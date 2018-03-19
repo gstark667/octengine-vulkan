@@ -100,9 +100,15 @@ std::array<VkVertexInputAttributeDescription, 2> vertex_get_attribute_descriptio
 
 const std::vector<vertex_t> vertices =
 {
-    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+};
+
+const std::vector<uint16_t> indices =
+{
+    0, 1, 2, 2, 3, 0
 };
 
 struct application_t
@@ -130,9 +136,12 @@ struct application_t
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
 
-    VkCommandPool commandPool;
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
+    VkBuffer indexBuffer;
+    VkDeviceMemory indexBufferMemory;
+
+    VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;
 
     VkSemaphore imageAvailableSemaphore;
@@ -828,6 +837,26 @@ void application_create_vertex_buffer(application_t *app) {
     vkFreeMemory(app->device, stagingBufferMemory, nullptr);
 }
 
+void application_create_index_buffer(application_t *app) {
+    VkDeviceSize bufferSize = (sizeof(indices[0]) * indices.size());
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    application_create_buffer(app, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
+
+    void* data;
+    vkMapMemory(app->device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, indices.data(), (size_t) bufferSize);
+    vkUnmapMemory(app->device, stagingBufferMemory);
+
+    application_create_buffer(app, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &app->indexBuffer, &app->indexBufferMemory);
+
+    application_copy_buffer(app, stagingBuffer, app->indexBuffer, bufferSize);
+
+    vkDestroyBuffer(app->device, stagingBuffer, nullptr);
+    vkFreeMemory(app->device, stagingBufferMemory, nullptr);
+}
+
 void application_create_command_buffers(application_t *app) {
     app->commandBuffers.resize(app->swapChainFramebuffers.size());
 
@@ -866,8 +895,9 @@ void application_create_command_buffers(application_t *app) {
         VkBuffer vertexBuffers[] = {app->vertexBuffer};
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(app->commandBuffers[i], 0, 1, &app->vertexBuffer, offsets);
+        vkCmdBindIndexBuffer(app->commandBuffers[i], app->indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-        vkCmdDraw(app->commandBuffers[i], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+        vkCmdDrawIndexed(app->commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
         vkCmdEndRenderPass(app->commandBuffers[i]);
 
@@ -951,6 +981,7 @@ void application_init_vulkan(application_t *app) {
     application_create_framebuffers(app);
     application_create_command_pool(app);
     application_create_vertex_buffer(app);
+    application_create_index_buffer(app);
     application_create_command_buffers(app);
     application_create_semaphores(app);
 }
@@ -972,6 +1003,8 @@ void application_cleanup(application_t *app) {
 
     vkDestroyBuffer(app->device, app->vertexBuffer, nullptr);
     vkFreeMemory(app->device, app->vertexBufferMemory, nullptr);
+    vkDestroyBuffer(app->device, app->indexBuffer, nullptr);
+    vkFreeMemory(app->device, app->indexBufferMemory, nullptr);
 
     for (auto framebuffer : app->swapChainFramebuffers) {
         vkDestroyFramebuffer(app->device, framebuffer, nullptr);
