@@ -1,8 +1,10 @@
-
-
 #define GLFW_INCLUDE_VULKAN
+#define GLM_FORCE_RADIANS
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <chrono>
 
 #include <iostream>
 #include <fstream>
@@ -66,6 +68,13 @@ struct vertex_t
 {
     glm::vec2 pos;
     glm::vec3 color;
+};
+
+struct uniform_buffer_object_t
+{
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
 };
 
 VkVertexInputBindingDescription vertex_get_binding_description()
@@ -132,6 +141,10 @@ struct application_t
     std::vector<VkImageView> swapChainImageViews;
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
+    VkDescriptorPool descriptorPool;
+    VkDescriptorSet descriptorSet;
+    VkDescriptorSetLayout descriptorSetLayout;
+
     VkRenderPass renderPass;
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
@@ -140,6 +153,8 @@ struct application_t
     VkDeviceMemory vertexBufferMemory;
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
+    VkBuffer uniformBuffer;
+    VkDeviceMemory uniformBufferMemory;
 
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;
@@ -591,6 +606,24 @@ VkShaderModule application_create_shader_module(application_t *app, const std::v
     return shaderModule;
 }
 
+void application_create_descriptor_set_layout(application_t *app) {
+    VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.descriptorCount = 1;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    uboLayoutBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &uboLayoutBinding;
+
+    if (vkCreateDescriptorSetLayout(app->device, &layoutInfo, nullptr, &app->descriptorSetLayout) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create descriptor set layout!");
+    }
+}
+
 void application_create_graphics_pipeline(application_t *app) {
     auto vertShaderCode = read_file("shaders/vert.spv");
     auto fragShaderCode = read_file("shaders/frag.spv");
@@ -653,7 +686,7 @@ void application_create_graphics_pipeline(application_t *app) {
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisampling = {};
@@ -678,7 +711,9 @@ void application_create_graphics_pipeline(application_t *app) {
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &app->descriptorSetLayout;
+    //pipelineLayoutInfo.setLayoutCount = 0;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
 
     if (vkCreatePipelineLayout(app->device, &pipelineLayoutInfo, nullptr, &app->pipelineLayout) != VK_SUCCESS) {
@@ -857,6 +892,59 @@ void application_create_index_buffer(application_t *app) {
     vkFreeMemory(app->device, stagingBufferMemory, nullptr);
 }
 
+void application_create_uniform_buffer(application_t *app) {
+    VkDeviceSize bufferSize = sizeof(uniform_buffer_object_t);
+    application_create_buffer(app, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &app->uniformBuffer, &app->uniformBufferMemory);
+}
+
+void application_create_descriptor_pool(application_t *app) {
+    VkDescriptorPoolSize poolSize = {};
+    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSize.descriptorCount = 1;
+
+    VkDescriptorPoolCreateInfo poolInfo = {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &poolSize;
+    poolInfo.maxSets = 1;
+
+    if (vkCreateDescriptorPool(app->device, &poolInfo, nullptr, &app->descriptorPool) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create descriptor pool!");
+    }
+}
+
+void application_create_descriptor_set(application_t *app) {
+    VkDescriptorSetLayout layouts[] = {app->descriptorSetLayout};
+    VkDescriptorSetAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = app->descriptorPool;
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = layouts;
+
+    if (vkAllocateDescriptorSets(app->device, &allocInfo, &app->descriptorSet) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to allocate descriptor set!");
+    }
+
+    VkDescriptorBufferInfo bufferInfo = {};
+    bufferInfo.buffer = app->uniformBuffer;
+    bufferInfo.offset = 0;
+    bufferInfo.range = sizeof(uniform_buffer_object_t);
+
+    VkWriteDescriptorSet descriptorWrite = {};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.dstSet = app->descriptorSet;
+    descriptorWrite.dstBinding = 0;
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pBufferInfo = &bufferInfo;
+    descriptorWrite.pImageInfo = nullptr; // Optional
+    descriptorWrite.pTexelBufferView = nullptr; // Optional
+
+    vkUpdateDescriptorSets(app->device, 1, &descriptorWrite, 0, nullptr);
+}
+
 void application_create_command_buffers(application_t *app) {
     app->commandBuffers.resize(app->swapChainFramebuffers.size());
 
@@ -897,6 +985,8 @@ void application_create_command_buffers(application_t *app) {
         vkCmdBindVertexBuffers(app->commandBuffers[i], 0, 1, &app->vertexBuffer, offsets);
         vkCmdBindIndexBuffer(app->commandBuffers[i], app->indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
+        vkCmdBindDescriptorSets(app->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app->pipelineLayout, 0, 1, &app->descriptorSet, 0, nullptr);
+
         vkCmdDrawIndexed(app->commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
         vkCmdEndRenderPass(app->commandBuffers[i]);
@@ -916,6 +1006,24 @@ void application_create_semaphores(application_t *app) {
 
         throw std::runtime_error("failed to create semaphores!");
     }
+}
+
+void application_update_uniforms(application_t *app)
+{
+    static auto startTime = std::chrono::high_resolution_clock::now();
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+    uniform_buffer_object_t ubo = {};
+    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.proj = glm::perspective(glm::radians(45.0f), app->swapChainExtent.width / (float) app->swapChainExtent.height, 0.1f, 10.0f);
+    ubo.proj[1][1] *= -1;
+
+    void* data;
+    vkMapMemory(app->device, app->uniformBufferMemory, 0, sizeof(ubo), 0, &data);
+    memcpy(data, &ubo, sizeof(ubo));
+    vkUnmapMemory(app->device, app->uniformBufferMemory);
 }
 
 void application_draw_frame(application_t *app) {
@@ -977,11 +1085,16 @@ void application_init_vulkan(application_t *app) {
     application_create_swap_chain(app);
     application_create_image_views(app);
     application_create_render_pass(app);
+    application_create_descriptor_set_layout(app);
     application_create_graphics_pipeline(app);
     application_create_framebuffers(app);
     application_create_command_pool(app);
     application_create_vertex_buffer(app);
     application_create_index_buffer(app);
+    application_create_uniform_buffer(app);
+    application_create_descriptor_pool(app);
+    application_create_descriptor_set(app);
+    application_update_uniforms(app);
     application_create_command_buffers(app);
     application_create_semaphores(app);
 }
@@ -989,6 +1102,7 @@ void application_init_vulkan(application_t *app) {
 void application_main_loop(application_t *app) {
     while (!glfwWindowShouldClose(app->window)) {
         glfwPollEvents();
+        application_update_uniforms(app);
         application_draw_frame(app);
     }
 
@@ -1005,6 +1119,8 @@ void application_cleanup(application_t *app) {
     vkFreeMemory(app->device, app->vertexBufferMemory, nullptr);
     vkDestroyBuffer(app->device, app->indexBuffer, nullptr);
     vkFreeMemory(app->device, app->indexBufferMemory, nullptr);
+    vkDestroyBuffer(app->device, app->uniformBuffer, nullptr);
+    vkFreeMemory(app->device, app->uniformBufferMemory, nullptr);
 
     for (auto framebuffer : app->swapChainFramebuffers) {
         vkDestroyFramebuffer(app->device, framebuffer, nullptr);
@@ -1013,6 +1129,7 @@ void application_cleanup(application_t *app) {
     vkDestroyPipeline(app->device, app->graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(app->device, app->pipelineLayout, nullptr);
     vkDestroyRenderPass(app->device, app->renderPass, nullptr);
+    vkDestroyDescriptorSetLayout(app->device, app->descriptorSetLayout, nullptr);
 
     for (auto imageView : app->swapChainImageViews) {
         vkDestroyImageView(app->device, imageView, nullptr);
