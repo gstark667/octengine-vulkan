@@ -1,5 +1,6 @@
 #define GLFW_INCLUDE_VULKAN
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -54,6 +55,8 @@ void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT
     }
 }
 
+void on_window_resized(GLFWwindow *window, int width, int height);
+
 struct QueueFamilyIndices {
     int graphicsFamily = -1;
     int presentFamily = -1;
@@ -68,6 +71,7 @@ struct SwapChainSupportDetails {
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
 };
+
 
 struct vertex_t
 {
@@ -1333,16 +1337,39 @@ void application_create_semaphores(application_t *app) {
     }
 }
 
+double xRot(0), yRot(0);
+float xPos(0), yPos(0), zPos(0);
+auto lastTime = std::chrono::high_resolution_clock::now();
+
 void application_update_uniforms(application_t *app)
 {
-    static auto startTime = std::chrono::high_resolution_clock::now();
     auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
+    lastTime = std::chrono::high_resolution_clock::now();
+
+    glfwGetCursorPos(app->window, &xRot, &yRot);
+
+    float speed = 5.0f;
+    if (glfwGetKey(app->window, GLFW_KEY_D) == GLFW_PRESS)
+        xPos -= time * speed;
+    if (glfwGetKey(app->window, GLFW_KEY_A) == GLFW_PRESS)
+        xPos += time * speed;
+    if (glfwGetKey(app->window, GLFW_KEY_W) == GLFW_PRESS)
+        zPos += time * speed;
+    if (glfwGetKey(app->window, GLFW_KEY_S) == GLFW_PRESS)
+        zPos -= time * speed;
+    if (glfwGetKey(app->window, GLFW_KEY_E) == GLFW_PRESS)
+        yPos -= time * speed;
+    if (glfwGetKey(app->window, GLFW_KEY_Q) == GLFW_PRESS)
+        yPos += time * speed;
 
     uniform_buffer_object_t ubo = {};
-    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.view = glm::lookAt(glm::vec3(6.0f, 6.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.proj = glm::perspective(glm::radians(45.0f), app->swapChainExtent.width / (float) app->swapChainExtent.height, 0.1f, 10.0f);
+    ubo.model = glm::mat4();
+    ubo.view = glm::translate(glm::mat4(), glm::vec3(xPos, yPos, zPos));
+    ubo.model *= glm::rotate(glm::mat4(1.0f), glm::radians((float)yPos), glm::vec3(1.0f, 0.0f, 0.0f));
+    //ubo.model *= glm::rotate(glm::mat4(1.0f), glm::radians((float)xPos), glm::vec3(0.0f, 0.0f, 1.0f));
+    //ubo.view = glm::lookAt(glm::vec3(6.0f, 6.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.proj = glm::perspective(glm::radians(45.0f), app->swapChainExtent.width / (float) app->swapChainExtent.height, 0.1f, 1000.0f);
     ubo.proj[1][1] *= -1;
 
     void *data;
@@ -1409,7 +1436,7 @@ void application_load_model(application_t* app, std::string path) {
             aiVector3D normals = scene->mMeshes[i]->mNormals[vert];
             aiVector3D **uv = scene->mMeshes[i]->mTextureCoords;
             vertex_t newVertex;
-            if (uv)
+            if (uv[0])
                 newVertex = {{vertex[0], vertex[1], vertex[2]}, {normals[0], normals[1], normals[2]}, {uv[0][vert][0], uv[0][vert][1]}};
             else
                 newVertex = {{vertex[0], vertex[1], vertex[2]}, {normals[0], normals[1], normals[2]}, {0.0f, 0.0f}};
@@ -1430,9 +1457,14 @@ void application_init_window(application_t *app) {
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     app->window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+
+    glfwSetInputMode(app->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    glfwSetWindowUserPointer(app->window, app);
+    glfwSetWindowSizeCallback(app->window, on_window_resized);
 }
 
 void application_init_vulkan(application_t *app) {
@@ -1535,6 +1567,11 @@ void application_recreate_swap_chain(application_t *app) {
     application_create_depth_resources(app);
     application_create_frame_buffers(app);
     application_create_command_buffers(app);
+}
+
+void on_window_resized(GLFWwindow *window, int width, int height) {
+    application_t *app = (application_t*)glfwGetWindowUserPointer(window);
+    application_recreate_swap_chain(app);
 }
 
 void application_main_loop(application_t *app) {
