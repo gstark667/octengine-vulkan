@@ -1407,7 +1407,12 @@ void application_load_model(application_t* app, std::string path) {
         {
             aiVector3D vertex = scene->mMeshes[i]->mVertices[vert];
             aiVector3D normals = scene->mMeshes[i]->mNormals[vert];
-            vertex_t newVertex = {{vertex[0], vertex[1], vertex[2]}, {normals[0], normals[1], normals[2]}, {0.0f, 0.0f}};
+            aiVector3D **uv = scene->mMeshes[i]->mTextureCoords;
+            vertex_t newVertex;
+            if (uv)
+                newVertex = {{vertex[0], vertex[1], vertex[2]}, {normals[0], normals[1], normals[2]}, {uv[0][vert][0], uv[0][vert][1]}};
+            else
+                newVertex = {{vertex[0], vertex[1], vertex[2]}, {normals[0], normals[1], normals[2]}, {0.0f, 0.0f}};
             vertices.push_back(newVertex);
         }
 
