@@ -141,6 +141,15 @@ std::vector<uint16_t> indices =
     4, 5, 6, 6, 7, 4*/
 };
 
+struct camera_t
+{
+    glm::vec3 angle;
+    glm::vec3 position;
+
+    float lastCursorX(0);
+    float lastCursorY(0);
+};
+
 struct application_t
 {
     GLFWwindow* window;
@@ -1350,23 +1359,28 @@ void application_update_uniforms(application_t *app)
     glfwGetCursorPos(app->window, &xRot, &yRot);
 
     float speed = 5.0f;
+    float xVel(0), yVel(0), zVel(0);
     if (glfwGetKey(app->window, GLFW_KEY_D) == GLFW_PRESS)
-        xPos -= time * speed;
+        xVel -= time * speed;
     if (glfwGetKey(app->window, GLFW_KEY_A) == GLFW_PRESS)
-        xPos += time * speed;
+        xVel += time * speed;
     if (glfwGetKey(app->window, GLFW_KEY_W) == GLFW_PRESS)
-        zPos += time * speed;
+        zVel += time * speed;
     if (glfwGetKey(app->window, GLFW_KEY_S) == GLFW_PRESS)
-        zPos -= time * speed;
+        zVel -= time * speed;
     if (glfwGetKey(app->window, GLFW_KEY_E) == GLFW_PRESS)
-        yPos -= time * speed;
+        yVel -= time * speed;
     if (glfwGetKey(app->window, GLFW_KEY_Q) == GLFW_PRESS)
-        yPos += time * speed;
+        yVel += time * speed;
+    xPos += xVel;
+    yPos += yVel;
+    zPos += zVel;
 
     uniform_buffer_object_t ubo = {};
     ubo.model = glm::mat4();
-    ubo.view = glm::translate(glm::mat4(), glm::vec3(xPos, yPos, zPos));
-    ubo.model *= glm::rotate(glm::mat4(1.0f), glm::radians((float)yPos), glm::vec3(1.0f, 0.0f, 0.0f));
+    ubo.view = glm::rotate(glm::mat4(), glm::radians((float)yRot), glm::vec3(1.0f, 0.0f, 0.0f));
+    ubo.view *= glm::rotate(glm::mat4(), glm::radians((float)xRot), glm::vec3(0.0f, 1.0f, 0.0f));
+    ubo.view *= glm::translate(glm::mat4(), glm::vec3(xPos, yPos, zPos));
     //ubo.model *= glm::rotate(glm::mat4(1.0f), glm::radians((float)xPos), glm::vec3(0.0f, 0.0f, 1.0f));
     //ubo.view = glm::lookAt(glm::vec3(6.0f, 6.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.proj = glm::perspective(glm::radians(45.0f), app->swapChainExtent.width / (float) app->swapChainExtent.height, 0.1f, 1000.0f);
