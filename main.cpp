@@ -78,6 +78,9 @@ struct vertex_t
     glm::vec3 pos;
     glm::vec3 normal;
     glm::vec2 texCoord;
+    glm::vec4 weights;
+    glm::ivec4 bones;
+    int32_t boneCount = 0;
 };
 
 struct uniform_buffer_object_t
@@ -85,7 +88,8 @@ struct uniform_buffer_object_t
     glm::mat4 model;
     glm::mat4 view;
     glm::mat4 proj;
-};
+    glm::mat4 bones[64];
+} ubo;
 
 VkVertexInputBindingDescription vertex_get_binding_description()
 {
@@ -101,9 +105,9 @@ VkVertexInputBindingDescription vertex_get_binding_description()
 // vec2: VK_FORMAT_R32G32_SFLOAT
 // vec3: VK_FORMAT_R32G32B32_SFLOAT
 // vec4: VK_FORMAT_R32G32B32A32_SFLOAT
-std::array<VkVertexInputAttributeDescription, 3> vertex_get_attribute_descriptions()
+std::array<VkVertexInputAttributeDescription, 5> vertex_get_attribute_descriptions()
 {
-    std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions;
+    std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions;
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;
     attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -118,6 +122,16 @@ std::array<VkVertexInputAttributeDescription, 3> vertex_get_attribute_descriptio
     attributeDescriptions[2].location = 2;
     attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
     attributeDescriptions[2].offset = offsetof(vertex_t, texCoord);
+
+    attributeDescriptions[3].binding = 0;
+    attributeDescriptions[3].location = 3;
+    attributeDescriptions[3].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+    attributeDescriptions[3].offset = offsetof(vertex_t, weights);
+
+    attributeDescriptions[4].binding = 0;
+    attributeDescriptions[4].location = 4;
+    attributeDescriptions[4].format = VK_FORMAT_R32G32B32A32_SINT;
+    attributeDescriptions[4].offset = offsetof(vertex_t, bones);
 
     return attributeDescriptions;
 }
@@ -1388,7 +1402,6 @@ void application_update_uniforms(application_t *app)
     zPos += (float)(cos(xRot) * zVel);
     yPos += yVel;
 
-    uniform_buffer_object_t ubo = {};
     ubo.model = glm::mat4();
     ubo.view = glm::rotate(glm::mat4(), yRot, glm::vec3(1.0f, 0.0f, 0.0f));
     ubo.view *= glm::rotate(glm::mat4(), xRot, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -1463,9 +1476,9 @@ void application_load_model(application_t* app, std::string path) {
             aiVector3D **uv = scene->mMeshes[i]->mTextureCoords;
             vertex_t newVertex;
             if (uv[0])
-                newVertex = {{vertex[0], vertex[1], vertex[2]}, {normals[0], normals[1], normals[2]}, {uv[0][vert][0], uv[0][vert][1]}};
+                newVertex = {{vertex[0], vertex[1], vertex[2]}, {normals[0], normals[1], normals[2]}, {uv[0][vert][0], uv[0][vert][1]}, {0.0f, 0.0f, 0.0f, 0.0f}, {0, 0, 0, 0}};
             else
-                newVertex = {{vertex[0], vertex[1], vertex[2]}, {normals[0], normals[1], normals[2]}, {0.0f, 0.0f}};
+                newVertex = {{vertex[0], vertex[1], vertex[2]}, {normals[0], normals[1], normals[2]}, {0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {0, 0, 0, 0}};
             vertices.push_back(newVertex);
         }
 
@@ -1474,6 +1487,23 @@ void application_load_model(application_t* app, std::string path) {
             for (unsigned int j = 0; j < 3; ++j)
             {
                 indices.push_back(scene->mMeshes[i]->mFaces[face].mIndices[j]);
+            }
+        }
+
+        for (unsigned int bone = 0; bone < scene->mMeshes[i]->mNumBones; ++bone)
+        {
+            aiBone *b = scene->mMeshes[i]->mBones[bone];
+            std::cout << b->mName.data << std::endl;
+            if (bone == 0)
+                ubo.bones[bone] = glm::rotate(glm::mat4(), 0.24f, glm::vec3(1.0f, 0.0f, 0.0f));
+            glm::vec4 weights(0.0f);
+            unsigned int vertexId = 0;
+            for (unsigned int weight = 0; weight < scene->mMeshes[i]->mBones[bone]->mNumWeights; ++weight)
+            {
+                aiVertexWeight vertexWeight = scene->mMeshes[i]->mBones[bone]->mWeights[weight];
+                vertices.at(vertexWeight.mVertexId).weights[vertices.at(vertexWeight.mVertexId).boneCount] = vertexWeight.mWeight;
+                vertices.at(vertexWeight.mVertexId).bones[vertices.at(vertexWeight.mVertexId).boneCount] = bone;
+                ++vertices.at(vertexWeight.mVertexId).boneCount;
             }
         }
     }

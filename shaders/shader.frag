@@ -9,7 +9,6 @@ layout(location = 1) in vec2 fragTexCoord;
 layout(location = 0) out vec4 outColor;
 
 void main() {
-    float shade = max(dot(fragNormal, vec3(0, 2, 0)), 0.0);
+    float shade = max(dot(fragNormal, vec3(2, 2, 0)), 0.0);
     outColor = texture(texSampler, fragTexCoord) * vec4(shade, shade, shade, 1.0f);
-    outColor = vec4(fragNormal, 1.0f);
 }
