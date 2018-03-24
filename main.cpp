@@ -83,6 +83,13 @@ struct vertex_t
     int32_t boneCount = 0;
 };
 
+struct bone_t
+{
+    glm::mat4 matrix;
+    glm::mat4 offset;
+    int16_t parent = 0;
+};
+
 struct uniform_buffer_object_t
 {
     glm::mat4 model;
@@ -136,24 +143,9 @@ std::array<VkVertexInputAttributeDescription, 5> vertex_get_attribute_descriptio
     return attributeDescriptions;
 }
 
-std::vector<vertex_t> vertices =
-{
-/*    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}*/
-};
-
-std::vector<uint16_t> indices =
-{
-    /*0, 1, 2, 2, 3, 0,
-    4, 5, 6, 6, 7, 4*/
-};
+std::vector<vertex_t> vertices;
+std::vector<uint16_t> indices;
+std::vector<bone_t> bones;
 
 struct camera_t
 {
@@ -1361,11 +1353,13 @@ double lastX(0), lastY(0);
 float xRot(0), yRot(0);
 float xPos(0), yPos(0), zPos(0);
 auto lastTime = std::chrono::high_resolution_clock::now();
+auto startTime = std::chrono::high_resolution_clock::now();
 
 void application_update_uniforms(application_t *app)
 {
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
+    float rot = std::chrono::duration<float, std::chrono::seconds::period>(startTime - currentTime).count();
     lastTime = std::chrono::high_resolution_clock::now();
 
     double curX, curY;
@@ -1410,6 +1404,10 @@ void application_update_uniforms(application_t *app)
     //ubo.view = glm::lookAt(glm::vec3(6.0f, 6.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.proj = glm::perspective(glm::radians(45.0f), app->swapChainExtent.width / (float) app->swapChainExtent.height, 0.1f, 1000.0f);
     ubo.proj[1][1] *= -1;
+
+    bones.at(1).matrix = glm::rotate(glm::mat4(), rot, glm::vec3(1.0f, 0.0f, 0.0f));
+    for (size_t i = 0; i < bones.size(); ++i)
+        ubo.bones[i] = bones.at(i).matrix;
 
     void *data;
     vkMapMemory(app->device, app->uniformBufferMemory, 0, sizeof(ubo), 0, &data);
@@ -1496,7 +1494,12 @@ void application_load_model(application_t* app, std::string path) {
             std::cout << b->mName.data << std::endl;
             if (bone == 0)
                 ubo.bones[bone] = glm::rotate(glm::mat4(), 0.24f, glm::vec3(1.0f, 0.0f, 0.0f));
-            glm::vec4 weights(0.0f);
+            bone_t newBone;
+            for (short i = 0; i < 4; ++i)
+                for (short j = 0; j < 4; ++j)
+                    newBone.offset[i][j] = b->mOffsetMatrix[i][j];
+            bones.push_back(newBone);
+
             unsigned int vertexId = 0;
             for (unsigned int weight = 0; weight < scene->mMeshes[i]->mBones[bone]->mNumWeights; ++weight)
             {
@@ -1504,6 +1507,7 @@ void application_load_model(application_t* app, std::string path) {
                 vertices.at(vertexWeight.mVertexId).weights[vertices.at(vertexWeight.mVertexId).boneCount] = vertexWeight.mWeight;
                 vertices.at(vertexWeight.mVertexId).bones[vertices.at(vertexWeight.mVertexId).boneCount] = bone;
                 ++vertices.at(vertexWeight.mVertexId).boneCount;
+
             }
         }
     }
