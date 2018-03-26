@@ -1,0 +1,2 @@
+VkCommandBuffer application_begin_single_time_commands(application_t *app);
+void application_end_single_time_commands(application_t *app, VkCommandBuffer commandBuffer);
