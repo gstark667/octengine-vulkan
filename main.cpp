@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <FreeImage.h>
 #include <assimp/Importer.hpp>
@@ -72,6 +73,23 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+struct scale_keyframe_t
+{
+    aiVector3D vec;
+    float time;
+};
+
+struct rotation_keyframe_t
+{
+    aiQuaternion quat;
+    float time;
+};
+
+struct position_keyframe_t
+{
+    aiVector3D vec;
+    float time;
+};
 
 struct vertex_t
 {
@@ -85,9 +103,14 @@ struct vertex_t
 
 struct bone_t
 {
-    glm::mat4 matrix;
-    glm::mat4 offset;
-    int16_t parent = 0;
+    aiMatrix4x4 matrix;
+    aiMatrix4x4 offset;
+    std::string name;
+    std::vector<scale_keyframe_t> scaleKeyframes;
+    std::vector<rotation_keyframe_t> rotationKeyframes;
+    std::vector<position_keyframe_t> positionKeyframes;
+    int32_t pos = 0;
+    std::vector<bone_t*> children;
 };
 
 struct uniform_buffer_object_t
@@ -108,10 +131,6 @@ VkVertexInputBindingDescription vertex_get_binding_description()
     return bindingDescription;
 }
 
-// float: VK_FORMAT_R32_SFLOAT
-// vec2: VK_FORMAT_R32G32_SFLOAT
-// vec3: VK_FORMAT_R32G32B32_SFLOAT
-// vec4: VK_FORMAT_R32G32B32A32_SFLOAT
 std::array<VkVertexInputAttributeDescription, 5> vertex_get_attribute_descriptions()
 {
     std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions;
@@ -146,6 +165,7 @@ std::array<VkVertexInputAttributeDescription, 5> vertex_get_attribute_descriptio
 std::vector<vertex_t> vertices;
 std::vector<uint16_t> indices;
 std::vector<bone_t> bones;
+aiMatrix4x4 globalInverseTransform;
 
 struct camera_t
 {
@@ -773,7 +793,7 @@ void application_create_graphics_pipeline(application_t *app) {
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisampling = {};
@@ -1349,24 +1369,167 @@ void application_create_semaphores(application_t *app) {
     }
 }
 
+aiMatrix4x4 application_interpolate_scale(application_t *app, bone_t *bone, float time)
+{
+    aiVector3D scale;
+    if (bone->scaleKeyframes.size() == 1)
+    {
+        scale = bone->scaleKeyframes[0].vec;
+    }
+    else
+    {
+        scale_keyframe_t *start(NULL), *end(NULL);
+        for (size_t i = 0; i < bone->scaleKeyframes.size(); ++i)
+        {
+            if (bone->scaleKeyframes[i].time < time)
+            {
+                start = &bone->scaleKeyframes[i];
+            }
+            else if (bone->scaleKeyframes[i].time > time)
+            {
+                end = &bone->scaleKeyframes[i];
+                break;
+            }
+        }
+
+        if (start && !end)
+        {
+            scale = start->vec;
+        }
+        else if (end && !start)
+        {
+            scale = end->vec;
+        }
+        else
+        {
+            float delta = (time - (float)start->time) / ((float)end->time - (float)start->time);
+            scale = (start->vec + delta * (end->vec - start->vec));
+        }
+    }
+    aiMatrix4x4 mat;
+    aiMatrix4x4::Scaling(scale, mat);
+    return mat;
+    //return glm::translate(glm::mat4(), glm::vec3(scale[0], scale[1], scale[2]));
+}
+
+aiMatrix4x4 application_interpolate_rotation(application_t *app, bone_t *bone, float time)
+{
+    aiQuaternion rotation;
+    if (bone->rotationKeyframes.size() == 1)
+    {
+        rotation = bone->rotationKeyframes[0].quat;
+    }
+    else
+    {
+        rotation_keyframe_t *start(NULL), *end(NULL);
+        for (size_t i = 0; i < bone->rotationKeyframes.size(); ++i)
+        {
+            if (bone->rotationKeyframes[i].time < time)
+            {
+                start = &bone->rotationKeyframes[i];
+            }
+            else if (bone->rotationKeyframes[i].time > time)
+            {
+                end = &bone->rotationKeyframes[i];
+                break;
+            }
+        }
+
+        if (start && !end)
+        {
+            rotation = start->quat;
+        }
+        else if (end && !start)
+        {
+            rotation = end->quat;
+        }
+        else
+        {
+            float delta = (time - (float)start->time) / ((float)end->time - (float)start->time);
+            aiQuaternion::Interpolate(rotation, start->quat, end->quat, delta);
+            rotation.Normalize();
+        }
+    }
+    aiMatrix4x4 mat(rotation.GetMatrix());
+    /*glm::mat4 output;
+    for (short i = 0; i < 4; ++i)
+        for (short j = 0; j < 4; ++j)
+            output[i][j] = mat[i][j];
+    return output;*/
+    return mat;
+}
+
+aiMatrix4x4 application_interpolate_position(application_t *app, bone_t *bone, float time)
+{
+    aiVector3D position;
+    if (bone->positionKeyframes.size() == 1)
+    {
+        position = bone->positionKeyframes[0].vec;
+    }
+    else
+    {
+        position_keyframe_t *start(NULL), *end(NULL);
+        for (size_t i = 0; i < bone->positionKeyframes.size(); ++i)
+        {
+            if (bone->positionKeyframes[i].time < time)
+            {
+                start = &bone->positionKeyframes[i];
+            }
+            else if (bone->positionKeyframes[i].time > time)
+            {
+                end = &bone->positionKeyframes[i];
+                break;
+            }
+        }
+
+        if (start && !end)
+        {
+            position = start->vec;
+        }
+        else if (end && !start)
+        {
+            position = end->vec;
+        }
+        else
+        {
+            float delta = (time - (float)start->time) / ((float)end->time - (float)start->time);
+            position = (start->vec + delta * (end->vec - start->vec));
+        }
+    }
+    //return glm::translate(glm::mat4(), glm::vec3(position[0], position[1], position[2]));
+    aiMatrix4x4 mat;
+    aiMatrix4x4::Translation(position, mat);
+    return mat;
+}
+
+void application_update_bone(application_t *app, bone_t *bone, float time, aiMatrix4x4 parentMatrix)
+{
+    bone->matrix = parentMatrix * application_interpolate_position(app, bone, time) * application_interpolate_rotation(app, bone, time) * application_interpolate_scale(app, bone, time);
+    for (size_t i = 0; i < bone->children.size(); ++i)
+        application_update_bone(app, bone->children[i], time, bone->matrix);
+    bone->matrix = globalInverseTransform * bone->matrix * bone->offset;
+}
+
 double lastX(0), lastY(0);
 float xRot(0), yRot(0);
 float xPos(0), yPos(0), zPos(0);
 auto lastTime = std::chrono::high_resolution_clock::now();
 auto startTime = std::chrono::high_resolution_clock::now();
+auto initialTime = std::chrono::high_resolution_clock::now();
 
 void application_update_uniforms(application_t *app)
 {
     auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
+    float delta = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
     float rot = std::chrono::duration<float, std::chrono::seconds::period>(startTime - currentTime).count();
     lastTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - initialTime).count();
 
     double curX, curY;
     glfwGetCursorPos(app->window, &curX, &curY);
 
-    xRot += (float)(curX - lastX) * 0.01f;
-    yRot += (float)(curY - lastY) * 0.01f;
+    xRot += (float)(curX - lastX) * 0.005f;
+    yRot -= (float)(curY - lastY) * 0.005f;
     if (yRot > 1.57079632679f)
         yRot = 1.57079632679;
     if (yRot < -1.57079632679f)
@@ -1378,17 +1541,17 @@ void application_update_uniforms(application_t *app)
     float speed = 5.0f;
     float xVel(0), yVel(0), zVel(0);
     if (glfwGetKey(app->window, GLFW_KEY_D) == GLFW_PRESS)
-        xVel -= time * speed;
+        xVel -= delta * speed;
     if (glfwGetKey(app->window, GLFW_KEY_A) == GLFW_PRESS)
-        xVel += time * speed;
+        xVel += delta * speed;
     if (glfwGetKey(app->window, GLFW_KEY_W) == GLFW_PRESS)
-        zVel += time * speed;
+        zVel += delta * speed;
     if (glfwGetKey(app->window, GLFW_KEY_S) == GLFW_PRESS)
-        zVel -= time * speed;
+        zVel -= delta * speed;
     if (glfwGetKey(app->window, GLFW_KEY_E) == GLFW_PRESS)
-        yVel -= time * speed;
+        yVel += delta * speed;
     if (glfwGetKey(app->window, GLFW_KEY_Q) == GLFW_PRESS)
-        yVel += time * speed;
+        yVel -= delta * speed;
     double velocity = sqrt(xVel * xVel + yVel * yVel);
     xPos += (float)(cos(xRot) * xVel);
     xPos -= (float)(sin(xRot) * zVel);
@@ -1396,18 +1559,26 @@ void application_update_uniforms(application_t *app)
     zPos += (float)(cos(xRot) * zVel);
     yPos += yVel;
 
-    ubo.model = glm::mat4();
     ubo.view = glm::rotate(glm::mat4(), yRot, glm::vec3(1.0f, 0.0f, 0.0f));
     ubo.view *= glm::rotate(glm::mat4(), xRot, glm::vec3(0.0f, 1.0f, 0.0f));
     ubo.view *= glm::translate(glm::mat4(), glm::vec3(xPos, yPos, zPos));
     //ubo.model *= glm::rotate(glm::mat4(1.0f), glm::radians((float)xPos), glm::vec3(0.0f, 0.0f, 1.0f));
     //ubo.view = glm::lookAt(glm::vec3(6.0f, 6.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.proj = glm::perspective(glm::radians(45.0f), app->swapChainExtent.width / (float) app->swapChainExtent.height, 0.1f, 1000.0f);
-    ubo.proj[1][1] *= -1;
+    //ubo.proj[1][1] *= -1;
 
-    bones.at(1).matrix = glm::rotate(glm::mat4(), rot, glm::vec3(1.0f, 0.0f, 0.0f));
+    while (time > 2.5f)
+        time -= 2.5f;
+
+    application_update_bone(app, &bones[0], time, aiMatrix4x4());
     for (size_t i = 0; i < bones.size(); ++i)
-        ubo.bones[i] = bones.at(i).matrix;
+    {
+        ubo.bones[bones[i].pos] = glm::transpose(glm::make_mat4(&bones[i].matrix.a1));
+    }
+
+    //bones.at(1).finalMatrix = glm::rotate(glm::mat4(), rot, glm::vec3(1.0f, 0.0f, 0.0f));
+    //for (size_t i = 0; i < bones.size(); ++i)
+    //    ubo.bones[i] = bones.at(i).finalMatrix;
 
     void *data;
     vkMapMemory(app->device, app->uniformBufferMemory, 0, sizeof(ubo), 0, &data);
@@ -1456,7 +1627,29 @@ void application_draw_frame(application_t *app) {
     vkQueueWaitIdle(app->presentQueue);
 }
 
-void application_load_model(application_t* app, std::string path) {
+bone_t *application_load_node(application_t *app, aiNode *node)
+{
+    std::cout << node->mName.data << std::endl;
+    bone_t *bone = NULL;
+    for (size_t b = 0; b < bones.size(); ++b)
+    {
+        if (bones[b].name == node->mName.data)
+        {
+            bone = &bones[b];
+        }
+    }
+
+    for (unsigned int i = 0; i < node->mNumChildren; ++i)
+    {
+        bone_t *child = application_load_node(app, node->mChildren[i]);
+        if (child && bone)
+            bone->children.push_back(child);
+    }
+    if (bone)
+        return bone;
+}
+
+void application_load_model(application_t *app, std::string path) {
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(path,
         aiProcess_CalcTangentSpace |
@@ -1492,12 +1685,10 @@ void application_load_model(application_t* app, std::string path) {
         {
             aiBone *b = scene->mMeshes[i]->mBones[bone];
             std::cout << b->mName.data << std::endl;
-            if (bone == 0)
-                ubo.bones[bone] = glm::rotate(glm::mat4(), 0.24f, glm::vec3(1.0f, 0.0f, 0.0f));
             bone_t newBone;
-            for (short i = 0; i < 4; ++i)
-                for (short j = 0; j < 4; ++j)
-                    newBone.offset[i][j] = b->mOffsetMatrix[i][j];
+            newBone.offset = b->mOffsetMatrix;
+            newBone.pos = bones.size();
+            newBone.name = b->mName.data;
             bones.push_back(newBone);
 
             unsigned int vertexId = 0;
@@ -1507,10 +1698,47 @@ void application_load_model(application_t* app, std::string path) {
                 vertices.at(vertexWeight.mVertexId).weights[vertices.at(vertexWeight.mVertexId).boneCount] = vertexWeight.mWeight;
                 vertices.at(vertexWeight.mVertexId).bones[vertices.at(vertexWeight.mVertexId).boneCount] = bone;
                 ++vertices.at(vertexWeight.mVertexId).boneCount;
-
             }
         }
     }
+
+    for (unsigned int i = 0; i < scene->mNumAnimations; ++i)
+    {
+        for (unsigned int chan = 0; chan < scene->mAnimations[i]->mNumChannels; ++chan)
+        {
+            aiNodeAnim *channel = scene->mAnimations[i]->mChannels[chan];
+            bone_t *bone = NULL;
+            for (size_t b = 0; b < bones.size(); ++b)
+            {
+                if (bones[b].name == channel->mNodeName.data)
+                {
+                    bone = &bones[b];
+                    break;
+                }
+            }
+            if (!bone)
+                continue;
+            std::cout << "found bone" << std::endl;
+            for (unsigned int j = 0; j < channel->mNumScalingKeys; ++j)
+            {
+                bone->scaleKeyframes.push_back({channel->mScalingKeys[j].mValue, (float)channel->mScalingKeys[j].mTime});
+            }
+            for (unsigned int j = 0; j < channel->mNumRotationKeys; ++j)
+            {
+                bone->rotationKeyframes.push_back({channel->mRotationKeys[j].mValue, (float)channel->mRotationKeys[j].mTime});
+            }
+            for (unsigned int j = 0; j < channel->mNumPositionKeys; ++j)
+            {
+                bone->positionKeyframes.push_back({channel->mPositionKeys[j].mValue, (float)channel->mPositionKeys[j].mTime});
+            }
+        }
+    }
+
+    std::cout << scene->mRootNode->mName.data << std::endl;
+    globalInverseTransform = scene->mRootNode->mTransformation;
+    globalInverseTransform.Inverse();
+    
+    application_load_node(app, scene->mRootNode);
 }
 
 void application_init_window(application_t *app) {
