@@ -20,6 +20,7 @@
 #include "model.h"
 #include "image.h"
 #include "texture.h"
+#include "camera.h"
 
 
 struct queue_family_t
@@ -90,6 +91,7 @@ struct application_t
     VkBuffer uniformBuffer;
     VkDeviceMemory uniformBufferMemory;
 
+    camera_t camera;
     model_t model;
     texture_t texture;
     uniform_buffer_object_t ubo;

@@ -18,6 +18,7 @@ set(HEADERS
     include/image.h
     include/texture.h
     include/model.h
+    include/camera.h
     include/application.h
 )
 
@@ -28,6 +29,7 @@ set(SOURCES
     src/image.cpp
     src/texture.cpp
     src/model.cpp
+    src/camera.cpp
     src/application.cpp
 )
 

@@ -39,6 +39,8 @@ void on_window_resized(GLFWwindow *window, int width, int height) {
     application_t *app = (application_t*)glfwGetWindowUserPointer(window);
     app->windowWidth = width;
     app->windowHeight = height;
+    app->camera.width = width;
+    app->camera.height = height;
     application_recreate_swap_chain(app);
 }
 
@@ -49,6 +51,8 @@ void application_init_window(application_t *app) {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     app->window = glfwCreateWindow(app->windowWidth, app->windowHeight, "Vulkan", nullptr, nullptr);
+    app->camera.width = app->windowWidth;
+    app->camera.height = app->windowHeight;
 
     glfwSetInputMode(app->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -824,16 +828,8 @@ void application_create_command_buffers(application_t *app) {
 
         vkCmdBeginRenderPass(app->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(app->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app->graphicsPipeline);
-
-        VkBuffer vertexBuffers[] = {app->model.vertexBuffer};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(app->commandBuffers[i], 0, 1, &app->model.vertexBuffer, offsets);
-        vkCmdBindIndexBuffer(app->commandBuffers[i], app->model.indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-
-        vkCmdBindDescriptorSets(app->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app->pipelineLayout, 0, 1, &app->descriptorSet, 0, nullptr);
-
-        vkCmdDrawIndexed(app->commandBuffers[i], static_cast<uint32_t>(app->model.indices.size()), 1, 0, 0, 0);
+        model_render(&app->model, app->commandBuffers[i], app->pipelineLayout, app->graphicsPipeline, app->descriptorSet);
+        // for testing model_render(&app->model, app->commandBuffers[i], app->pipelineLayout, app->graphicsPipeline, app->descriptorSet);
 
         vkCmdEndRenderPass(app->commandBuffers[i]);
 
@@ -864,9 +860,6 @@ void application_update_bone(application_t *app, bone_t *bone, float time, aiMat
     bone->matrix = app->model.globalInverseTransform * bone->matrix * bone->offset;
 }
 
-double lastX(0), lastY(0);
-float xRot(0), yRot(0);
-float xPos(0), yPos(0), zPos(0);
 auto lastTime = std::chrono::high_resolution_clock::now();
 auto startTime = std::chrono::high_resolution_clock::now();
 auto initialTime = std::chrono::high_resolution_clock::now();
@@ -877,62 +870,16 @@ void application_update_uniforms(application_t *app)
     float delta = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
     float rot = std::chrono::duration<float, std::chrono::seconds::period>(startTime - currentTime).count();
     lastTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - initialTime).count();
 
-    double curX, curY;
-    glfwGetCursorPos(app->window, &curX, &curY);
+    camera_update(&app->camera, delta, app->window);
+    app->ubo.view = app->camera.view;
+    app->ubo.proj = app->camera.proj;
 
-    xRot += (float)(curX - lastX) * 0.005f;
-    yRot -= (float)(curY - lastY) * 0.005f;
-    if (yRot > 1.57079632679f)
-        yRot = 1.57079632679;
-    if (yRot < -1.57079632679f)
-        yRot = -1.57079632679;
-
-    lastX = curX;
-    lastY = curY;
-
-    float speed = 5.0f;
-    float xVel(0), yVel(0), zVel(0);
-    if (glfwGetKey(app->window, GLFW_KEY_D) == GLFW_PRESS)
-        xVel -= delta * speed;
-    if (glfwGetKey(app->window, GLFW_KEY_A) == GLFW_PRESS)
-        xVel += delta * speed;
-    if (glfwGetKey(app->window, GLFW_KEY_W) == GLFW_PRESS)
-        zVel += delta * speed;
-    if (glfwGetKey(app->window, GLFW_KEY_S) == GLFW_PRESS)
-        zVel -= delta * speed;
-    if (glfwGetKey(app->window, GLFW_KEY_E) == GLFW_PRESS)
-        yVel += delta * speed;
-    if (glfwGetKey(app->window, GLFW_KEY_Q) == GLFW_PRESS)
-        yVel -= delta * speed;
-    double velocity = sqrt(xVel * xVel + yVel * yVel);
-    xPos += (float)(cos(xRot) * xVel);
-    xPos -= (float)(sin(xRot) * zVel);
-    zPos += (float)(sin(xRot) * xVel);
-    zPos += (float)(cos(xRot) * zVel);
-    yPos += yVel;
-
-    app->ubo.view = glm::rotate(glm::mat4(), yRot, glm::vec3(1.0f, 0.0f, 0.0f));
-    app->ubo.view *= glm::rotate(glm::mat4(), xRot, glm::vec3(0.0f, 1.0f, 0.0f));
-    app->ubo.view *= glm::translate(glm::mat4(), glm::vec3(xPos, yPos, zPos));
-    //ubo.model *= glm::rotate(glm::mat4(1.0f), glm::radians((float)xPos), glm::vec3(0.0f, 0.0f, 1.0f));
-    //ubo.view = glm::lookAt(glm::vec3(6.0f, 6.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    app->ubo.proj = glm::perspective(glm::radians(45.0f), app->swapChainExtent.width / (float) app->swapChainExtent.height, 0.1f, 1000.0f);
-    //ubo.proj[1][1] *= -1;
-
-    while (time > 2.5f)
-        time -= 2.5f;
-
-    application_update_bone(app, &app->model.bones[0], time, aiMatrix4x4());
+    model_update(&app->model, delta);
     for (size_t i = 0; i < app->model.bones.size(); ++i)
     {
         app->ubo.bones[app->model.bones[i].pos] = glm::transpose(glm::make_mat4(&app->model.bones[i].matrix.a1));
     }
-
-    //bones.at(1).finalMatrix = glm::rotate(glm::mat4(), rot, glm::vec3(1.0f, 0.0f, 0.0f));
-    //for (size_t i = 0; i < bones.size(); ++i)
-    //    ubo.bones[i] = bones.at(i).finalMatrix;
 
     void *data;
     vkMapMemory(app->device, app->uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
@@ -1008,6 +955,8 @@ void application_recreate_swap_chain(application_t *app) {
     glfwGetWindowSize(app->window, &width, &height);
     if (width == 0 || height == 0)
         return;
+    app->camera.width = width;
+    app->camera.height = height;
     vkDeviceWaitIdle(app->device);
 
     application_cleanup_swap_chain(app);
@@ -1035,6 +984,8 @@ void application_init_vulkan(application_t *app) {
     application_create_command_pool(app);
     application_create_depth_resources(app);
     application_create_frame_buffers(app);
+
+    app->camera.fov = 45.0f;
 
     model_load(&app->model, "example.dae");
     model_create_buffers(&app->model, &app->device, &app->physicalDevice, &app->commandPool, &app->graphicsQueue);

@@ -336,24 +336,40 @@ void model_create_buffers(model_t *model, VkDevice *device, VkPhysicalDevice *ph
     model_create_index_buffer(model, device, physicalDevice, commandPool, graphicsQueue);
 }
 
-void model_update(model_t *model)
+void model_update_bone(model_t *model, bone_t *bone, float time, aiMatrix4x4 parentMatrix)
 {
-
+    bone->matrix = parentMatrix
+        * interpolate_position(bone, time)
+        * interpolate_rotation(bone, time)
+        * interpolate_scale(bone, time);
+    for (size_t i = 0; i < bone->children.size(); ++i)
+        model_update_bone(model, bone->children[i], time, bone->matrix);
+    bone->matrix = model->globalInverseTransform * bone->matrix * bone->offset;
 }
 
-/*void model_render(model_t *model, VkCommandBuffer commandBuffer)
+void model_update(model_t *model, float delta)
+{
+    model->time += delta;
+    // TODO allign this with actual animation length
+    while (model->time > 2.5f)
+        model->time -= 2.5f;
+    // TODO make this pick the actual root bone (instead of assuming 0)
+    model_update_bone(model, &model->bones[0], model->time, aiMatrix4x4());
+}
+
+void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet)
 {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-    kBuffer vertexBuffers[] = {vertexBuffer};
+    VkBuffer vertexBuffers[] = {model->vertexBuffer};
     VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->vertexBuffer, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, &model->indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(commandBuffer, model->indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
     vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model->indices.size()), 1, 0, 0, 0);
-}*/
+}
 
 void model_cleanup(model_t *model, VkDevice *device)
 {
