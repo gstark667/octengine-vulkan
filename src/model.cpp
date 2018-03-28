@@ -321,7 +321,7 @@ void model_create_index_buffer(model_t *model, VkDevice *device, VkPhysicalDevic
     memcpy(data, model->indices.data(), (size_t) bufferSize);
     vkUnmapMemory(*device, stagingBufferMemory);
 
-    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &model->indexBuffer, &model->indexBufferMemory);
+    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &model->indexBuffer, &model->indexBufferMemory);
 
     copy_buffer(device, commandPool, graphicsQueue, stagingBuffer, model->indexBuffer, bufferSize);
 
