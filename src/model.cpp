@@ -1,3 +1,52 @@
+#include <vulkan/vulkan.h>
+
+#include "model.h"
+#include "util.h"
+
+#include <iostream>
+
+
+VkVertexInputBindingDescription vertex_get_binding_description()
+{
+    VkVertexInputBindingDescription bindingDescription;
+    bindingDescription.binding = 0;
+    bindingDescription.stride = sizeof(vertex_t);
+    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    return bindingDescription;
+}
+
+std::array<VkVertexInputAttributeDescription, 5> vertex_get_attribute_descriptions()
+{
+    std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions;
+    attributeDescriptions[0].binding = 0;
+    attributeDescriptions[0].location = 0;
+    attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescriptions[0].offset = offsetof(vertex_t, pos);
+
+    attributeDescriptions[1].binding = 0;
+    attributeDescriptions[1].location = 1;
+    attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescriptions[1].offset = offsetof(vertex_t, normal);
+
+    attributeDescriptions[2].binding = 0;
+    attributeDescriptions[2].location = 2;
+    attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+    attributeDescriptions[2].offset = offsetof(vertex_t, texCoord);
+
+    attributeDescriptions[3].binding = 0;
+    attributeDescriptions[3].location = 3;
+    attributeDescriptions[3].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+    attributeDescriptions[3].offset = offsetof(vertex_t, weights);
+
+    attributeDescriptions[4].binding = 0;
+    attributeDescriptions[4].location = 4;
+    attributeDescriptions[4].format = VK_FORMAT_R32G32B32A32_SINT;
+    attributeDescriptions[4].offset = offsetof(vertex_t, bones);
+
+    return attributeDescriptions;
+}
+
 aiMatrix4x4 interpolate_scale(bone_t *bone, float time)
 {
     aiVector3D scale;
@@ -124,12 +173,175 @@ aiMatrix4x4 interpolate_position(bone_t *bone, float time)
     return mat;
 }
 
+bone_t *model_load_node(model_t *model, aiNode *node)
+{
+    std::cout << node->mName.data << std::endl;
+    bone_t *bone = NULL;
+    for (size_t b = 0; b < model->bones.size(); ++b)
+    {
+        if (model->bones[b].name == node->mName.data)
+        {
+            bone = &model->bones[b];
+        }
+    }
+
+    for (unsigned int i = 0; i < node->mNumChildren; ++i)
+    {
+        bone_t *child = model_load_node(model, node->mChildren[i]);
+        if (child && bone)
+            bone->children.push_back(child);
+    }
+    if (bone)
+        return bone;
+}
+
+void model_load(model_t *model, std::string path)
+{
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(path,
+        aiProcess_CalcTangentSpace |
+        aiProcess_Triangulate |
+        aiProcess_JoinIdenticalVertices |
+        aiProcess_SortByPType
+    );
+
+    for (unsigned int i = 0; i < scene->mNumMeshes; ++i)
+    {
+        for (unsigned int vert = 0; vert < scene->mMeshes[i]->mNumVertices; ++vert)
+        {
+            aiVector3D vertex = scene->mMeshes[i]->mVertices[vert];
+            aiVector3D normals = scene->mMeshes[i]->mNormals[vert];
+            aiVector3D **uv = scene->mMeshes[i]->mTextureCoords;
+            vertex_t newVertex;
+            newVertex.pos = {vertex[0], vertex[1], vertex[2]};
+            newVertex.normal = {normals[0], normals[1], normals[2]};
+            newVertex.texCoord = {uv[0][vert][0], uv[0][vert][1]};
+            newVertex.weights = {0.0f, 0.0f, 0.0f, 0.0f};
+            newVertex.bones = {0, 0, 0, 0};
+            model->vertices.push_back(newVertex);
+        }
+
+        for (unsigned int face = 0; face < scene->mMeshes[i]->mNumFaces; ++face)
+        {
+            for (unsigned int j = 0; j < 3; ++j)
+            {
+                model->indices.push_back(scene->mMeshes[i]->mFaces[face].mIndices[j]);
+            }
+        }
+
+        for (unsigned int bone = 0; bone < scene->mMeshes[i]->mNumBones; ++bone)
+        {
+            aiBone *b = scene->mMeshes[i]->mBones[bone];
+            std::cout << b->mName.data << std::endl;
+            bone_t newBone;
+            newBone.offset = b->mOffsetMatrix;
+            newBone.pos = model->bones.size();
+            newBone.name = b->mName.data;
+            model->bones.push_back(newBone);
+
+            unsigned int vertexId = 0;
+            for (unsigned int weight = 0; weight < scene->mMeshes[i]->mBones[bone]->mNumWeights; ++weight)
+            {
+                aiVertexWeight vertexWeight = scene->mMeshes[i]->mBones[bone]->mWeights[weight];
+                model->vertices.at(vertexWeight.mVertexId).weights[model->vertices.at(vertexWeight.mVertexId).boneCount] = vertexWeight.mWeight;
+                model->vertices.at(vertexWeight.mVertexId).bones[model->vertices.at(vertexWeight.mVertexId).boneCount] = bone;
+                ++model->vertices.at(vertexWeight.mVertexId).boneCount;
+            }
+        }
+    }
+
+    for (unsigned int i = 0; i < scene->mNumAnimations; ++i)
+    {
+        for (unsigned int chan = 0; chan < scene->mAnimations[i]->mNumChannels; ++chan)
+        {
+            aiNodeAnim *channel = scene->mAnimations[i]->mChannels[chan];
+            bone_t *bone = NULL;
+            for (size_t b = 0; b < model->bones.size(); ++b)
+            {
+                if (model->bones[b].name == channel->mNodeName.data)
+                {
+                    bone = &model->bones[b];
+                    break;
+                }
+            }
+            if (!bone)
+                continue;
+            std::cout << "found bone" << std::endl;
+            for (unsigned int j = 0; j < channel->mNumScalingKeys; ++j)
+            {
+                bone->scaleKeyframes.push_back({channel->mScalingKeys[j].mValue, (float)channel->mScalingKeys[j].mTime});
+            }
+            for (unsigned int j = 0; j < channel->mNumRotationKeys; ++j)
+            {
+                bone->rotationKeyframes.push_back({channel->mRotationKeys[j].mValue, (float)channel->mRotationKeys[j].mTime});
+            }
+            for (unsigned int j = 0; j < channel->mNumPositionKeys; ++j)
+            {
+                bone->positionKeyframes.push_back({channel->mPositionKeys[j].mValue, (float)channel->mPositionKeys[j].mTime});
+            }
+        }
+    }
+
+    model->globalInverseTransform = scene->mRootNode->mTransformation;
+    model->globalInverseTransform.Inverse();
+    
+    model_load_node(model, scene->mRootNode);
+}
+
+void model_create_vertex_buffer(model_t *model, VkDevice *device, VkPhysicalDevice *physicalDevice, VkCommandPool *commandPool, VkQueue *graphicsQueue)
+{
+    VkDeviceSize bufferSize = (sizeof(model->vertices[0]) * model->vertices.size());
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
+
+    void *data;
+    vkMapMemory(*device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, model->vertices.data(), (size_t) bufferSize);
+    vkUnmapMemory(*device, stagingBufferMemory);
+
+    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &model->vertexBuffer, &model->vertexBufferMemory);
+
+    copy_buffer(device, commandPool, graphicsQueue, stagingBuffer, model->vertexBuffer, bufferSize);
+
+    vkDestroyBuffer(*device, stagingBuffer, nullptr);
+    vkFreeMemory(*device, stagingBufferMemory, nullptr);
+}
+
+void model_create_index_buffer(model_t *model, VkDevice *device, VkPhysicalDevice *physicalDevice, VkCommandPool *commandPool, VkQueue *graphicsQueue) {
+    VkDeviceSize bufferSize = (sizeof(model->indices[0]) * model->indices.size());
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
+
+    void *data;
+    vkMapMemory(*device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, model->indices.data(), (size_t) bufferSize);
+    vkUnmapMemory(*device, stagingBufferMemory);
+
+    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &model->indexBuffer, &model->indexBufferMemory);
+
+    copy_buffer(device, commandPool, graphicsQueue, stagingBuffer, model->indexBuffer, bufferSize);
+
+    vkDestroyBuffer(*device, stagingBuffer, nullptr);
+    vkFreeMemory(*device, stagingBufferMemory, nullptr);
+}
+
+
+void model_create_buffers(model_t *model, VkDevice *device, VkPhysicalDevice *physicalDevice, VkCommandPool *commandPool, VkQueue *graphicsQueue)
+{
+    model_create_vertex_buffer(model, device, physicalDevice, commandPool, graphicsQueue);
+    model_create_index_buffer(model, device, physicalDevice, commandPool, graphicsQueue);
+}
+
 void model_update(model_t *model)
 {
 
 }
 
-void model_render(model_t *model, VkCommandBuffer commandBuffer)
+/*void model_render(model_t *model, VkCommandBuffer commandBuffer)
 {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
@@ -140,5 +352,6 @@ void model_render(model_t *model, VkCommandBuffer commandBuffer)
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
-}
+    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model->indices.size()), 1, 0, 0, 0);
+}*/
+

@@ -15,6 +15,11 @@
 #include <set>
 #include <array>
 
+#include "util.h"
+#include "shader.h"
+#include "model.h"
+#include "image.h"
+
 
 struct queue_family_t
 {
@@ -63,9 +68,7 @@ struct application_t
     std::vector<VkImageView> swapChainImageViews;
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
-    VkImage depthImage;
-    VkDeviceMemory depthImageMemory;
-    VkImageView depthImageView;
+    image_t depthImage;
 
     VkDescriptorPool descriptorPool;
     VkDescriptorSet descriptorSet;

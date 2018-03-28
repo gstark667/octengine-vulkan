@@ -13,11 +13,19 @@ find_package(assimp)
 include_directories(include/)
 
 set(HEADERS
+    include/util.h
+    include/shader.h
+    include/image.h
+    include/model.h
     include/application.h
 )
 
 set(SOURCES
     src/main.cpp
+    src/util.cpp
+    src/shader.cpp
+    src/image.cpp
+    src/model.cpp
     src/application.cpp
 )
 
