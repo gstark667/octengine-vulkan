@@ -5,7 +5,7 @@
 #include <fstream>
 
 
-static std::vector<char> read_file(const std::string filename) {
+std::vector<char> read_file(const std::string filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
     if (!file.is_open()) {
@@ -22,7 +22,6 @@ static std::vector<char> read_file(const std::string filename) {
 
     return buffer;
 }
-
 
 VkCommandBuffer begin_single_time_commands(VkDevice *device, VkCommandPool *commandPool) {
     VkCommandBufferAllocateInfo allocInfo = {};
@@ -42,7 +41,8 @@ VkCommandBuffer begin_single_time_commands(VkDevice *device, VkCommandPool *comm
     return commandBuffer;
 }
 
-void end_single_time_commands(VkDevice *device, VkCommandPool *commandPool, VkQueue *graphicsQueue, VkCommandBuffer commandBuffer) {
+void end_single_time_commands(VkDevice *device, VkCommandPool *commandPool, VkQueue *graphicsQueue, VkCommandBuffer commandBuffer)
+{
     vkEndCommandBuffer(commandBuffer);
 
     VkSubmitInfo submitInfo = {};

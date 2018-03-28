@@ -10,19 +10,6 @@ bool has_stencil_component(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-uint32_t find_memory_type(VkPhysicalDevice *physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(*physicalDevice, &memProperties);
-
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("failed to find suitable memory type!");
-}
-
 void image_create(image_t *image, VkDevice *device, VkPhysicalDevice *physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties)
 {
     VkImageCreateInfo imageInfo = {};
@@ -132,3 +119,11 @@ void image_transition_layout(image_t *image, VkDevice *device, VkCommandPool *co
 
     end_single_time_commands(device, commandPool, graphicsQueue, commandBuffer);
 }
+
+void image_cleanup(image_t *image, VkDevice *device)
+{
+    vkDestroyImageView(*device, image->view, nullptr);
+    vkDestroyImage(*device, image->image, nullptr);
+    vkFreeMemory(*device, image->memory, nullptr);
+}
+

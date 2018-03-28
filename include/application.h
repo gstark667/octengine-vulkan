@@ -34,6 +34,14 @@ struct swapchain_support_t
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+struct uniform_buffer_object_t
+{
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+    glm::mat4 bones[64];
+};
+
 struct application_t
 {
     bool enableValidationLayers;
@@ -77,6 +85,12 @@ struct application_t
     VkRenderPass renderPass;
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
+
+    VkBuffer uniformBuffer;
+    VkDeviceMemory uniformBufferMemory;
+
+    model_t model;
+    uniform_buffer_object_t ubo;
 
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;

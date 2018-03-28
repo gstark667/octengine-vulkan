@@ -355,3 +355,12 @@ void model_update(model_t *model)
     vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model->indices.size()), 1, 0, 0, 0);
 }*/
 
+void model_cleanup(model_t *model, VkDevice *device)
+{
+    vkDestroyBuffer(*device, model->vertexBuffer, nullptr);
+    vkFreeMemory(*device, model->vertexBufferMemory, nullptr);
+
+    vkDestroyBuffer(*device, model->indexBuffer, nullptr);
+    vkFreeMemory(*device, model->indexBufferMemory, nullptr);
+}
+

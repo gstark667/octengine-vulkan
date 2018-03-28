@@ -30,5 +30,5 @@ set(SOURCES
 )
 
 add_executable(octengine ${SOURCES} ${HEADERS})
-target_link_libraries (octengine ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries (octengine ${CMAKE_THREAD_LIBS_INIT} vulkan glfw assimp)
 target_include_directories (octengine PUBLIC include/)

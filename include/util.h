@@ -5,7 +5,7 @@
 #include <string>
 
 
-static std::vector<char> read_file(const std::string filename);
+std::vector<char> read_file(const std::string filename);
 
 VkCommandBuffer begin_single_time_commands(VkDevice *device, VkCommandPool *commandPool);
 void end_single_time_commands(VkDevice *device, VkCommandPool *commandPool, VkQueue *graphicsQueue, VkCommandBuffer commandBuffer);

@@ -1,5 +1,7 @@
 #include "application.h"
 
+#include <chrono>
+
 
 // queue family
 bool queue_family_is_complete(queue_family_t *queueFamily)
@@ -716,6 +718,309 @@ void application_create_frame_buffers(application_t *app) {
     }
 }
 
+// create uniform buffer
+void application_create_uniform_buffer(application_t *app) {
+    VkDeviceSize bufferSize = sizeof(uniform_buffer_object_t);
+    create_buffer(&app->device, &app->physicalDevice, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &app->uniformBuffer, &app->uniformBufferMemory);
+}
+
+// create descriptor pool
+void application_create_descriptor_pool(application_t *app) {
+    std::array<VkDescriptorPoolSize, 2> poolSizes = {};
+    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSizes[0].descriptorCount = 1;
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    poolSizes[1].descriptorCount = 1;
+
+    VkDescriptorPoolCreateInfo poolInfo = {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+    poolInfo.pPoolSizes = poolSizes.data();
+    poolInfo.maxSets = 1;
+
+    if (vkCreateDescriptorPool(app->device, &poolInfo, nullptr, &app->descriptorPool) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create descriptor pool!");
+    }
+}
+
+// create descriptor set
+void application_create_descriptor_set(application_t *app) {
+    VkDescriptorSetLayout layouts[] = {app->descriptorSetLayout};
+    VkDescriptorSetAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = app->descriptorPool;
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = layouts;
+
+    if (vkAllocateDescriptorSets(app->device, &allocInfo, &app->descriptorSet) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to allocate descriptor set!");
+    }
+
+    VkDescriptorBufferInfo bufferInfo = {};
+    bufferInfo.buffer = app->uniformBuffer;
+    bufferInfo.offset = 0;
+    bufferInfo.range = sizeof(uniform_buffer_object_t);
+
+    /*VkDescriptorImageInfo imageInfo = {};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = app->textureImageView;
+    imageInfo.sampler = app->textureSampler;*/
+
+    std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
+    descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrites[0].dstSet = app->descriptorSet;
+    descriptorWrites[0].dstBinding = 0;
+    descriptorWrites[0].dstArrayElement = 0;
+    descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorWrites[0].descriptorCount = 1;
+    descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+    /*descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrites[1].dstSet = app->descriptorSet;
+    descriptorWrites[1].dstBinding = 1;
+    descriptorWrites[1].dstArrayElement = 0;
+    descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorWrites[1].descriptorCount = 1;
+    descriptorWrites[1].pImageInfo = &imageInfo;*/
+
+    vkUpdateDescriptorSets(app->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+}
+
+// create command buffers
+void application_create_command_buffers(application_t *app) {
+    app->commandBuffers.resize(app->swapChainFramebuffers.size());
+
+    VkCommandBufferAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = app->commandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = (uint32_t) app->commandBuffers.size();
+
+    if (vkAllocateCommandBuffers(app->device, &allocInfo, app->commandBuffers.data()) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate command buffers!");
+    }
+
+    for (size_t i = 0; i < app->commandBuffers.size(); i++) {
+        VkCommandBufferBeginInfo beginInfo = {};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+        vkBeginCommandBuffer(app->commandBuffers[i], &beginInfo);
+
+        VkRenderPassBeginInfo renderPassInfo = {};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = app->renderPass;
+        renderPassInfo.framebuffer = app->swapChainFramebuffers[i];
+        renderPassInfo.renderArea.offset = {0, 0};
+        renderPassInfo.renderArea.extent = app->swapChainExtent;
+
+        std::array<VkClearValue, 2> clearValues = {};
+        clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
+        clearValues[1].depthStencil = {1.0f, 0};
+
+        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+        renderPassInfo.pClearValues = clearValues.data();
+
+        vkCmdBeginRenderPass(app->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        vkCmdBindPipeline(app->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app->graphicsPipeline);
+
+        VkBuffer vertexBuffers[] = {app->model.vertexBuffer};
+        VkDeviceSize offsets[] = {0};
+        vkCmdBindVertexBuffers(app->commandBuffers[i], 0, 1, &app->model.vertexBuffer, offsets);
+        vkCmdBindIndexBuffer(app->commandBuffers[i], app->model.indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+        vkCmdBindDescriptorSets(app->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app->pipelineLayout, 0, 1, &app->descriptorSet, 0, nullptr);
+
+        vkCmdDrawIndexed(app->commandBuffers[i], static_cast<uint32_t>(app->model.indices.size()), 1, 0, 0, 0);
+
+        vkCmdEndRenderPass(app->commandBuffers[i]);
+
+        if (vkEndCommandBuffer(app->commandBuffers[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to record command buffer!");
+        }
+    }
+}
+
+// create semaphores
+void application_create_semaphores(application_t *app) {
+    VkSemaphoreCreateInfo semaphoreInfo = {};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    if (vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->imageAvailableSemaphore) != VK_SUCCESS ||
+        vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->renderFinishedSemaphore) != VK_SUCCESS) {
+
+        throw std::runtime_error("failed to create semaphores!");
+    }
+}
+
+// update uniforms
+void application_update_bone(application_t *app, bone_t *bone, float time, aiMatrix4x4 parentMatrix)
+{
+    bone->matrix = parentMatrix * interpolate_position(bone, time) * interpolate_rotation(bone, time) * interpolate_scale(bone, time);
+    for (size_t i = 0; i < bone->children.size(); ++i)
+        application_update_bone(app, bone->children[i], time, bone->matrix);
+    bone->matrix = app->model.globalInverseTransform * bone->matrix * bone->offset;
+}
+
+double lastX(0), lastY(0);
+float xRot(0), yRot(0);
+float xPos(0), yPos(0), zPos(0);
+auto lastTime = std::chrono::high_resolution_clock::now();
+auto startTime = std::chrono::high_resolution_clock::now();
+auto initialTime = std::chrono::high_resolution_clock::now();
+
+void application_update_uniforms(application_t *app)
+{
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float delta = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
+    float rot = std::chrono::duration<float, std::chrono::seconds::period>(startTime - currentTime).count();
+    lastTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - initialTime).count();
+
+    double curX, curY;
+    glfwGetCursorPos(app->window, &curX, &curY);
+
+    xRot += (float)(curX - lastX) * 0.005f;
+    yRot -= (float)(curY - lastY) * 0.005f;
+    if (yRot > 1.57079632679f)
+        yRot = 1.57079632679;
+    if (yRot < -1.57079632679f)
+        yRot = -1.57079632679;
+
+    lastX = curX;
+    lastY = curY;
+
+    float speed = 5.0f;
+    float xVel(0), yVel(0), zVel(0);
+    if (glfwGetKey(app->window, GLFW_KEY_D) == GLFW_PRESS)
+        xVel -= delta * speed;
+    if (glfwGetKey(app->window, GLFW_KEY_A) == GLFW_PRESS)
+        xVel += delta * speed;
+    if (glfwGetKey(app->window, GLFW_KEY_W) == GLFW_PRESS)
+        zVel += delta * speed;
+    if (glfwGetKey(app->window, GLFW_KEY_S) == GLFW_PRESS)
+        zVel -= delta * speed;
+    if (glfwGetKey(app->window, GLFW_KEY_E) == GLFW_PRESS)
+        yVel += delta * speed;
+    if (glfwGetKey(app->window, GLFW_KEY_Q) == GLFW_PRESS)
+        yVel -= delta * speed;
+    double velocity = sqrt(xVel * xVel + yVel * yVel);
+    xPos += (float)(cos(xRot) * xVel);
+    xPos -= (float)(sin(xRot) * zVel);
+    zPos += (float)(sin(xRot) * xVel);
+    zPos += (float)(cos(xRot) * zVel);
+    yPos += yVel;
+
+    app->ubo.view = glm::rotate(glm::mat4(), yRot, glm::vec3(1.0f, 0.0f, 0.0f));
+    app->ubo.view *= glm::rotate(glm::mat4(), xRot, glm::vec3(0.0f, 1.0f, 0.0f));
+    app->ubo.view *= glm::translate(glm::mat4(), glm::vec3(xPos, yPos, zPos));
+    //ubo.model *= glm::rotate(glm::mat4(1.0f), glm::radians((float)xPos), glm::vec3(0.0f, 0.0f, 1.0f));
+    //ubo.view = glm::lookAt(glm::vec3(6.0f, 6.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    app->ubo.proj = glm::perspective(glm::radians(45.0f), app->swapChainExtent.width / (float) app->swapChainExtent.height, 0.1f, 1000.0f);
+    //ubo.proj[1][1] *= -1;
+
+    while (time > 2.5f)
+        time -= 2.5f;
+
+    application_update_bone(app, &app->model.bones[0], time, aiMatrix4x4());
+    for (size_t i = 0; i < app->model.bones.size(); ++i)
+    {
+        app->ubo.bones[app->model.bones[i].pos] = glm::transpose(glm::make_mat4(&app->model.bones[i].matrix.a1));
+    }
+
+    //bones.at(1).finalMatrix = glm::rotate(glm::mat4(), rot, glm::vec3(1.0f, 0.0f, 0.0f));
+    //for (size_t i = 0; i < bones.size(); ++i)
+    //    ubo.bones[i] = bones.at(i).finalMatrix;
+
+    void *data;
+    vkMapMemory(app->device, app->uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
+    memcpy(data, &app->ubo, sizeof(app->ubo));
+    vkUnmapMemory(app->device, app->uniformBufferMemory);
+}
+
+// draw frame
+void application_draw_frame(application_t *app) {
+    uint32_t imageIndex;
+    vkAcquireNextImageKHR(app->device, app->swapChain, std::numeric_limits<uint64_t>::max(), app->imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    VkSemaphore waitSemaphores[] = {app->imageAvailableSemaphore};
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.pWaitDstStageMask = waitStages;
+
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &app->commandBuffers[imageIndex];
+
+    VkSemaphore signalSemaphores[] = {app->renderFinishedSemaphore};
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    if (vkQueueSubmit(app->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit draw command buffer!");
+    }
+
+    VkPresentInfoKHR presentInfo = {};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = signalSemaphores;
+
+    VkSwapchainKHR swapChains[] = {app->swapChain};
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = swapChains;
+
+    presentInfo.pImageIndices = &imageIndex;
+
+    vkQueuePresentKHR(app->presentQueue, &presentInfo);
+
+    vkQueueWaitIdle(app->presentQueue);
+}
+
+// cleanup swapchain
+void application_cleanup_swap_chain(application_t *app) {
+    image_cleanup(&app->depthImage, &app->device);
+
+    for (auto framebuffer: app->swapChainFramebuffers) {
+        vkDestroyFramebuffer(app->device, framebuffer, nullptr);
+    }
+
+    vkFreeCommandBuffers(app->device, app->commandPool, static_cast<uint32_t>(app->commandBuffers.size()), app->commandBuffers.data());
+    vkDestroyPipeline(app->device, app->graphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(app->device, app->pipelineLayout, nullptr);
+    vkDestroyRenderPass(app->device, app->renderPass, nullptr);
+
+    for (auto imageView : app->swapChainImageViews) {
+        vkDestroyImageView(app->device, imageView, nullptr);
+    }
+
+    vkDestroySwapchainKHR(app->device, app->swapChain, nullptr);
+}
+
+// recreate swapchain
+void application_recreate_swap_chain(application_t *app) {
+    int width, height; 
+    glfwGetWindowSize(app->window, &width, &height);
+    if (width == 0 || height == 0)
+        return;
+    vkDeviceWaitIdle(app->device);
+
+    application_cleanup_swap_chain(app);
+
+    application_create_swap_chain(app);
+    application_create_image_views(app);
+    application_create_render_pass(app);
+    application_create_graphics_pipeline(app);
+    application_create_depth_resources(app);
+    application_create_frame_buffers(app);
+    application_create_command_buffers(app);
+}
+
 void application_init_vulkan(application_t *app) {
     application_create_instance(app);
     application_setup_debug_callback(app);
@@ -734,9 +1039,9 @@ void application_init_vulkan(application_t *app) {
     //application_create_texture_image_view(app);
     //application_create_texture_sampler(app);
 
-    model_t model;
-    model_load(&model, "example.dae");
-    model_create_buffers(&model, &app->device, &app->physicalDevice, &app->commandPool, &app->graphicsQueue);
+    model_load(&app->model, "example.dae");
+    model_create_buffers(&app->model, &app->device, &app->physicalDevice, &app->commandPool, &app->graphicsQueue);
+
     application_create_uniform_buffer(app);
     application_create_descriptor_pool(app);
     application_create_descriptor_set(app);
@@ -758,11 +1063,11 @@ void application_main_loop(application_t *app) {
 void application_cleanup(application_t *app) {
     application_cleanup_swap_chain(app);
 
-    vkDestroySampler(app->device, app->textureSampler, nullptr);
-    vkDestroyImageView(app->device, app->textureImageView, nullptr);
+    //vkDestroySampler(app->device, app->textureSampler, nullptr);
+    //vkDestroyImageView(app->device, app->textureImageView, nullptr);
 
-    vkDestroyImage(app->device, app->textureImage, nullptr);
-    vkFreeMemory(app->device, app->textureImageMemory, nullptr);
+    //vkDestroyImage(app->device, app->textureImage, nullptr);
+    //vkFreeMemory(app->device, app->textureImageMemory, nullptr);
 
     vkDestroyDescriptorPool(app->device, app->descriptorPool, nullptr);
 
@@ -770,11 +1075,7 @@ void application_cleanup(application_t *app) {
     vkDestroyBuffer(app->device, app->uniformBuffer, nullptr);
     vkFreeMemory(app->device, app->uniformBufferMemory, nullptr);
 
-    vkDestroyBuffer(app->device, app->indexBuffer, nullptr);
-    vkFreeMemory(app->device, app->indexBufferMemory, nullptr);
-
-    vkDestroyBuffer(app->device, app->vertexBuffer, nullptr);
-    vkFreeMemory(app->device, app->vertexBufferMemory, nullptr);
+    model_cleanup(&app->model, &app->device);
 
     vkDestroySemaphore(app->device, app->renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->imageAvailableSemaphore, nullptr);
