@@ -16,6 +16,7 @@ set(HEADERS
     include/util.h
     include/shader.h
     include/image.h
+    include/texture.h
     include/model.h
     include/application.h
 )
@@ -25,10 +26,11 @@ set(SOURCES
     src/util.cpp
     src/shader.cpp
     src/image.cpp
+    src/texture.cpp
     src/model.cpp
     src/application.cpp
 )
 
 add_executable(octengine ${SOURCES} ${HEADERS})
-target_link_libraries (octengine ${CMAKE_THREAD_LIBS_INIT} vulkan glfw assimp)
+target_link_libraries (octengine ${CMAKE_THREAD_LIBS_INIT} vulkan glfw assimp freeimage)
 target_include_directories (octengine PUBLIC include/)

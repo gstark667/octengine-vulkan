@@ -3,11 +3,16 @@
 
 #include "image.h"
 
+#include <string>
+
 
 struct texture_t
 {
     image_t image;
-    VkSampler textureSampler;
+    VkSampler sampler;
 };
+
+void texture_load(texture_t *texture, VkDevice *device, VkPhysicalDevice *physicalDevice, VkCommandPool *commandPool, VkQueue *graphicsQueue, std::string path);
+void texture_cleanup(texture_t *texture, VkDevice *device);
 
 #endif

@@ -523,15 +523,14 @@ void application_create_descriptor_set_layout(application_t *app) {
     uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     uboLayoutBinding.pImmutableSamplers = nullptr;
 
-    //VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
-    //samplerLayoutBinding.binding = 1;
-    //samplerLayoutBinding.descriptorCount = 1;
-    //samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    //samplerLayoutBinding.pImmutableSamplers = nullptr;
-    //samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
+    samplerLayoutBinding.binding = 1;
+    samplerLayoutBinding.descriptorCount = 1;
+    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerLayoutBinding.pImmutableSamplers = nullptr;
+    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-    //std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
-    std::array<VkDescriptorSetLayoutBinding, 1> bindings = {uboLayoutBinding};
+    std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
     VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -727,12 +726,11 @@ void application_create_uniform_buffer(application_t *app) {
 
 // create descriptor pool
 void application_create_descriptor_pool(application_t *app) {
-    //std::array<VkDescriptorPoolSize, 2> poolSizes = {};
-    std::array<VkDescriptorPoolSize, 1> poolSizes = {};
+    std::array<VkDescriptorPoolSize, 2> poolSizes = {};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSizes[0].descriptorCount = 1;
-    //poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    //poolSizes[1].descriptorCount = 1;
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    poolSizes[1].descriptorCount = 1;
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -764,13 +762,12 @@ void application_create_descriptor_set(application_t *app) {
     bufferInfo.offset = 0;
     bufferInfo.range = sizeof(uniform_buffer_object_t);
 
-    /*VkDescriptorImageInfo imageInfo = {};
+    VkDescriptorImageInfo imageInfo = {};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = app->textureImageView;
-    imageInfo.sampler = app->textureSampler;*/
+    imageInfo.imageView = app->texture.image.view;
+    imageInfo.sampler = app->texture.sampler;
 
-    //std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
-    std::array<VkWriteDescriptorSet, 1> descriptorWrites = {};
+    std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
     descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     descriptorWrites[0].dstSet = app->descriptorSet;
     descriptorWrites[0].dstBinding = 0;
@@ -779,13 +776,13 @@ void application_create_descriptor_set(application_t *app) {
     descriptorWrites[0].descriptorCount = 1;
     descriptorWrites[0].pBufferInfo = &bufferInfo;
 
-    /*descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     descriptorWrites[1].dstSet = app->descriptorSet;
     descriptorWrites[1].dstBinding = 1;
     descriptorWrites[1].dstArrayElement = 0;
     descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     descriptorWrites[1].descriptorCount = 1;
-    descriptorWrites[1].pImageInfo = &imageInfo;*/
+    descriptorWrites[1].pImageInfo = &imageInfo;
 
     vkUpdateDescriptorSets(app->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }
@@ -1038,12 +1035,11 @@ void application_init_vulkan(application_t *app) {
     application_create_command_pool(app);
     application_create_depth_resources(app);
     application_create_frame_buffers(app);
-    //application_create_texture_image(app, "example.png");
-    //application_create_texture_image_view(app);
-    //application_create_texture_sampler(app);
 
     model_load(&app->model, "example.dae");
     model_create_buffers(&app->model, &app->device, &app->physicalDevice, &app->commandPool, &app->graphicsQueue);
+
+    texture_load(&app->texture, &app->device, &app->physicalDevice, &app->commandPool, &app->graphicsQueue, "example.png");
 
     application_create_uniform_buffer(app);
     application_create_descriptor_pool(app);
@@ -1066,12 +1062,6 @@ void application_main_loop(application_t *app) {
 void application_cleanup(application_t *app) {
     application_cleanup_swap_chain(app);
 
-    //vkDestroySampler(app->device, app->textureSampler, nullptr);
-    //vkDestroyImageView(app->device, app->textureImageView, nullptr);
-
-    //vkDestroyImage(app->device, app->textureImage, nullptr);
-    //vkFreeMemory(app->device, app->textureImageMemory, nullptr);
-
     vkDestroyDescriptorPool(app->device, app->descriptorPool, nullptr);
 
     vkDestroyDescriptorSetLayout(app->device, app->descriptorSetLayout, nullptr);
@@ -1079,6 +1069,7 @@ void application_cleanup(application_t *app) {
     vkFreeMemory(app->device, app->uniformBufferMemory, nullptr);
 
     model_cleanup(&app->model, &app->device);
+    texture_cleanup(&app->texture, &app->device);
 
     vkDestroySemaphore(app->device, app->renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->imageAvailableSemaphore, nullptr);

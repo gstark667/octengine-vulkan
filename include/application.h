@@ -19,6 +19,7 @@
 #include "shader.h"
 #include "model.h"
 #include "image.h"
+#include "texture.h"
 
 
 struct queue_family_t
@@ -90,6 +91,7 @@ struct application_t
     VkDeviceMemory uniformBufferMemory;
 
     model_t model;
+    texture_t texture;
     uniform_buffer_object_t ubo;
 
     VkCommandPool commandPool;
