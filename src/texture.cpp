@@ -8,7 +8,7 @@
 #include <stdexcept>
 
 
-void texture_load(texture_t *texture, VkDevice *device, VkPhysicalDevice *physicalDevice, VkCommandPool *commandPool, VkQueue *graphicsQueue, std::string path)
+void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, std::string path)
 {
     FIBITMAP *img = FreeImage_Load(FreeImage_GetFileType(path.c_str(), 0), path.c_str());
     FIBITMAP *bitmap = FreeImage_ConvertTo32Bits(img);
@@ -31,9 +31,9 @@ void texture_load(texture_t *texture, VkDevice *device, VkPhysicalDevice *physic
     create_buffer(device, physicalDevice, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
 
     void *data;
-    vkMapMemory(*device, stagingBufferMemory, 0, imageSize, 0, &data);
+    vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
     memcpy(data, (void*)FreeImage_GetBits(bitmap), static_cast<size_t>(imageSize));
-    vkUnmapMemory(*device, stagingBufferMemory);
+    vkUnmapMemory(device, stagingBufferMemory);
 
     FreeImage_Unload(bitmap);
 
@@ -43,8 +43,8 @@ void texture_load(texture_t *texture, VkDevice *device, VkPhysicalDevice *physic
     image_copy_buffer(&texture->image, device, commandPool, graphicsQueue, stagingBuffer);
     image_transition_layout(&texture->image, device, commandPool, graphicsQueue, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-    vkDestroyBuffer(*device, stagingBuffer, nullptr);
-    vkFreeMemory(*device, stagingBufferMemory, nullptr);
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
+    vkFreeMemory(device, stagingBufferMemory, nullptr);
 
     image_create_view(&texture->image, device, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
 
@@ -66,14 +66,14 @@ void texture_load(texture_t *texture, VkDevice *device, VkPhysicalDevice *physic
     samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = 0.0f;
 
-    if (vkCreateSampler(*device, &samplerInfo, nullptr, &texture->sampler) != VK_SUCCESS) {
+    if (vkCreateSampler(device, &samplerInfo, nullptr, &texture->sampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
 }
 
-void texture_cleanup(texture_t *texture, VkDevice *device)
+void texture_cleanup(texture_t *texture, VkDevice device)
 {
-    vkDestroySampler(*device, texture->sampler, nullptr);
+    vkDestroySampler(device, texture->sampler, nullptr);
     image_cleanup(&texture->image, device);
 }
 

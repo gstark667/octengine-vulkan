@@ -17,6 +17,7 @@ set(HEADERS
     include/shader.h
     include/image.h
     include/texture.h
+    include/pipeline.h
     include/model.h
     include/camera.h
     include/application.h
@@ -28,6 +29,7 @@ set(SOURCES
     src/shader.cpp
     src/image.cpp
     src/texture.cpp
+    src/pipeline.cpp
     src/model.cpp
     src/camera.cpp
     src/application.cpp

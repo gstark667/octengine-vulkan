@@ -17,6 +17,7 @@
 
 #include "util.h"
 #include "shader.h"
+#include "pipeline.h"
 #include "model.h"
 #include "image.h"
 #include "texture.h"
@@ -34,14 +35,6 @@ struct swapchain_support_t
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
-};
-
-struct uniform_buffer_object_t
-{
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 proj;
-    glm::mat4 bones[64];
 };
 
 struct application_t
@@ -78,18 +71,10 @@ struct application_t
     std::vector<VkImageView> swapChainImageViews;
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
+    VkFormat depthFormat;
     image_t depthImage;
 
-    VkDescriptorPool descriptorPool;
-    VkDescriptorSet descriptorSet;
-    VkDescriptorSetLayout descriptorSetLayout;
-
-    VkRenderPass renderPass;
-    VkPipelineLayout pipelineLayout;
-    VkPipeline graphicsPipeline;
-
-    VkBuffer uniformBuffer;
-    VkDeviceMemory uniformBufferMemory;
+    pipeline_t pipeline;
 
     camera_t camera;
     model_t model;

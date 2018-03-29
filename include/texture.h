@@ -12,7 +12,7 @@ struct texture_t
     VkSampler sampler;
 };
 
-void texture_load(texture_t *texture, VkDevice *device, VkPhysicalDevice *physicalDevice, VkCommandPool *commandPool, VkQueue *graphicsQueue, std::string path);
-void texture_cleanup(texture_t *texture, VkDevice *device);
+void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, std::string path);
+void texture_cleanup(texture_t *texture, VkDevice device);
 
 #endif

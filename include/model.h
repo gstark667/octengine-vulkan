@@ -85,9 +85,9 @@ aiMatrix4x4 interpolate_rotation(bone_t *bone, float time);
 aiMatrix4x4 interpolate_position(bone_t *bone, float time);
 
 void model_load(model_t *model, std::string path);
-void model_create_buffers(model_t *model, VkDevice *device, VkPhysicalDevice *physicalDevice, VkCommandPool *commandPool, VkQueue *graphicsQueue);
+void model_create_buffers(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 void model_update(model_t *model, float delta);
 void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet);
-void model_cleanup(model_t *model, VkDevice *device);
+void model_cleanup(model_t *model, VkDevice device);
 
 #endif

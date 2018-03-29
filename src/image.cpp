@@ -10,7 +10,7 @@ bool has_stencil_component(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void image_create(image_t *image, VkDevice *device, VkPhysicalDevice *physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties)
+void image_create(image_t *image, VkDevice device, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties)
 {
     image->width = width;
     image->height = height;
@@ -30,26 +30,26 @@ void image_create(image_t *image, VkDevice *device, VkPhysicalDevice *physicalDe
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if (vkCreateImage(*device, &imageInfo, nullptr, &image->image) != VK_SUCCESS) {
+    if (vkCreateImage(device, &imageInfo, nullptr, &image->image) != VK_SUCCESS) {
         throw std::runtime_error("failed to create image!");
     }
 
     VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(*device, image->image, &memRequirements);
+    vkGetImageMemoryRequirements(device, image->image, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
     allocInfo.memoryTypeIndex = find_memory_type(physicalDevice, memRequirements.memoryTypeBits, properties);
 
-    if (vkAllocateMemory(*device, &allocInfo, nullptr, &image->memory) != VK_SUCCESS) {
+    if (vkAllocateMemory(device, &allocInfo, nullptr, &image->memory) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate image memory!");
     }
 
-    vkBindImageMemory(*device, image->image, image->memory, 0);
+    vkBindImageMemory(device, image->image, image->memory, 0);
 }
 
-void image_create_view(image_t *image, VkDevice *device, VkFormat format, VkImageAspectFlags aspectFlags) {
+void image_create_view(image_t *image, VkDevice device, VkFormat format, VkImageAspectFlags aspectFlags) {
     VkImageViewCreateInfo viewInfo = {};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = image->image;
@@ -62,12 +62,12 @@ void image_create_view(image_t *image, VkDevice *device, VkFormat format, VkImag
     viewInfo.subresourceRange.layerCount = 1;
     viewInfo.subresourceRange.aspectMask = aspectFlags;
 
-    if (vkCreateImageView(*device, &viewInfo, nullptr, &image->view) != VK_SUCCESS) {
+    if (vkCreateImageView(device, &viewInfo, nullptr, &image->view) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture image view!");
     }
 }
 
-void image_transition_layout(image_t *image, VkDevice *device, VkCommandPool *commandPool, VkQueue *graphicsQueue, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
+void image_transition_layout(image_t *image, VkDevice device, VkCommandPool commandPool, VkQueue graphicsQueue, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
     VkCommandBuffer commandBuffer = begin_single_time_commands(device, commandPool);
 
     VkImageMemoryBarrier barrier = {};
@@ -123,7 +123,7 @@ void image_transition_layout(image_t *image, VkDevice *device, VkCommandPool *co
     end_single_time_commands(device, commandPool, graphicsQueue, commandBuffer);
 }
 
-void image_copy_buffer(image_t *image, VkDevice *device, VkCommandPool *commandPool, VkQueue *graphicsQueue, VkBuffer buffer)
+void image_copy_buffer(image_t *image, VkDevice device, VkCommandPool commandPool, VkQueue graphicsQueue, VkBuffer buffer)
 {
     VkCommandBuffer commandBuffer = begin_single_time_commands(device, commandPool);
 
@@ -147,10 +147,10 @@ void image_copy_buffer(image_t *image, VkDevice *device, VkCommandPool *commandP
     end_single_time_commands(device, commandPool, graphicsQueue, commandBuffer);
 }
 
-void image_cleanup(image_t *image, VkDevice *device)
+void image_cleanup(image_t *image, VkDevice device)
 {
-    vkDestroyImageView(*device, image->view, nullptr);
-    vkDestroyImage(*device, image->image, nullptr);
-    vkFreeMemory(*device, image->memory, nullptr);
+    vkDestroyImageView(device, image->view, nullptr);
+    vkDestroyImage(device, image->image, nullptr);
+    vkFreeMemory(device, image->memory, nullptr);
 }
 

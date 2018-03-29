@@ -10,6 +10,6 @@ struct shader_t
     VkShaderModule fragShaderModule;
 };
 
-void shader_create(shader_t *shader, VkDevice *device, std::string vertPath, std::string fragPath);
+void shader_create(shader_t *shader, VkDevice device, std::string vertPath, std::string fragPath);
 
 #endif
