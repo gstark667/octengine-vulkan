@@ -652,9 +652,6 @@ void application_cleanup_swap_chain(application_t *app) {
     }
 
     vkFreeCommandBuffers(app->device, app->commandPool, static_cast<uint32_t>(app->commandBuffers.size()), app->commandBuffers.data());
-    vkDestroyPipeline(app->device, app->pipeline.pipeline, nullptr);
-    vkDestroyPipelineLayout(app->device, app->pipeline.layout, nullptr);
-    vkDestroyRenderPass(app->device, app->pipeline.renderPass, nullptr);
 
     for (auto imageView : app->swapChainImageViews) {
         vkDestroyImageView(app->device, imageView, nullptr);
