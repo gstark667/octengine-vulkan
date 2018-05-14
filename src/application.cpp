@@ -542,7 +542,8 @@ void application_create_command_buffers(application_t *app) {
 
         vkCmdBeginRenderPass(app->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        model_render(&app->model, app->commandBuffers[i], app->pipeline.layout, app->pipeline.pipeline, app->pipeline.descriptorSet);
+        //model_render(&app->model, app->commandBuffers[i], app->pipeline.layout, app->pipeline.pipeline, app->pipeline.descriptorSet);
+        scene_render(&app->scene, app->commandBuffers[i], app->pipeline.layout, app->pipeline.pipeline, app->pipeline.descriptorSet);
         // for testing model_render(&app->model, app->commandBuffers[i], app->pipelineLayout, app->graphicsPipeline, app->descriptorSet);
 
         vkCmdEndRenderPass(app->commandBuffers[i]);
@@ -594,7 +595,10 @@ void application_update_uniforms(application_t *app)
     {
         app->ubo.bones[app->model.bones[i].pos] = glm::transpose(glm::make_mat4(&app->model.bones[i].matrix.a1));
     }
+}
 
+void application_copy_uniforms(application_t *app)
+{
     void *data;
     vkMapMemory(app->device, app->pipeline.uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
     memcpy(data, &app->ubo, sizeof(app->ubo));
@@ -698,12 +702,15 @@ void application_init_vulkan(application_t *app) {
     application_create_depth_resources(app);
     application_create_frame_buffers(app);
 
-    app->camera.fov = 45.0f;
+    app->camera.fov = 90.0f;
 
+    scene_create(&app->scene, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
+    scene_add_model(&app->scene, "example.dae", "example.png", "shaders/vert.spv", "shaders/frag.spv");
     model_load(&app->model, "example.dae");
     model_create_buffers(&app->model, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
 
     application_update_uniforms(app);
+    application_copy_uniforms(app);
     application_create_command_buffers(app);
     application_create_semaphores(app);
 }
@@ -712,6 +719,7 @@ void application_main_loop(application_t *app) {
     while (!glfwWindowShouldClose(app->window)) {
         glfwPollEvents();
         application_update_uniforms(app);
+        application_copy_uniforms(app);
         application_draw_frame(app);
     }
 

@@ -20,6 +20,7 @@ set(HEADERS
     include/pipeline.h
     include/model.h
     include/camera.h
+    include/scene.h
     include/application.h
 )
 
@@ -32,6 +33,7 @@ set(SOURCES
     src/pipeline.cpp
     src/model.cpp
     src/camera.cpp
+    src/scene.cpp
     src/application.cpp
 )
 

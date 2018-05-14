@@ -22,6 +22,7 @@
 #include "image.h"
 #include "texture.h"
 #include "camera.h"
+#include "scene.h"
 
 
 struct queue_family_t
@@ -79,6 +80,7 @@ struct application_t
     camera_t camera;
     model_t model;
     texture_t texture;
+    scene_t scene;
     uniform_buffer_object_t ubo;
 
     VkCommandPool commandPool;
