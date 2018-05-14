@@ -329,7 +329,6 @@ void model_create_index_buffer(model_t *model, VkDevice device, VkPhysicalDevice
     vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
-
 void model_create_buffers(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
     model_create_vertex_buffer(model, device, physicalDevice, commandPool, graphicsQueue);
@@ -369,6 +368,22 @@ void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayou
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
     vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model->indices.size()), 1, 0, 0, 0);
+}
+
+void model_render_instanced(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet)
+{
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+
+    VkBuffer vertexBuffers[] = {model->vertexBuffer};
+    VkBuffer instanceBuffers[] = {model->vertexBuffer};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    vkCmdBindInstanceBuffers(instanceBuffer, 1, 1, instanceBuffers, offsets);
+    vkCmdBindIndexBuffer(commandBuffer, model->indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+
+    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model->indices.size()), INSTANCE_COUNT, 0, 0, 0);
 }
 
 void model_cleanup(model_t *model, VkDevice device)

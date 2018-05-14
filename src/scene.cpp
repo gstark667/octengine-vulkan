@@ -39,15 +39,19 @@ void scene_add_model(scene_t *scene, std::string modelPath, std::string textureP
     instance.model = modelPath;
     instance.texture = texturePath;
     instance.shader = shaderName;
-    scene->instances.push_back(instance);
+    std::string instanceName = modelPath + "|" + texturePath + "|" + shaderName;
+    scene->instances[instanceName].push_back(instance);
 }
 
 
 void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet)
 {
-    for (std::vector<instance_t>::iterator it = scene->instances.begin(); it != scene->instances.end(); ++it)
+    for (std::map<std::string, std::vector<instance_t>>::iterator it = scene->instances.begin(); it != scene->instances.end(); ++it)
     {
-        model_render(&scene->models[it->model], commandBuffer, pipelineLayout, graphicsPipeline, descriptorSet);
+        for (std::vector<instance_t>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
+        {
+            model_render(&scene->models[it2->model], commandBuffer, pipelineLayout, graphicsPipeline, descriptorSet);
+        }
     }
 }
 

@@ -14,6 +14,9 @@ layout(location = 2) in vec2 inTexCoord;
 layout(location = 3) in vec4 inWeights;
 layout(location = 4) in ivec4 inBones;
 
+layout(location = 5) in mat4 instanceMat;
+layout(location = 6) in int instanceTex;
+
 layout(location = 0) out vec3 fragNormal;
 layout(location = 1) out vec2 fragTexCoord;
 
@@ -27,6 +30,7 @@ void main() {
     boneTransform     += ubo.bones[inBones[2]] * inWeights[2];
     boneTransform     += ubo.bones[inBones[3]] * inWeights[3];
     gl_Position = ubo.proj * ubo.view * ubo.model * boneTransform * vec4(inPosition, 1.0);
+    gl_Position = ubo.proj * ubo.view * instanceMat * boneTransform * vec4(inPosition, 1.0);
     fragNormal = mat3(inverse(transpose(ubo.model * boneTransform))) * inNormal;
     fragTexCoord = inTexCoord;
 }

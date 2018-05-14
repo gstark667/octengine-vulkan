@@ -29,7 +29,7 @@ struct scene_t
     std::map<std::string, texture_t> textures;
     std::map<std::string, model_t> models;
     std::map<std::string, shader_t> shaders;
-    std::vector<instance_t> instances;
+    std::map<std::string, std::vector<instance_t>> instances;
 };
 
 void scene_create(scene_t *scene, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
