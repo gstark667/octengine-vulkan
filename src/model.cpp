@@ -16,9 +16,20 @@ VkVertexInputBindingDescription vertex_get_binding_description()
     return bindingDescription;
 }
 
-std::array<VkVertexInputAttributeDescription, 5> vertex_get_attribute_descriptions()
+VkVertexInputBindingDescription instance_get_binding_description()
 {
-    std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions;
+    VkVertexInputBindingDescription bindingDescription;
+    bindingDescription.binding = 1;
+    bindingDescription.stride = sizeof(model_instance_t);
+    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
+
+    return bindingDescription;
+}
+
+std::array<VkVertexInputAttributeDescription, 9> vertex_get_attribute_descriptions()
+{
+    std::array<VkVertexInputAttributeDescription, 9> attributeDescriptions;
+    // vertex data
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;
     attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -43,6 +54,27 @@ std::array<VkVertexInputAttributeDescription, 5> vertex_get_attribute_descriptio
     attributeDescriptions[4].location = 4;
     attributeDescriptions[4].format = VK_FORMAT_R32G32B32A32_SINT;
     attributeDescriptions[4].offset = offsetof(vertex_t, bones);
+
+    // instance data
+    attributeDescriptions[5].binding = 1;
+    attributeDescriptions[5].location = 5;
+    attributeDescriptions[5].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescriptions[5].offset = offsetof(model_instance_t, pos);
+
+    attributeDescriptions[6].binding = 1;
+    attributeDescriptions[6].location = 6;
+    attributeDescriptions[6].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescriptions[6].offset = offsetof(model_instance_t, rot);
+
+    attributeDescriptions[7].binding = 1;
+    attributeDescriptions[7].location = 7;
+    attributeDescriptions[7].format = VK_FORMAT_R32_SFLOAT;
+    attributeDescriptions[7].offset = offsetof(model_instance_t, scale);
+
+    attributeDescriptions[8].binding = 1;
+    attributeDescriptions[8].location = 8;
+    attributeDescriptions[8].format = VK_FORMAT_R32_SINT;
+    attributeDescriptions[8].offset = offsetof(model_instance_t, textureIdx);
 
     return attributeDescriptions;
 }
@@ -191,8 +223,7 @@ bone_t *model_load_node(model_t *model, aiNode *node)
         if (child && bone)
             bone->children.push_back(child);
     }
-    if (bone)
-        return bone;
+    return bone;
 }
 
 void model_load(model_t *model, std::string path)
@@ -329,10 +360,37 @@ void model_create_index_buffer(model_t *model, VkDevice device, VkPhysicalDevice
     vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
+void model_create_instance_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
+{
+    for (size_t i = 0; i < 100000; ++i)
+    {
+        model->instances.push_back({glm::vec3((float)i * 3, 0, 0), glm::vec3(0.f, 0.f, 0.f), 1.f, 0});
+    }
+
+    VkDeviceSize bufferSize = (sizeof(model->instances[0]) * model->instances.size());
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
+
+    void *data;
+    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, model->instances.data(), (size_t) bufferSize);
+    vkUnmapMemory(device, stagingBufferMemory);
+
+    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &model->instanceBuffer, &model->instanceBufferMemory);
+
+    copy_buffer(device, commandPool, graphicsQueue, stagingBuffer, model->instanceBuffer, bufferSize);
+
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
+    vkFreeMemory(device, stagingBufferMemory, nullptr);
+}
+
 void model_create_buffers(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
     model_create_vertex_buffer(model, device, physicalDevice, commandPool, graphicsQueue);
     model_create_index_buffer(model, device, physicalDevice, commandPool, graphicsQueue);
+    model_create_instance_buffer(model, device, physicalDevice, commandPool, graphicsQueue);
 }
 
 void model_update_bone(model_t *model, bone_t *bone, float time, aiMatrix4x4 parentMatrix)
@@ -356,7 +414,7 @@ void model_update(model_t *model, float delta)
     model_update_bone(model, &model->bones[0], model->time, aiMatrix4x4());
 }
 
-void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet)
+/*void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet)
 {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
@@ -368,22 +426,22 @@ void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayou
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
     vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model->indices.size()), 1, 0, 0, 0);
-}
+}*/
 
-void model_render_instanced(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet)
+void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet)
 {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
     VkBuffer vertexBuffers[] = {model->vertexBuffer};
-    VkBuffer instanceBuffers[] = {model->vertexBuffer};
+    VkBuffer instanceBuffers[] = {model->instanceBuffer};
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindInstanceBuffers(instanceBuffer, 1, 1, instanceBuffers, offsets);
+    vkCmdBindVertexBuffers(commandBuffer, 1, 1, instanceBuffers, offsets);
     vkCmdBindIndexBuffer(commandBuffer, model->indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model->indices.size()), INSTANCE_COUNT, 0, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model->indices.size()), model->instances.size(), 0, 0, 0);
 }
 
 void model_cleanup(model_t *model, VkDevice device)
@@ -393,5 +451,8 @@ void model_cleanup(model_t *model, VkDevice device)
 
     vkDestroyBuffer(device, model->indexBuffer, nullptr);
     vkFreeMemory(device, model->indexBufferMemory, nullptr);
+
+    vkDestroyBuffer(device, model->instanceBuffer, nullptr);
+    vkFreeMemory(device, model->instanceBufferMemory, nullptr);
 }
 

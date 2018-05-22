@@ -25,7 +25,8 @@ struct vertex_t
 };
 
 VkVertexInputBindingDescription vertex_get_binding_description();
-std::array<VkVertexInputAttributeDescription, 5> vertex_get_attribute_descriptions();
+VkVertexInputBindingDescription instance_get_binding_description();
+std::array<VkVertexInputAttributeDescription, 9> vertex_get_attribute_descriptions();
 
 
 struct scale_keyframe_t
@@ -58,6 +59,13 @@ struct bone_t
     std::vector<bone_t*> children;
 };
 
+struct model_instance_t {
+    glm::vec3 pos;
+    glm::vec3 rot;
+    float scale;
+    uint32_t textureIdx;
+};
+
 
 struct model_t
 {
@@ -65,15 +73,21 @@ struct model_t
     VkDeviceMemory vertexBufferMemory;
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
+    VkBuffer instanceBuffer;
+    VkDeviceMemory instanceBufferMemory;
     VkBuffer uniformBuffer;
     VkDeviceMemory uniformBufferMemory;
 
     VkDescriptorSet descriptorSet;
     VkDescriptorSetLayout descriptorSetLayout;
 
+    VkDescriptorSet instanceDescriptorSet;
+    VkDescriptorSetLayout instanceDescriptorSetLayout;
+
     std::vector<vertex_t> vertices;
     std::vector<uint16_t> indices;
     std::vector<bone_t> bones;
+    std::vector<model_instance_t> instances;
 
     aiMatrix4x4 globalInverseTransform;
 

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.9)
 
 project(octengine)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g")
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 

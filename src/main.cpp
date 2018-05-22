@@ -8,6 +8,8 @@ int main() {
     app.enableValidationLayers = true;
     app.windowWidth = 800;
     app.windowHeight = 600;
+    app.windowWidth = 1280;
+    app.windowHeight = 720;
 
     try {
         application_run(&app);
