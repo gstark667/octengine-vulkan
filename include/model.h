@@ -16,11 +16,11 @@
 
 struct vertex_t
 {
-    glm::vec3 pos;
-    glm::vec3 normal;
-    glm::vec2 texCoord;
-    glm::vec4 weights;
-    glm::ivec4 bones;
+    glm::vec3 pos = glm::vec3(0.0f);
+    glm::vec3 normal = glm::vec3(0.0f);
+    glm::vec2 texCoord = glm::vec2(0.0f);
+    glm::vec4 weights = glm::vec4(0.0f);
+    glm::ivec4 bones = glm::ivec4(0);
     int32_t boneCount = 0;
 };
 

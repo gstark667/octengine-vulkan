@@ -36,6 +36,7 @@ swapchain_support_t application_query_swap_chain_support(application_t *app, VkP
 
 // init window
 void on_window_resized(GLFWwindow *window, int width, int height) {
+    std::cout << "resize" << std::endl;
     application_t *app = (application_t*)glfwGetWindowUserPointer(window);
     app->windowWidth = width;
     app->windowHeight = height;

@@ -25,7 +25,7 @@ void camera_update(camera_t *camera, float delta, GLFWwindow *window)
     camera->mouseY = newMouseY;
 
     float speed = 5.0f;
-    glm::vec3 velocityVec;
+    glm::vec3 velocityVec(0.0f);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         velocityVec.x -= delta * speed;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
@@ -44,10 +44,12 @@ void camera_update(camera_t *camera, float delta, GLFWwindow *window)
     camera->pos.z += (float)(sin(camera->rot.x) * velocityVec.x);
     camera->pos.z += (float)(cos(camera->rot.x) * velocityVec.z);
     camera->pos.y += velocityVec.y;
+
+    std::cout << camera->pos.x << ":" << camera->pos.y << ":" << camera->pos.z << std::endl;
  
-    camera->view = glm::rotate(glm::mat4(), camera->rot.y, glm::vec3(1.0f, 0.0f, 0.0f));
-    camera->view *= glm::rotate(glm::mat4(), camera->rot.x, glm::vec3(0.0f, 1.0f, 0.0f));
-    camera->view *= glm::translate(glm::mat4(), glm::vec3(camera->pos.x, camera->pos.y, camera->pos.z));
+    camera->view = glm::rotate(glm::mat4(1.0f), camera->rot.y, glm::vec3(1.0f, 0.0f, 0.0f));
+    camera->view *= glm::rotate(glm::mat4(1.0f), camera->rot.x, glm::vec3(0.0f, 1.0f, 0.0f));
+    camera->view *= glm::translate(glm::mat4(1.0f), glm::vec3(camera->pos.x, camera->pos.y, camera->pos.z));
     camera->proj = glm::perspective(glm::radians(camera->fov), (float)camera->width / (float)camera->height, 0.1f, 1000.0f);
 }
 

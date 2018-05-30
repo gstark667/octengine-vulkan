@@ -362,7 +362,7 @@ void model_create_index_buffer(model_t *model, VkDevice device, VkPhysicalDevice
 
 void model_create_instance_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-    for (size_t i = 0; i < 100000; ++i)
+    for (size_t i = 0; i < 10; ++i)
     {
         model->instances.push_back({glm::vec3((float)i * 3, 0, 0), glm::vec3(0.f, 0.f, 0.f), 1.f, 0});
     }
