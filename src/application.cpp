@@ -717,12 +717,17 @@ void application_init_vulkan(application_t *app) {
 }
 
 void application_main_loop(application_t *app) {
+    script_t script;
+    script_create(&script, "test.lua");
+    script_setup(&script);
     while (!glfwWindowShouldClose(app->window)) {
         glfwPollEvents();
         application_update_uniforms(app);
         application_copy_uniforms(app);
         application_draw_frame(app);
+        script_update(&script, 0.5f);
     }
+    script_destroy(&script);
 
     vkDeviceWaitIdle(app->device);
 }

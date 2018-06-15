@@ -45,8 +45,6 @@ void camera_update(camera_t *camera, float delta, GLFWwindow *window)
     camera->pos.z += (float)(cos(camera->rot.x) * velocityVec.z);
     camera->pos.y += velocityVec.y;
 
-    std::cout << camera->pos.x << ":" << camera->pos.y << ":" << camera->pos.z << std::endl;
- 
     camera->view = glm::rotate(glm::mat4(1.0f), camera->rot.y, glm::vec3(1.0f, 0.0f, 0.0f));
     camera->view *= glm::rotate(glm::mat4(1.0f), camera->rot.x, glm::vec3(0.0f, 1.0f, 0.0f));
     camera->view *= glm::translate(glm::mat4(1.0f), glm::vec3(camera->pos.x, camera->pos.y, camera->pos.z));

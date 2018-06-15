@@ -21,6 +21,7 @@ set(HEADERS
     include/model.h
     include/camera.h
     include/scene.h
+    include/script.h
     include/application.h
 )
 
@@ -34,9 +35,10 @@ set(SOURCES
     src/model.cpp
     src/camera.cpp
     src/scene.cpp
+    src/script.cpp
     src/application.cpp
 )
 
 add_executable(octengine ${SOURCES} ${HEADERS})
-target_link_libraries (octengine ${CMAKE_THREAD_LIBS_INIT} vulkan glfw assimp freeimage)
+target_link_libraries (octengine ${CMAKE_THREAD_LIBS_INIT} vulkan glfw assimp freeimage lua)
 target_include_directories (octengine PUBLIC include/)

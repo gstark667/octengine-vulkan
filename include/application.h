@@ -23,6 +23,7 @@
 #include "texture.h"
 #include "camera.h"
 #include "scene.h"
+#include "script.h"
 
 
 struct queue_family_t
