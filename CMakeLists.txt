@@ -20,7 +20,6 @@ set(HEADERS
     include/pipeline.h
     include/model.h
     include/camera.h
-    include/scene.h
     include/script.h
     include/application.h
 )
@@ -34,7 +33,6 @@ set(SOURCES
     src/pipeline.cpp
     src/model.cpp
     src/camera.cpp
-    src/scene.cpp
     src/script.cpp
     src/application.cpp
 )
@@ -42,3 +40,8 @@ set(SOURCES
 add_executable(octengine ${SOURCES} ${HEADERS})
 target_link_libraries (octengine ${CMAKE_THREAD_LIBS_INIT} vulkan glfw assimp freeimage lua)
 target_include_directories (octengine PUBLIC include/)
+
+
+ADD_LIBRARY(gameobject SHARED lualibs/gameobject.cpp ${HEADERS})
+SET_TARGET_PROPERTIES(gameobject PROPERTIES PREFIX "")
+TARGET_LINK_LIBRARIES(gameobject lua)

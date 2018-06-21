@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include <vulkan/vulkan.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -13,6 +15,8 @@
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+
+#include "gameobject.h"
 
 struct vertex_t
 {
@@ -59,13 +63,6 @@ struct bone_t
     std::vector<bone_t*> children;
 };
 
-struct model_instance_t {
-    glm::vec3 pos;
-    glm::vec3 rot;
-    float scale;
-    uint32_t textureIdx;
-};
-
 
 struct model_t
 {
@@ -73,8 +70,8 @@ struct model_t
     VkDeviceMemory vertexBufferMemory;
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
-    VkBuffer instanceBuffer;
-    VkDeviceMemory instanceBufferMemory;
+    VkBuffer instanceBuffer = nullptr;
+    VkDeviceMemory instanceBufferMemory = nullptr;
     VkBuffer uniformBuffer;
     VkDeviceMemory uniformBufferMemory;
 
@@ -87,7 +84,7 @@ struct model_t
     std::vector<vertex_t> vertices;
     std::vector<uint16_t> indices;
     std::vector<bone_t> bones;
-    std::vector<model_instance_t> instances;
+    std::vector<gameobject_t> instances;
 
     aiMatrix4x4 globalInverseTransform;
 
@@ -99,6 +96,8 @@ aiMatrix4x4 interpolate_rotation(bone_t *bone, float time);
 aiMatrix4x4 interpolate_position(bone_t *bone, float time);
 
 void model_load(model_t *model, std::string path);
+//model_instance_t *model_create_instance(model_t *model);
+void model_copy_index_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 void model_create_buffers(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 void model_update(model_t *model, float delta);
 void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet);

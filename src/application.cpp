@@ -543,9 +543,8 @@ void application_create_command_buffers(application_t *app) {
 
         vkCmdBeginRenderPass(app->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        //model_render(&app->model, app->commandBuffers[i], app->pipeline.layout, app->pipeline.pipeline, app->pipeline.descriptorSet);
-        scene_render(&app->scene, app->commandBuffers[i], app->pipeline.layout, app->pipeline.pipeline, app->pipeline.descriptorSet);
-        // for testing model_render(&app->model, app->commandBuffers[i], app->pipelineLayout, app->graphicsPipeline, app->descriptorSet);
+        //scene_render(&app->scene, app->commandBuffers[i], app->pipeline.layout, app->pipeline.pipeline, app->pipeline.descriptorSet);
+        pipeline_render(&app->pipeline, app->commandBuffers[i]);
 
         vkCmdEndRenderPass(app->commandBuffers[i]);
 
@@ -576,6 +575,9 @@ void application_update_bone(application_t *app, bone_t *bone, float time, aiMat
     bone->matrix = app->model.globalInverseTransform * bone->matrix * bone->offset;
 }
 
+//model_instance_t *inst;
+//script_t script;
+
 auto lastTime = std::chrono::high_resolution_clock::now();
 auto startTime = std::chrono::high_resolution_clock::now();
 auto initialTime = std::chrono::high_resolution_clock::now();
@@ -591,11 +593,13 @@ void application_update_uniforms(application_t *app)
     app->ubo.view = app->camera.view;
     app->ubo.proj = app->camera.proj;
 
-    model_update(&app->model, delta);
-    for (size_t i = 0; i < app->model.bones.size(); ++i)
-    {
-        app->ubo.bones[app->model.bones[i].pos] = glm::transpose(glm::make_mat4(&app->model.bones[i].matrix.a1));
-    }
+    //script_update(&script, inst, delta);
+    //pipeline_update(&app->pipeline, delta);
+    //model_update(&app->model, delta);
+    //for (size_t i = 0; i < app->model.bones.size(); ++i)
+    //{
+    //    app->ubo.bones[app->model.bones[i].pos] = glm::transpose(glm::make_mat4(&app->model.bones[i].matrix.a1));
+    //}
 }
 
 void application_copy_uniforms(application_t *app)
@@ -698,17 +702,21 @@ void application_init_vulkan(application_t *app) {
 
     texture_load(&app->pipeline.texture, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "example.png");
     app->depthFormat = application_find_depth_format(app);
-    pipeline_create(&app->pipeline, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat);
+    pipeline_create(&app->pipeline, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue);
+    pipeline_add_gameobject(&app->pipeline, "example.dae");
+    pipeline_add_gameobject(&app->pipeline, "cube.dae");
 
     application_create_depth_resources(app);
     application_create_frame_buffers(app);
 
     app->camera.fov = 90.0f;
 
-    scene_create(&app->scene, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
-    scene_add_model(&app->scene, "example.dae", "example.png", "shaders/vert.spv", "shaders/frag.spv");
-    model_load(&app->model, "example.dae");
-    model_create_buffers(&app->model, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
+    //script_create(&script, "test.lua");
+    //script_setup(&script);
+    //scene_create(&app->scene, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
+    //inst = scene_add_model(&app->scene, "example.dae", "example.png", "shaders/vert.spv", "shaders/frag.spv");
+    //model_load(&app->model, "example.dae");
+    //model_create_buffers(&app->model, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
 
     application_update_uniforms(app);
     application_copy_uniforms(app);
@@ -717,17 +725,13 @@ void application_init_vulkan(application_t *app) {
 }
 
 void application_main_loop(application_t *app) {
-    script_t script;
-    script_create(&script, "test.lua");
-    script_setup(&script);
     while (!glfwWindowShouldClose(app->window)) {
         glfwPollEvents();
         application_update_uniforms(app);
         application_copy_uniforms(app);
         application_draw_frame(app);
-        script_update(&script, 0.5f);
     }
-    script_destroy(&script);
+    //script_destroy(&script);
 
     vkDeviceWaitIdle(app->device);
 }
@@ -737,7 +741,7 @@ void application_cleanup(application_t *app) {
 
     pipeline_cleanup(&app->pipeline, app->device);
     texture_cleanup(&app->pipeline.texture, app->device);
-    model_cleanup(&app->model, app->device);
+    //model_cleanup(&app->model, app->device);
 
     vkDestroySemaphore(app->device, app->renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->imageAvailableSemaphore, nullptr);

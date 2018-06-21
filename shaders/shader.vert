@@ -60,6 +60,8 @@ void main() {
     mat3 rotMat = mz * my * mx;
 
     gl_Position = ubo.proj * ubo.view * mat4(rotMat) * boneTransform * vec4(inPosition, 1.0) + (ubo.proj * ubo.view * vec4(instancePos, 1.0));
+    gl_Position = ubo.proj * ubo.view * mat4(rotMat) * vec4(inPosition, 1.0) + (ubo.proj * ubo.view * vec4(instancePos, 1.0));
     fragNormal = mat3(boneTransform) * inNormal;
+    fragNormal = inNormal;
     fragTexCoord = inTexCoord;
 }

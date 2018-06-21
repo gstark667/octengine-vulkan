@@ -2,11 +2,14 @@
 #define H_PIPELINE
 
 #include "texture.h" 
+#include "model.h" 
+#include "gameobject.h" 
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
+#include <map>
 
 
 struct uniform_buffer_object_t
@@ -23,6 +26,12 @@ struct pipeline_t
 
     std::string vertShader, fragShader;
 
+    std::map<std::string, model_t> models;
+    std::map<std::string, std::vector<gameobject_t>> gameobjects;
+
+    VkDevice device;
+    VkPhysicalDevice physicalDevice;
+
     VkDescriptorPool descriptorPool;
     VkDescriptorSet descriptorSet;
     VkDescriptorSetLayout descriptorSetLayout;
@@ -33,10 +42,19 @@ struct pipeline_t
     VkRenderPass renderPass;
     VkPipelineLayout layout;
     VkPipeline pipeline;
+
+    VkCommandPool commandPool;
+    VkQueue graphicsQueue;
 };
 
-void pipeline_create(pipeline_t *pipeline, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkFormat colorFormat, VkFormat depthFormat);
+void pipeline_create(pipeline_t *pipeline, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkFormat colorFormat, VkFormat depthFormat, VkCommandPool commandPool, VkQueue graphicsQueue);
 void pipeline_recreate(pipeline_t *pipeline, uint32_t width, uint32_t height, VkDevice device, VkFormat colorFormat, VkFormat depthFormat);
+
+void pipeline_add_model(pipeline_t *pipeline, std::string modelPath);
+void pipeline_add_gameobject(pipeline_t *pipeline, std::string modelPath);
+void pipeline_render(pipeline_t *pipeline, VkCommandBuffer commandBuffer);
+void pipeline_update(pipeline_t *pipeline, float delta);
+
 void pipeline_cleanup(pipeline_t *pipeline, VkDevice device);
 
 #endif

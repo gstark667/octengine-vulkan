@@ -33,7 +33,8 @@ struct scene_t
 };
 
 void scene_create(scene_t *scene, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
-void scene_add_model(scene_t *scene, std::string modelPath, std::string texturePath, std::string fragPath, std::string vertPath);
+//model_instance_t *scene_add_model(scene_t *scene, std::string modelPath, std::string texturePath, std::string fragPath, std::string vertPath);
 void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet);
+void scene_update(scene_t *scene, float delta);
 
 #endif

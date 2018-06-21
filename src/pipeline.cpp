@@ -292,9 +292,13 @@ void pipeline_create_graphics(pipeline_t *pipeline, uint32_t width, uint32_t hei
     vkDestroyShaderModule(device, shader.vertShaderModule, nullptr);
 }
 
-void pipeline_create(pipeline_t *pipeline, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkFormat colorFormat, VkFormat depthFormat) {
+void pipeline_create(pipeline_t *pipeline, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkFormat colorFormat, VkFormat depthFormat, VkCommandPool commandPool, VkQueue graphicsQueue) {
+    pipeline->device = device;
+    pipeline->physicalDevice = physicalDevice;
     pipeline->vertShader = vertShader;
     pipeline->fragShader = fragShader;
+    pipeline->commandPool = commandPool;
+    pipeline->graphicsQueue = graphicsQueue;
     pipeline_create_render_pass(pipeline, device, colorFormat, depthFormat);
     pipeline_create_descriptor_set_layout(pipeline, device);
     pipeline_create_descriptor_pool(pipeline, device);
@@ -313,9 +317,43 @@ void pipeline_recreate(pipeline_t *pipeline, uint32_t width, uint32_t height, Vk
     pipeline_create_render_pass(pipeline, device, colorFormat, depthFormat);
 }
 
+void pipeline_add_model(pipeline_t *pipeline, std::string modelPath)
+{
+    pipeline->models[modelPath] = {};
+    model_load(&pipeline->models[modelPath], modelPath);
+    model_create_buffers(&pipeline->models[modelPath], pipeline->device, pipeline->physicalDevice, pipeline->commandPool, pipeline->graphicsQueue);
+}
+
+void pipeline_add_gameobject(pipeline_t *pipeline, std::string modelPath)
+{
+    if (pipeline->models.find(modelPath) == pipeline->models.end())
+        pipeline_add_model(pipeline, modelPath);
+
+    pipeline->gameobjects[modelPath].push_back({});
+}
+
+void pipeline_render(pipeline_t *pipeline, VkCommandBuffer commandBuffer)
+{
+    for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
+    {
+        model_render(&it->second, commandBuffer, pipeline->layout, pipeline->pipeline, pipeline->descriptorSet);
+    }
+}
+
+void pipeline_update(pipeline_t *pipeline, float delta)
+{
+    for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
+    {
+        model_update(&it->second, delta);
+    }
+}
 
 void pipeline_cleanup(pipeline_t *pipeline, VkDevice device)
 {
+    for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
+    {
+        model_cleanup(&it->second, device);
+    }
     vkDestroyPipeline(device, pipeline->pipeline, nullptr);
     vkDestroyPipelineLayout(device, pipeline->layout, nullptr);
     vkDestroyRenderPass(device, pipeline->renderPass, nullptr);
