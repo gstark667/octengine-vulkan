@@ -91,6 +91,8 @@ struct application_t
     VkSemaphore renderFinishedSemaphore;
 };
 
+static application_t *g_app;
+
 void application_recreate_swap_chain(application_t *app);
 void application_run(application_t *app);
 

@@ -1,4 +1,5 @@
 require("gameobject")
+require("scene")
 
 io.write("loading\n")
 
@@ -6,8 +7,8 @@ function setup()
     io.write("running script setup\n")
 end
 
-function update(object, delta)
-    io.write("running script delta: ", tostring(delta), "\n")
-    io.write("running script object: ", tostring(object), "\n")
-    gameobject_transform(object, 0.01 * delta, 0, 0)
+function update(scene, object, delta)
+    gameobject_transform(object, 1 * delta, 0, 0)
+    gameobject_rotate(object, 0, 1 * delta, 0)
+    io.write("it can call any lua functions: ", tostring(delta), "\n")
 end

@@ -5,6 +5,8 @@
 #include "shader.h"
 #include "model.h"
 
+#include <iostream>
+
 void pipeline_create_render_pass(pipeline_t *pipeline, VkDevice device, VkFormat colorFormat, VkFormat depthFormat) {
     VkAttachmentDescription colorAttachment = {};
     colorAttachment.format = colorFormat;
@@ -324,16 +326,40 @@ void pipeline_add_model(pipeline_t *pipeline, std::string modelPath)
     model_create_buffers(&pipeline->models[modelPath], pipeline->device, pipeline->physicalDevice, pipeline->commandPool, pipeline->graphicsQueue);
 }
 
-void pipeline_add_gameobject(pipeline_t *pipeline, std::string modelPath)
+gameobject_t *pipeline_add_gameobject(pipeline_t *pipeline, std::string modelPath)
 {
+    std::cout << "dirtying pipeline" << std::endl;
+    pipeline->isDirty = true;
     if (pipeline->models.find(modelPath) == pipeline->models.end())
         pipeline_add_model(pipeline, modelPath);
 
-    pipeline->gameobjects[modelPath].push_back({});
+    gameobject_t *temp = new gameobject_t();
+    pipeline->gameobjects[modelPath].push_back(temp);
+    model_copy_instance_buffer(&pipeline->models[modelPath], pipeline->gameobjects[modelPath], pipeline->device, pipeline->physicalDevice, pipeline->commandPool, pipeline->graphicsQueue);
+    return temp;
+}
+
+void pipeline_add_script(pipeline_t *pipeline, gameobject_t *object, std::string scriptPath)
+{
+    script_t *script = NULL;
+    if (pipeline->scripts.find(scriptPath) == pipeline->scripts.end())
+    {
+        script = new script_t();
+        script_create(script, scriptPath);
+        script_setup(script);
+    }
+    else
+    {
+        script = pipeline->scripts[scriptPath];
+    }
+
+    object->scripts.insert(script);
 }
 
 void pipeline_render(pipeline_t *pipeline, VkCommandBuffer commandBuffer)
 {
+    std::cout << "rendering pipeline" << std::endl;
+    pipeline->isDirty = false;
     for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
     {
         model_render(&it->second, commandBuffer, pipeline->layout, pipeline->pipeline, pipeline->descriptorSet);
@@ -344,7 +370,15 @@ void pipeline_update(pipeline_t *pipeline, float delta)
 {
     for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
     {
+        for (std::vector<gameobject_t*>::iterator it2 = pipeline->gameobjects[it->first].begin(); it2 != pipeline->gameobjects[it->first].end(); ++it2)
+        {
+            for (std::set<script_t*>::iterator it3 = (*it2)->scripts.begin(); it3 != (*it2)->scripts.end(); ++it3)
+            {
+                script_update(*it3, pipeline, *it2, delta);
+            }
+        }
         model_update(&it->second, delta);
+        model_copy_instance_buffer(&it->second, pipeline->gameobjects[it->first], pipeline->device, pipeline->physicalDevice, pipeline->commandPool, pipeline->graphicsQueue);
     }
 }
 

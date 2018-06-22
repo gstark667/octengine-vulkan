@@ -59,22 +59,22 @@ std::array<VkVertexInputAttributeDescription, 9> vertex_get_attribute_descriptio
     attributeDescriptions[5].binding = 1;
     attributeDescriptions[5].location = 5;
     attributeDescriptions[5].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[5].offset = offsetof(gameobject_t, pos);
+    attributeDescriptions[5].offset = offsetof(model_instance_t, pos);
 
     attributeDescriptions[6].binding = 1;
     attributeDescriptions[6].location = 6;
     attributeDescriptions[6].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[6].offset = offsetof(gameobject_t, rot);
+    attributeDescriptions[6].offset = offsetof(model_instance_t, rot);
 
     attributeDescriptions[7].binding = 1;
     attributeDescriptions[7].location = 7;
     attributeDescriptions[7].format = VK_FORMAT_R32_SFLOAT;
-    attributeDescriptions[7].offset = offsetof(gameobject_t, scale);
+    attributeDescriptions[7].offset = offsetof(model_instance_t, scale);
 
     attributeDescriptions[8].binding = 1;
     attributeDescriptions[8].location = 8;
     attributeDescriptions[8].format = VK_FORMAT_R32_SINT;
-    attributeDescriptions[8].offset = offsetof(gameobject_t, textureIdx);
+    attributeDescriptions[8].offset = offsetof(model_instance_t, textureIdx);
 
     return attributeDescriptions;
 }
@@ -392,24 +392,56 @@ void model_copy_index_buffer(model_t *model, VkDevice device, VkPhysicalDevice p
 
 void model_create_instance_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-    for (size_t i = 0; i < 10; ++i)
-    {
-        //model->instances.push_back({glm::vec3((float)i * 3, 0, 0), glm::vec3(0.f, 0.f, 0.f), 1.f, 0});
-    }
-    model->instances.push_back({});
-
-    VkDeviceSize bufferSize = (sizeof(model->instances[0]) * model->instances.size());
+    model->instanceCount = 0;
+    VkDeviceSize bufferSize = (sizeof(model_instance_t) * 256);
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
     create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
 
+    std::vector<model_instance_t> temp;
+    for (size_t i = 0; i < 256; ++i)
+    {
+        temp.push_back({});
+    }
+
     void *data;
     vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, model->instances.data(), (size_t)bufferSize);
+    memcpy(data, temp.data(), (size_t)bufferSize);
     vkUnmapMemory(device, stagingBufferMemory);
 
     create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &model->instanceBuffer, &model->instanceBufferMemory);
+
+    copy_buffer(device, commandPool, graphicsQueue, stagingBuffer, model->instanceBuffer, bufferSize);
+
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
+    vkFreeMemory(device, stagingBufferMemory, nullptr);
+}
+
+void model_copy_instance_buffer(model_t *model, std::vector<gameobject_t*> instances, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
+{
+    model->instanceCount = instances.size();
+    VkDeviceSize bufferSize = (sizeof(model_instance_t) * model->instanceCount);
+    std::vector<model_instance_t> temp;
+    for (std::vector<gameobject_t*>::iterator it = instances.begin(); it != instances.end(); ++it)
+    {
+        model_instance_t item;
+        item.pos = (*it)->pos;
+        item.rot = (*it)->rot;
+        item.scale = (*it)->scale;
+        item.textureIdx = (*it)->textureIdx;
+        temp.push_back(item);
+    }
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
+
+    size_t size = sizeof(gameobject_t);
+    void *data;
+    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, temp.data(), (size_t)bufferSize);
+    vkUnmapMemory(device, stagingBufferMemory);
 
     copy_buffer(device, commandPool, graphicsQueue, stagingBuffer, model->instanceBuffer, bufferSize);
 
@@ -458,8 +490,7 @@ void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayou
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
-    std::cout << "drawing " << model->instances.size() << std::endl;
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model->indices.size()), model->instances.size(), 0, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model->indices.size()), model->instanceCount, 0, 0, 0);
 }
 
 void model_cleanup(model_t *model, VkDevice device)

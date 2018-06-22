@@ -1,6 +1,8 @@
 #ifndef H_PIPELINE
 #define H_PIPELINE
 
+#include <vulkan/vulkan.h>
+
 #include "texture.h" 
 #include "model.h" 
 #include "gameobject.h" 
@@ -27,7 +29,8 @@ struct pipeline_t
     std::string vertShader, fragShader;
 
     std::map<std::string, model_t> models;
-    std::map<std::string, std::vector<gameobject_t>> gameobjects;
+    std::map<std::string, std::vector<gameobject_t*>> gameobjects;
+    std::map<std::string, script_t*> scripts;
 
     VkDevice device;
     VkPhysicalDevice physicalDevice;
@@ -43,6 +46,8 @@ struct pipeline_t
     VkPipelineLayout layout;
     VkPipeline pipeline;
 
+    bool isDirty = false;
+
     VkCommandPool commandPool;
     VkQueue graphicsQueue;
 };
@@ -51,7 +56,8 @@ void pipeline_create(pipeline_t *pipeline, uint32_t width, uint32_t height, std:
 void pipeline_recreate(pipeline_t *pipeline, uint32_t width, uint32_t height, VkDevice device, VkFormat colorFormat, VkFormat depthFormat);
 
 void pipeline_add_model(pipeline_t *pipeline, std::string modelPath);
-void pipeline_add_gameobject(pipeline_t *pipeline, std::string modelPath);
+gameobject_t *pipeline_add_gameobject(pipeline_t *pipeline, std::string modelPath);
+void pipeline_add_script(pipeline_t *pipeline, gameobject_t *object, std::string scriptPath);
 void pipeline_render(pipeline_t *pipeline, VkCommandBuffer commandBuffer);
 void pipeline_update(pipeline_t *pipeline, float delta);
 

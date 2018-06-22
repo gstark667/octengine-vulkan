@@ -581,6 +581,7 @@ void application_update_bone(application_t *app, bone_t *bone, float time, aiMat
 auto lastTime = std::chrono::high_resolution_clock::now();
 auto startTime = std::chrono::high_resolution_clock::now();
 auto initialTime = std::chrono::high_resolution_clock::now();
+float total = 0.0f;
 
 void application_update_uniforms(application_t *app)
 {
@@ -588,13 +589,19 @@ void application_update_uniforms(application_t *app)
     float delta = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
     float rot = std::chrono::duration<float, std::chrono::seconds::period>(startTime - currentTime).count();
     lastTime = std::chrono::high_resolution_clock::now();
+    total += delta;
 
     camera_update(&app->camera, delta, app->window);
     app->ubo.view = app->camera.view;
     app->ubo.proj = app->camera.proj;
 
     //script_update(&script, inst, delta);
-    //pipeline_update(&app->pipeline, delta);
+    pipeline_update(&app->pipeline, delta);
+    /*if (total > 1)
+    {
+        total = 0;
+        pipeline_add_gameobject(&app->pipeline, "example.dae");
+    }*/
     //model_update(&app->model, delta);
     //for (size_t i = 0; i < app->model.bones.size(); ++i)
     //{
@@ -703,8 +710,10 @@ void application_init_vulkan(application_t *app) {
     texture_load(&app->pipeline.texture, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "example.png");
     app->depthFormat = application_find_depth_format(app);
     pipeline_create(&app->pipeline, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue);
-    pipeline_add_gameobject(&app->pipeline, "example.dae");
-    pipeline_add_gameobject(&app->pipeline, "cube.dae");
+    gameobject_t *obj = pipeline_add_gameobject(&app->pipeline, "example.dae");
+    pipeline_add_script(&app->pipeline, obj, "test.lua");
+    //pipeline_add_gameobject(&app->pipeline, "cube.dae");
+    //pipeline_add_gameobject(&app->pipeline, "cube.dae");
 
     application_create_depth_resources(app);
     application_create_frame_buffers(app);
@@ -727,8 +736,16 @@ void application_init_vulkan(application_t *app) {
 void application_main_loop(application_t *app) {
     while (!glfwWindowShouldClose(app->window)) {
         glfwPollEvents();
+
         application_update_uniforms(app);
         application_copy_uniforms(app);
+
+        if (app->pipeline.isDirty)
+        {
+            std::cout << "making render" << std::endl;
+            application_create_command_buffers(app);
+        }
+
         application_draw_frame(app);
     }
     //script_destroy(&script);

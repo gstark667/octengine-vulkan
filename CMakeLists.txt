@@ -25,7 +25,6 @@ set(HEADERS
 )
 
 set(SOURCES
-    src/main.cpp
     src/util.cpp
     src/shader.cpp
     src/image.cpp
@@ -37,11 +36,18 @@ set(SOURCES
     src/application.cpp
 )
 
-add_executable(octengine ${SOURCES} ${HEADERS})
-target_link_libraries (octengine ${CMAKE_THREAD_LIBS_INIT} vulkan glfw assimp freeimage lua)
-target_include_directories (octengine PUBLIC include/)
+ADD_LIBRARY(liboctengine SHARED ${SOURCES} ${HEADERS})
+set_target_properties(liboctengine PROPERTIES OUTPUT_NAME "octengine")
 
+add_executable(mainoctengine src/main.cpp)
+set_target_properties(mainoctengine PROPERTIES OUTPUT_NAME "octengine")
+target_link_libraries (mainoctengine ${CMAKE_THREAD_LIBS_INIT} vulkan glfw assimp freeimage lua liboctengine)
+target_include_directories (mainoctengine PUBLIC include/)
 
 ADD_LIBRARY(gameobject SHARED lualibs/gameobject.cpp ${HEADERS})
 SET_TARGET_PROPERTIES(gameobject PROPERTIES PREFIX "")
 TARGET_LINK_LIBRARIES(gameobject lua)
+
+ADD_LIBRARY(scene SHARED lualibs/scene.cpp ${HEADERS})
+SET_TARGET_PROPERTIES(scene PROPERTIES PREFIX "")
+TARGET_LINK_LIBRARIES(scene lua liboctengine)

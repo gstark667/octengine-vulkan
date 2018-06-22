@@ -63,6 +63,13 @@ struct bone_t
     std::vector<bone_t*> children;
 };
 
+struct model_instance_t
+{
+    glm::vec3 pos = glm::vec3(0.0f);
+    glm::vec3 rot = glm::vec3(0.0f);
+    float scale = 1.0f;
+    uint32_t textureIdx = 0;
+};
 
 struct model_t
 {
@@ -86,6 +93,8 @@ struct model_t
     std::vector<bone_t> bones;
     std::vector<gameobject_t> instances;
 
+    size_t instanceCount = 0;
+
     aiMatrix4x4 globalInverseTransform;
 
     float time = 0.0f;
@@ -98,6 +107,7 @@ aiMatrix4x4 interpolate_position(bone_t *bone, float time);
 void model_load(model_t *model, std::string path);
 //model_instance_t *model_create_instance(model_t *model);
 void model_copy_index_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
+void model_copy_instance_buffer(model_t *model, std::vector<gameobject_t*> instances, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 void model_create_buffers(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 void model_update(model_t *model, float delta);
 void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet);

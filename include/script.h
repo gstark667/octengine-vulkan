@@ -12,7 +12,6 @@ extern "C"
 #include <iostream>
 #include <stdlib.h>
 
-#include "model.h"
  
 struct script_t
 {
@@ -23,7 +22,7 @@ struct script_t
 void script_error(script_t *script, std::string message);
 void script_create(script_t *script, std::string path);
 void script_setup(script_t *script);
-void script_update(script_t *script, gameobject_t *model, float delta);
+void script_update(script_t *script, void *scene, void *object, float delta);
 void script_destroy(script_t *script);
 
 #endif
