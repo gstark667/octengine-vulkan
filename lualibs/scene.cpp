@@ -19,8 +19,9 @@ static int scene_add_gameobject(lua_State *L)
 {
     pipeline_t *scene = (pipeline_t*)lua_tointeger(L, 1);
     const char *name = lua_tostring(L, 2);
-    pipeline_add_gameobject(scene, name);
-    return 0;
+    gameobject_t *object = pipeline_add_gameobject(scene, name);
+    lua_pushinteger(L, (lua_Integer)object);
+    return 1;
 }
 
 static int scene_add_script(lua_State *L)

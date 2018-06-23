@@ -35,10 +35,83 @@ static int gameobject_rotate(lua_State *L)
     return 0;
 }
 
+static int gameobject_scale(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    float scale = lua_tonumber(L, 2);
+    object->scale *= scale;
+    return 0;
+}
+
+
+static int gameobject_set_string(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    const char *name = lua_tostring(L, 2);
+    const char *value = lua_tostring(L, 3);
+    object->strings[name] = std::string(value);
+    return 0;
+}
+
+static int gameobject_get_string(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    const char *name = lua_tostring(L, 2);
+    std::string value = object->strings[name];
+    lua_pushstring(L, value.c_str());
+    return 1;
+}
+
+
+static int gameobject_set_integer(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    const char *name = lua_tostring(L, 2);
+    lua_Integer value = lua_tointeger(L, 3);
+    object->integers[name] = value;
+    return 0;
+}
+
+static int gameobject_get_integer(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    const char *name = lua_tostring(L, 2);
+    lua_Integer value = object->integers[name];
+    lua_pushinteger(L, value);
+    return 1;
+}
+
+
+static int gameobject_set_number(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    const char *name = lua_tostring(L, 2);
+    lua_Number value = lua_tonumber(L, 3);
+    object->numbers[name] = value;
+    return 0;
+}
+
+static int gameobject_get_number(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    const char *name = lua_tostring(L, 2);
+    lua_Number value = object->numbers[name];
+    lua_pushnumber(L, value);
+    return 1;
+}
+
+
 int luaopen_gameobject(lua_State *L)
 {
     lua_register(L, "gameobject_transform", gameobject_transform);
     lua_register(L, "gameobject_rotate", gameobject_rotate);
+    lua_register(L, "gameobject_scale", gameobject_scale);
+    lua_register(L, "gameobject_set_string", gameobject_set_string);
+    lua_register(L, "gameobject_get_string", gameobject_get_string);
+    lua_register(L, "gameobject_set_integer", gameobject_set_integer);
+    lua_register(L, "gameobject_get_integer", gameobject_get_integer);
+    lua_register(L, "gameobject_set_number", gameobject_set_number);
+    lua_register(L, "gameobject_get_number", gameobject_get_number);
     return 0;
 }
 
