@@ -334,8 +334,7 @@ gameobject_t *pipeline_add_gameobject(pipeline_t *pipeline, std::string modelPat
         pipeline_add_model(pipeline, modelPath);
 
     gameobject_t *temp = new gameobject_t();
-    pipeline->gameobjects[modelPath].push_back(temp);
-    model_copy_instance_buffer(&pipeline->models[modelPath], pipeline->gameobjects[modelPath], pipeline->device, pipeline->physicalDevice, pipeline->commandPool, pipeline->graphicsQueue);
+    pipeline->tempGameobjects[modelPath].push_back(temp);
     return temp;
 }
 
@@ -368,6 +367,16 @@ void pipeline_render(pipeline_t *pipeline, VkCommandBuffer commandBuffer)
 
 void pipeline_update(pipeline_t *pipeline, float delta)
 {
+    for (std::map<std::string, std::vector<gameobject_t*>>::iterator it = pipeline->tempGameobjects.begin(); it != pipeline->tempGameobjects.end(); ++it)
+    {
+        for (std::vector<gameobject_t*>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
+        {
+            pipeline->gameobjects[it->first].push_back(*it2);
+        }
+        it->second.clear();
+    }
+    pipeline->tempGameobjects.clear();
+
     for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
     {
         for (std::vector<gameobject_t*>::iterator it2 = pipeline->gameobjects[it->first].begin(); it2 != pipeline->gameobjects[it->first].end(); ++it2)

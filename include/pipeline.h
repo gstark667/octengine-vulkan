@@ -31,6 +31,7 @@ struct pipeline_t
     std::map<std::string, model_t> models;
     std::map<std::string, std::vector<gameobject_t*>> gameobjects;
     std::map<std::string, script_t*> scripts;
+    std::map<std::string, std::vector<gameobject_t*>> tempGameobjects;
 
     VkDevice device;
     VkPhysicalDevice physicalDevice;
