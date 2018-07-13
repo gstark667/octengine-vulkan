@@ -64,4 +64,6 @@ void pipeline_update(pipeline_t *pipeline, float delta);
 
 void pipeline_cleanup(pipeline_t *pipeline, VkDevice device);
 
+void pipeline_on_cursor_pos(pipeline_t *pipeline, double x, double y);
+
 #endif

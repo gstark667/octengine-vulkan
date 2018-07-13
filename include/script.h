@@ -23,6 +23,7 @@ void script_error(script_t *script, std::string message);
 void script_create(script_t *script, std::string path);
 void script_setup(script_t *script);
 void script_update(script_t *script, void *scene, void *object, float delta);
+void script_on_cursor_pos(script_t *script, void *scene, void *object, double x, double y);
 void script_destroy(script_t *script);
 
 #endif

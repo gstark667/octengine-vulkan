@@ -45,6 +45,13 @@ void on_window_resized(GLFWwindow *window, int width, int height) {
     application_recreate_swap_chain(app);
 }
 
+void on_cursor_pos(GLFWwindow *window, double x, double y)
+{
+    application_t *app = (application_t*)glfwGetWindowUserPointer(window);
+    pipeline_on_cursor_pos(&app->pipeline, x, y);
+    //std::cout << x << ":" << y << std::endl;
+}
+
 void application_init_window(application_t *app) {
     glfwInit();
 
@@ -59,6 +66,7 @@ void application_init_window(application_t *app) {
 
     glfwSetWindowUserPointer(app->window, app);
     glfwSetWindowSizeCallback(app->window, on_window_resized);
+    glfwSetCursorPosCallback(app->window, on_cursor_pos);
 }
 
 // create instance

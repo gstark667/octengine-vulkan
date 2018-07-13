@@ -36,7 +36,29 @@ set(SOURCES
     src/application.cpp
 )
 
-ADD_LIBRARY(liboctengine SHARED ${SOURCES} ${HEADERS})
+set(SHADERS
+    shaders/frag.spv
+    shaders/vert.spv
+)
+
+ADD_CUSTOM_COMMAND(
+    OUTPUT shaders
+    COMMAND mkdir -p shaders
+)
+
+ADD_CUSTOM_COMMAND(
+    OUTPUT shaders/frag.spv
+    DEPENDS shaders
+    COMMAND glslangValidator -V ${CMAKE_SOURCE_DIR}/shaders/shader.frag -o shaders/frag.spv
+)
+
+ADD_CUSTOM_COMMAND(
+    OUTPUT shaders/vert.spv
+    DEPENDS shaders
+    COMMAND glslangValidator -V ${CMAKE_SOURCE_DIR}/shaders/shader.vert -o shaders/vert.spv
+)
+
+ADD_LIBRARY(liboctengine SHARED ${SOURCES} ${HEADERS} ${SHADERS})
 set_target_properties(liboctengine PROPERTIES OUTPUT_NAME "octengine")
 
 add_executable(mainoctengine src/main.cpp)
@@ -51,3 +73,4 @@ TARGET_LINK_LIBRARIES(gameobject lua)
 ADD_LIBRARY(scene SHARED lualibs/scene.cpp ${HEADERS})
 SET_TARGET_PROPERTIES(scene PROPERTIES PREFIX "")
 TARGET_LINK_LIBRARIES(scene lua liboctengine)
+

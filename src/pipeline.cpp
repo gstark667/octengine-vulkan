@@ -406,3 +406,17 @@ void pipeline_cleanup(pipeline_t *pipeline, VkDevice device)
     vkFreeMemory(device, pipeline->uniformBufferMemory, nullptr);
 }
 
+void pipeline_on_cursor_pos(pipeline_t *pipeline, double x, double y)
+{
+    for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
+    {
+        for (std::vector<gameobject_t*>::iterator it2 = pipeline->gameobjects[it->first].begin(); it2 != pipeline->gameobjects[it->first].end(); ++it2)
+        {
+            for (std::set<script_t*>::iterator it3 = (*it2)->scripts.begin(); it3 != (*it2)->scripts.end(); ++it3)
+            {
+                script_on_cursor_pos(*it3, pipeline, *it2, x, y);
+            }
+        }
+    }
+}
+

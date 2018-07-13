@@ -41,6 +41,20 @@ void script_update(script_t *script, void *scene, void *object, float delta)
         script_error(script, "update failed");
 }
 
+void script_on_cursor_pos(script_t *script, void *scene, void *object, double x, double y)
+{
+    lua_getglobal(script->lua, "on_cursor_pos");
+    if (lua_isnil(script->lua, -1))
+        return;
+
+    lua_pushinteger(script->lua, (long long int)scene);
+    lua_pushinteger(script->lua, (long long int)object);
+    lua_pushnumber(script->lua, x);
+    lua_pushnumber(script->lua, y);
+    if (lua_pcall(script->lua, 4, 1, 0))
+        script_error(script, "on cursor pos failed");
+}
+
 void script_destroy(script_t *script)
 {
     lua_close(script->lua);
