@@ -40,16 +40,17 @@ void on_window_resized(GLFWwindow *window, int width, int height) {
     application_t *app = (application_t*)glfwGetWindowUserPointer(window);
     app->windowWidth = width;
     app->windowHeight = height;
-    app->camera.width = width;
-    app->camera.height = height;
+    app->pipeline.camera.width = width;
+    app->pipeline.camera.height = height;
     application_recreate_swap_chain(app);
 }
 
 void on_cursor_pos(GLFWwindow *window, double x, double y)
 {
     application_t *app = (application_t*)glfwGetWindowUserPointer(window);
+    x -= app->pipeline.camera.width/2;
+    y -= app->pipeline.camera.height/2;
     pipeline_on_cursor_pos(&app->pipeline, x, y);
-    //std::cout << x << ":" << y << std::endl;
 }
 
 void application_init_window(application_t *app) {
@@ -59,10 +60,11 @@ void application_init_window(application_t *app) {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     app->window = glfwCreateWindow(app->windowWidth, app->windowHeight, "Vulkan", nullptr, nullptr);
-    app->camera.width = app->windowWidth;
-    app->camera.height = app->windowHeight;
+    app->pipeline.camera.width = app->windowWidth;
+    app->pipeline.camera.height = app->windowHeight;
 
-    glfwSetInputMode(app->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSetInputMode(app->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSetInputMode(app->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     glfwSetWindowUserPointer(app->window, app);
     glfwSetWindowSizeCallback(app->window, on_window_resized);
@@ -574,18 +576,6 @@ void application_create_semaphores(application_t *app) {
     }
 }
 
-// update uniforms
-void application_update_bone(application_t *app, bone_t *bone, float time, aiMatrix4x4 parentMatrix)
-{
-    bone->matrix = parentMatrix * interpolate_position(bone, time) * interpolate_rotation(bone, time) * interpolate_scale(bone, time);
-    for (size_t i = 0; i < bone->children.size(); ++i)
-        application_update_bone(app, bone->children[i], time, bone->matrix);
-    bone->matrix = app->model.globalInverseTransform * bone->matrix * bone->offset;
-}
-
-//model_instance_t *inst;
-//script_t script;
-
 auto lastTime = std::chrono::high_resolution_clock::now();
 auto startTime = std::chrono::high_resolution_clock::now();
 auto initialTime = std::chrono::high_resolution_clock::now();
@@ -595,16 +585,18 @@ void application_update_uniforms(application_t *app)
 {
     auto currentTime = std::chrono::high_resolution_clock::now();
     float delta = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
-    float rot = std::chrono::duration<float, std::chrono::seconds::period>(startTime - currentTime).count();
     lastTime = std::chrono::high_resolution_clock::now();
     total += delta;
 
-    camera_update(&app->camera, delta, app->window);
-    app->ubo.view = app->camera.view;
-    app->ubo.proj = app->camera.proj;
-
-    //script_update(&script, inst, delta);
     pipeline_update(&app->pipeline, delta);
+
+    //camera_update(&app->camera, delta, app->window);
+    camera_update(&app->pipeline.camera);
+    app->ubo.view = app->pipeline.camera.view;
+    app->ubo.proj = app->pipeline.camera.proj;
+
+    //glfwSetCursorPos(app->window, app->pipeline.camera.width/2, app->pipeline.camera.height/2);
+    //script_update(&script, inst, delta);
     /*if (total > 1)
     {
         total = 0;
@@ -690,8 +682,8 @@ void application_recreate_swap_chain(application_t *app) {
     glfwGetWindowSize(app->window, &width, &height);
     if (width == 0 || height == 0)
         return;
-    app->camera.width = width;
-    app->camera.height = height;
+    app->pipeline.camera.width = width;
+    app->pipeline.camera.height = height;
     vkDeviceWaitIdle(app->device);
 
     application_cleanup_swap_chain(app);
@@ -719,14 +711,16 @@ void application_init_vulkan(application_t *app) {
     app->depthFormat = application_find_depth_format(app);
     pipeline_create(&app->pipeline, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue);
     gameobject_t *obj = pipeline_add_gameobject(&app->pipeline, "example.dae");
+    gameobject_t *obj2 = pipeline_add_gameobject(&app->pipeline, "example.dae");
     pipeline_add_script(&app->pipeline, obj, "test.lua");
+    pipeline_add_script(&app->pipeline, obj2, "camera.lua");
     //pipeline_add_gameobject(&app->pipeline, "cube.dae");
     //pipeline_add_gameobject(&app->pipeline, "cube.dae");
 
     application_create_depth_resources(app);
     application_create_frame_buffers(app);
 
-    app->camera.fov = 90.0f;
+    app->pipeline.camera.fov = 90.0f;
 
     //script_create(&script, "test.lua");
     //script_setup(&script);

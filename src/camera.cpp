@@ -9,7 +9,7 @@
 #include <iostream>
 
 
-void camera_update(camera_t *camera, float delta, GLFWwindow *window)
+/*void camera_update(camera_t *camera, float delta, GLFWwindow *window)
 {
     double newMouseX, newMouseY;
     glfwGetCursorPos(window, &newMouseX, &newMouseY);
@@ -48,6 +48,16 @@ void camera_update(camera_t *camera, float delta, GLFWwindow *window)
     camera->view = glm::rotate(glm::mat4(1.0f), camera->rot.y, glm::vec3(1.0f, 0.0f, 0.0f));
     camera->view *= glm::rotate(glm::mat4(1.0f), camera->rot.x, glm::vec3(0.0f, 1.0f, 0.0f));
     camera->view *= glm::translate(glm::mat4(1.0f), glm::vec3(camera->pos.x, camera->pos.y, camera->pos.z));
+    camera->proj = glm::perspective(glm::radians(camera->fov), (float)camera->width / (float)camera->height, 0.1f, 1000.0f);
+}*/
+
+void camera_update(camera_t *camera)
+{
+    if (camera->object == NULL)
+        return;
+    camera->view = glm::rotate(glm::mat4(1.0f), camera->object->rot.x, glm::vec3(1.0f, 0.0f, 0.0f));
+    camera->view *= glm::rotate(glm::mat4(1.0f), camera->object->rot.y, glm::vec3(0.0f, 1.0f, 0.0f));
+    camera->view *= glm::translate(glm::mat4(1.0f), camera->object->pos);
     camera->proj = glm::perspective(glm::radians(camera->fov), (float)camera->width / (float)camera->height, 0.1f, 1000.0f);
 }
 

@@ -1,6 +1,8 @@
 #ifndef H_CAMERA
 #define H_CAMERA
 
+#include "gameobject.h"
+
 
 struct camera_t
 {
@@ -10,14 +12,16 @@ struct camera_t
 
     double mouseX = 0.0;
     double mouseY = 0.0;
-    glm::vec3 pos = glm::vec3(0.0f);
-    glm::vec2 rot = glm::vec3(0.0f);
+    //glm::vec3 pos = glm::vec3(0.0f);
+    //glm::vec2 rot = glm::vec3(0.0f);
+    gameobject_t *object = NULL;
 
-    glm::mat4 model = glm::mat4(1.0f);
+    //glm::mat4 model = glm::mat4(1.0f);
     glm::mat4 view = glm::mat4(1.0f);
     glm::mat4 proj = glm::mat4(1.0f);
 };
 
-void camera_update(camera_t *camera, float delta, GLFWwindow *window);
+//void camera_update(camera_t *camera, float delta, GLFWwindow *window);
+void camera_update(camera_t *camera);
 
 #endif

@@ -5,6 +5,7 @@
 
 #include "texture.h" 
 #include "model.h" 
+#include "camera.h"
 #include "gameobject.h" 
 
 #include <glm/glm.hpp>
@@ -19,12 +20,13 @@ struct uniform_buffer_object_t
     glm::mat4 model = glm::mat4(0.0f);
     glm::mat4 view = glm::mat4(0.0f);
     glm::mat4 proj = glm::mat4(0.0f);
-    glm::mat4 bones[64];
+    //glm::mat4 bones[64];
 };
 
 struct pipeline_t
 {
     texture_t texture;
+    camera_t camera;
 
     std::string vertShader, fragShader;
 

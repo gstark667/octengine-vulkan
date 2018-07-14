@@ -270,7 +270,6 @@ void model_load(model_t *model, std::string path)
             newBone.name = b->mName.data;
             model->bones.push_back(newBone);
 
-            unsigned int vertexId = 0;
             for (unsigned int weight = 0; weight < scene->mMeshes[i]->mBones[bone]->mNumWeights; ++weight)
             {
                 aiVertexWeight vertexWeight = scene->mMeshes[i]->mBones[bone]->mWeights[weight];
@@ -437,7 +436,6 @@ void model_copy_instance_buffer(model_t *model, std::vector<gameobject_t*> insta
     VkDeviceMemory stagingBufferMemory;
     create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
 
-    size_t size = sizeof(gameobject_t);
     void *data;
     vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
     memcpy(data, temp.data(), (size_t)bufferSize);

@@ -50,6 +50,9 @@ struct application_t
     uint32_t windowWidth;
     uint32_t windowHeight;
 
+    double mouseX = 0.0;
+    double mouseY = 0.0;
+
     std::string name;
 
     VkInstance instance;
@@ -90,8 +93,6 @@ struct application_t
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
 };
-
-static application_t *g_app;
 
 void application_recreate_swap_chain(application_t *app);
 void application_run(application_t *app);

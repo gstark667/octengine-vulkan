@@ -345,7 +345,7 @@ void pipeline_add_script(pipeline_t *pipeline, gameobject_t *object, std::string
     {
         script = new script_t();
         script_create(script, scriptPath);
-        script_setup(script);
+        script_setup(script, pipeline, object);
     }
     else
     {

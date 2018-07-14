@@ -24,10 +24,12 @@ void script_create(script_t *script, string path)
     script->name = path;
 }
 
-void script_setup(script_t *script)
+void script_setup(script_t *script, void *scene, void *object)
 {
     lua_getglobal(script->lua, "setup");
-    if (lua_pcall(script->lua, 0, 0, 0))
+    lua_pushinteger(script->lua, (long long int)scene);
+    lua_pushinteger(script->lua, (long long int)object);
+    if (lua_pcall(script->lua, 2, 1, 0))
         script_error(script, "setup failed");
 }
 
