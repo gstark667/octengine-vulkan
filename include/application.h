@@ -1,10 +1,13 @@
 #ifndef H_APPLICATION
 #define H_APPLICATION
 
-#define GLFW_INCLUDE_VULKAN
+//#define GLFW_INCLUDE_VULKAN
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <GLFW/glfw3.h>
+//#include <GLFW/glfw3.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_vulkan.h>
+#include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -21,7 +24,6 @@
 #include "model.h"
 #include "image.h"
 #include "texture.h"
-#include "camera.h"
 #include "scene.h"
 #include "script.h"
 
@@ -46,9 +48,11 @@ struct application_t
         "VK_LAYER_LUNARG_standard_validation"
     };
 
-    GLFWwindow* window;
+    //GLFWwindow* window;
     uint32_t windowWidth;
     uint32_t windowHeight;
+
+    SDL_Window *window;
 
     double mouseX = 0.0;
     double mouseY = 0.0;
@@ -81,7 +85,6 @@ struct application_t
 
     pipeline_t pipeline;
 
-    camera_t camera;
     model_t model;
     texture_t texture;
     scene_t scene;

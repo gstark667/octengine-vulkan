@@ -3,7 +3,8 @@
 #include <iostream>
 
 
-int main() {
+int main()
+{
     application_t app;
     app.enableValidationLayers = true;
     app.windowWidth = 800;

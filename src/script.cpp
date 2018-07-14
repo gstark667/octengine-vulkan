@@ -31,6 +31,7 @@ void script_setup(script_t *script, void *scene, void *object)
     lua_pushinteger(script->lua, (long long int)object);
     if (lua_pcall(script->lua, 2, 1, 0))
         script_error(script, "setup failed");
+    lua_pop(script->lua, 1);
 }
 
 void script_update(script_t *script, void *scene, void *object, float delta)
@@ -41,6 +42,7 @@ void script_update(script_t *script, void *scene, void *object, float delta)
     lua_pushnumber(script->lua, delta);
     if (lua_pcall(script->lua, 3, 1, 0))
         script_error(script, "update failed");
+    lua_pop(script->lua, 1);
 }
 
 void script_on_cursor_pos(script_t *script, void *scene, void *object, double x, double y)
@@ -55,6 +57,7 @@ void script_on_cursor_pos(script_t *script, void *scene, void *object, double x,
     lua_pushnumber(script->lua, y);
     if (lua_pcall(script->lua, 4, 1, 0))
         script_error(script, "on cursor pos failed");
+    lua_pop(script->lua, 1);
 }
 
 void script_destroy(script_t *script)

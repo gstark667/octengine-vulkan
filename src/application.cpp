@@ -35,7 +35,7 @@ swapchain_support_t application_query_swap_chain_support(application_t *app, VkP
 }
 
 // init window
-void on_window_resized(GLFWwindow *window, int width, int height) {
+/*void on_window_resized(GLFWwindow *window, int width, int height) {
     std::cout << "resize" << std::endl;
     application_t *app = (application_t*)glfwGetWindowUserPointer(window);
     app->windowWidth = width;
@@ -43,18 +43,34 @@ void on_window_resized(GLFWwindow *window, int width, int height) {
     app->pipeline.camera.width = width;
     app->pipeline.camera.height = height;
     application_recreate_swap_chain(app);
-}
+}*/
 
-void on_cursor_pos(GLFWwindow *window, double x, double y)
+/*void on_cursor_pos(GLFWwindow *window, double x, double y)
 {
     application_t *app = (application_t*)glfwGetWindowUserPointer(window);
     x -= app->pipeline.camera.width/2;
     y -= app->pipeline.camera.height/2;
     pipeline_on_cursor_pos(&app->pipeline, x, y);
-}
+}*/
 
 void application_init_window(application_t *app) {
-    glfwInit();
+    SDL_Init(SDL_INIT_VIDEO);
+    app->window = SDL_CreateWindow(
+        "octengine",
+        SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED,
+        app->windowWidth,
+        app->windowHeight,
+        SDL_WINDOW_VULKAN
+    );
+    app->pipeline.camera.width = app->windowWidth;
+    app->pipeline.camera.height = app->windowHeight;
+
+    //SDL_ShowCursor(SDL_DISABLE);
+    SDL_SetWindowGrab(app->window, SDL_TRUE);
+    SDL_SetRelativeMouseMode(SDL_FALSE);
+
+    /*glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -68,7 +84,7 @@ void application_init_window(application_t *app) {
 
     glfwSetWindowUserPointer(app->window, app);
     glfwSetWindowSizeCallback(app->window, on_window_resized);
-    glfwSetCursorPosCallback(app->window, on_cursor_pos);
+    glfwSetCursorPosCallback(app->window, on_cursor_pos);*/
 }
 
 // create instance
@@ -99,11 +115,14 @@ bool application_check_validation_layer_support(application_t *app) {
 
 std::vector<const char*> application_get_required_extensions(application_t *app)
 {
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    uint32_t sdlExtensionCount = 0;
+    const char** sdlExtensions;
+    //glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    SDL_Vulkan_GetInstanceExtensions(app->window, &sdlExtensionCount, NULL);
+    sdlExtensions = new const char *[sdlExtensionCount];
+    SDL_Vulkan_GetInstanceExtensions(app->window, &sdlExtensionCount, sdlExtensions);
 
-    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    std::vector<const char*> extensions(sdlExtensions, sdlExtensions + sdlExtensionCount);
 
     if (app->enableValidationLayers) {
         extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
@@ -190,10 +209,11 @@ void application_setup_debug_callback(application_t *app) {
 // create surface
 void application_create_surface(application_t *app)
 {
-    if (glfwCreateWindowSurface(app->instance, app->window, nullptr, &app->surface) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create window surface!");
-    }
+    SDL_Vulkan_CreateSurface(app->window, app->instance, &app->surface);
+    //if (glfwCreateWindowSurface(app->instance, app->window, nullptr, &app->surface) != VK_SUCCESS)
+    //{
+    //    throw std::runtime_error("failed to create window surface!");
+    //}
 }
 
 // pick physical device
@@ -679,7 +699,8 @@ void application_cleanup_swap_chain(application_t *app) {
 // recreate swapchain
 void application_recreate_swap_chain(application_t *app) {
     int width, height; 
-    glfwGetWindowSize(app->window, &width, &height);
+    //glfwGetWindowSize(app->window, &width, &height);
+    SDL_GetWindowSize(app->window, &width, &height);
     if (width == 0 || height == 0)
         return;
     app->pipeline.camera.width = width;
@@ -736,8 +757,35 @@ void application_init_vulkan(application_t *app) {
 }
 
 void application_main_loop(application_t *app) {
-    while (!glfwWindowShouldClose(app->window)) {
-        glfwPollEvents();
+    //while (!glfwWindowShouldClose(app->window)) {
+    int totalX = 0;
+    int totalY = 0;
+    bool running = true;
+    while (running) {
+        std::cout << "pre: " << totalX << ":" << totalY << std::endl;
+        SDL_Event event;
+        while (!SDL_PollEvent(&event))
+        {
+            switch (event.type)
+            {
+            case SDL_MOUSEMOTION:
+                break;
+            case SDL_QUIT:
+                running = false;
+                break;
+            default:
+                break;
+            }
+        }
+        int newX, newY;
+        SDL_GetRelativeMouseState(&newX, &newY);
+        std::cout << "post: " << newX << ":" << newY << std::endl;
+        //newX -= app->windowWidth/2;
+        //newY -= app->windowHeight/2;
+        totalX += newX;
+        totalY += newY;
+        pipeline_on_cursor_pos(&app->pipeline, (double)totalX, (double)totalY);
+        SDL_WarpMouseInWindow(app->window, app->windowWidth/2, app->windowHeight/2);
 
         application_update_uniforms(app);
         application_copy_uniforms(app);
@@ -772,8 +820,9 @@ void application_cleanup(application_t *app) {
     vkDestroySurfaceKHR(app->instance, app->surface, nullptr);
     vkDestroyInstance(app->instance, nullptr);
 
-    glfwDestroyWindow(app->window);
-    glfwTerminate();
+    //glfwDestroyWindow(app->window);
+    SDL_DestroyWindow(app->window);
+    SDL_Quit();
 }
 
 void application_run(application_t *app) {

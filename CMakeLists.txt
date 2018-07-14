@@ -8,6 +8,7 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(glfw3)
 find_package(glm)
+find_package(SDL2)
 find_package(assimp)
 
 include_directories(include/)
@@ -63,7 +64,7 @@ set_target_properties(liboctengine PROPERTIES OUTPUT_NAME "octengine")
 
 add_executable(mainoctengine src/main.cpp)
 set_target_properties(mainoctengine PROPERTIES OUTPUT_NAME "octengine")
-target_link_libraries (mainoctengine ${CMAKE_THREAD_LIBS_INIT} vulkan glfw assimp freeimage lua liboctengine)
+target_link_libraries (mainoctengine ${CMAKE_THREAD_LIBS_INIT} vulkan glfw SDL2 assimp freeimage lua liboctengine)
 target_include_directories (mainoctengine PUBLIC include/)
 
 ADD_LIBRARY(gameobject SHARED lualibs/gameobject.cpp ${HEADERS})
