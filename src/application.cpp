@@ -68,7 +68,7 @@ void application_init_window(application_t *app) {
 
     //SDL_ShowCursor(SDL_DISABLE);
     SDL_SetWindowGrab(app->window, SDL_TRUE);
-    SDL_SetRelativeMouseMode(SDL_FALSE);
+    SDL_SetRelativeMouseMode(SDL_TRUE);
 
     /*glfwInit();
 
@@ -758,17 +758,18 @@ void application_init_vulkan(application_t *app) {
 
 void application_main_loop(application_t *app) {
     //while (!glfwWindowShouldClose(app->window)) {
-    int totalX = 0;
-    int totalY = 0;
     bool running = true;
     while (running) {
-        std::cout << "pre: " << totalX << ":" << totalY << std::endl;
+        int x = 0;
+        int y = 0;
         SDL_Event event;
         while (!SDL_PollEvent(&event))
         {
             switch (event.type)
             {
             case SDL_MOUSEMOTION:
+                x = event.motion.xrel;
+                y = event.motion.yrel;
                 break;
             case SDL_QUIT:
                 running = false;
@@ -777,15 +778,7 @@ void application_main_loop(application_t *app) {
                 break;
             }
         }
-        int newX, newY;
-        SDL_GetRelativeMouseState(&newX, &newY);
-        std::cout << "post: " << newX << ":" << newY << std::endl;
-        //newX -= app->windowWidth/2;
-        //newY -= app->windowHeight/2;
-        totalX += newX;
-        totalY += newY;
-        pipeline_on_cursor_pos(&app->pipeline, (double)totalX, (double)totalY);
-        SDL_WarpMouseInWindow(app->window, app->windowWidth/2, app->windowHeight/2);
+        pipeline_on_cursor_pos(&app->pipeline, (double)x, (double)y);
 
         application_update_uniforms(app);
         application_copy_uniforms(app);
