@@ -763,7 +763,7 @@ void application_main_loop(application_t *app) {
         int x = 0;
         int y = 0;
         SDL_Event event;
-        while (!SDL_PollEvent(&event))
+        while (SDL_PollEvent(&event))
         {
             switch (event.type)
             {
