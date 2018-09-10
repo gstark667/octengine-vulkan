@@ -60,6 +60,34 @@ void script_on_cursor_pos(script_t *script, void *scene, void *object, double x,
     lua_pop(script->lua, 1);
 }
 
+void script_on_button_down(script_t *script, void *scene, void *object, string buttonCode)
+{
+    lua_getglobal(script->lua, "on_button_down");
+    if (lua_isnil(script->lua, -1))
+        return;
+
+    lua_pushinteger(script->lua, (long long int)scene);
+    lua_pushinteger(script->lua, (long long int)object);
+    lua_pushstring(script->lua, buttonCode.c_str());
+    if (lua_pcall(script->lua, 3, 1, 0))
+        script_error(script, "on button down failed");
+    lua_pop(script->lua, 1);
+}
+
+void script_on_button_up(script_t *script, void *scene, void *object, string buttonCode)
+{
+    lua_getglobal(script->lua, "on_button_up");
+    if (lua_isnil(script->lua, -1))
+        return;
+
+    lua_pushinteger(script->lua, (long long int)scene);
+    lua_pushinteger(script->lua, (long long int)object);
+    lua_pushstring(script->lua, buttonCode.c_str());
+    if (lua_pcall(script->lua, 3, 1, 0))
+        script_error(script, "on button down failed");
+    lua_pop(script->lua, 1);
+}
+
 void script_destroy(script_t *script)
 {
     lua_close(script->lua);

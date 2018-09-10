@@ -420,3 +420,31 @@ void pipeline_on_cursor_pos(pipeline_t *pipeline, double x, double y)
     }
 }
 
+void pipeline_on_button_down(pipeline_t *pipeline, std::string buttonCode)
+{
+    for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
+    {
+        for (std::vector<gameobject_t*>::iterator it2 = pipeline->gameobjects[it->first].begin(); it2 != pipeline->gameobjects[it->first].end(); ++it2)
+        {
+            for (std::set<script_t*>::iterator it3 = (*it2)->scripts.begin(); it3 != (*it2)->scripts.end(); ++it3)
+            {
+                script_on_button_down(*it3, pipeline, *it2, buttonCode);
+            }
+        }
+    }
+}
+
+void pipeline_on_button_up(pipeline_t *pipeline, std::string buttonCode)
+{
+    for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
+    {
+        for (std::vector<gameobject_t*>::iterator it2 = pipeline->gameobjects[it->first].begin(); it2 != pipeline->gameobjects[it->first].end(); ++it2)
+        {
+            for (std::set<script_t*>::iterator it3 = (*it2)->scripts.begin(); it3 != (*it2)->scripts.end(); ++it3)
+            {
+                script_on_button_up(*it3, pipeline, *it2, buttonCode);
+            }
+        }
+    }
+}
+

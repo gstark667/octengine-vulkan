@@ -762,6 +762,8 @@ void application_main_loop(application_t *app) {
     while (running) {
         int x = 0;
         int y = 0;
+        std::set<std::string> downs;
+        std::set<std::string> ups;
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
@@ -771,6 +773,16 @@ void application_main_loop(application_t *app) {
                 x = event.motion.xrel;
                 y = event.motion.yrel;
                 break;
+            case SDL_KEYDOWN:
+                if (event.key.repeat)
+                    continue;
+                downs.insert(SDL_GetScancodeName(event.key.keysym.scancode));
+                break;
+            case SDL_KEYUP:
+                if (event.key.repeat)
+                    continue;
+                ups.insert(SDL_GetScancodeName(event.key.keysym.scancode));
+                break;
             case SDL_QUIT:
                 running = false;
                 break;
@@ -778,7 +790,14 @@ void application_main_loop(application_t *app) {
                 break;
             }
         }
-        pipeline_on_cursor_pos(&app->pipeline, (double)x, (double)y);
+
+        if (x != 0 || y != 0)
+            pipeline_on_cursor_pos(&app->pipeline, (double)x, (double)y);
+
+        for (auto it = downs.begin(); it != downs.end(); ++it)
+            pipeline_on_button_down(&app->pipeline, *it);
+        for (auto it = ups.begin(); it != ups.end(); ++it)
+            pipeline_on_button_up(&app->pipeline, *it);
 
         application_update_uniforms(app);
         application_copy_uniforms(app);
