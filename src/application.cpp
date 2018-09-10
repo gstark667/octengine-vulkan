@@ -731,12 +731,12 @@ void application_init_vulkan(application_t *app) {
     texture_load(&app->pipeline.texture, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "example.png");
     app->depthFormat = application_find_depth_format(app);
     pipeline_create(&app->pipeline, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue);
-    gameobject_t *obj = pipeline_add_gameobject(&app->pipeline, "example.dae");
+    /*gameobject_t *obj = pipeline_add_gameobject(&app->pipeline, "example.dae");
     gameobject_t *obj2 = pipeline_add_gameobject(&app->pipeline, "example.dae");
     pipeline_add_script(&app->pipeline, obj, "test.lua");
     pipeline_add_script(&app->pipeline, obj2, "camera.lua");
     //pipeline_add_gameobject(&app->pipeline, "cube.dae");
-    //pipeline_add_gameobject(&app->pipeline, "cube.dae");
+    //pipeline_add_gameobject(&app->pipeline, "cube.dae");*/
 
     application_create_depth_resources(app);
     application_create_frame_buffers(app);
@@ -758,6 +758,7 @@ void application_init_vulkan(application_t *app) {
 
 void application_main_loop(application_t *app) {
     //while (!glfwWindowShouldClose(app->window)) {
+    pipeline_load(&app->pipeline, "scene_0.lua");
     bool running = true;
     while (running) {
         int x = 0;

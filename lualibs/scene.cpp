@@ -19,7 +19,9 @@ static int scene_add_gameobject(lua_State *L)
 {
     pipeline_t *scene = (pipeline_t*)lua_tointeger(L, 1);
     const char *name = lua_tostring(L, 2);
+    std::cout << "makeing object: " << scene << ":" << name << std::endl;
     gameobject_t *object = pipeline_add_gameobject(scene, name);
+    std::cout << "made object: " << object << std::endl;
     lua_pushinteger(L, (lua_Integer)object);
     return 1;
 }

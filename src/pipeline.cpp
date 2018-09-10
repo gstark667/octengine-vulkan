@@ -391,6 +391,15 @@ void pipeline_update(pipeline_t *pipeline, float delta)
     }
 }
 
+void pipeline_load(pipeline_t *pipeline, std::string path)
+{
+    std::cout << "creating script" << std::endl;
+    script_create(&pipeline->script, path);
+    std::cout << "setup script" << std::endl;
+    script_setup(&pipeline->script, pipeline, NULL);
+    std::cout << "done with setup" << std::endl;
+}
+
 void pipeline_cleanup(pipeline_t *pipeline, VkDevice device)
 {
     for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)

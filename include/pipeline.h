@@ -27,6 +27,7 @@ struct pipeline_t
 {
     texture_t texture;
     camera_t camera;
+    script_t script;
 
     std::string vertShader, fragShader;
 
@@ -64,6 +65,7 @@ void pipeline_add_script(pipeline_t *pipeline, gameobject_t *object, std::string
 void pipeline_render(pipeline_t *pipeline, VkCommandBuffer commandBuffer);
 void pipeline_update(pipeline_t *pipeline, float delta);
 
+void pipeline_load(pipeline_t *pipeline, std::string path);
 void pipeline_cleanup(pipeline_t *pipeline, VkDevice device);
 
 void pipeline_on_cursor_pos(pipeline_t *pipeline, double x, double y);
