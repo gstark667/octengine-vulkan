@@ -20,8 +20,8 @@ layout(location = 7) in float instanceScale;
 layout(location = 8) in int instanceTex;
 
 layout(location = 0) out vec3 fragNormal;
-layout(location = 1) out vec2 fragTexCoord;
-layout(location = 2) out vec3 fragColor;
+layout(location = 1) out vec3 fragColor;
+layout(location = 2) out vec2 fragTexCoord;
 
 out gl_PerVertex {
     vec4 gl_Position;
@@ -63,5 +63,7 @@ void main() {
     gl_Position = ubo.proj * ubo.view * mat4(rotMat) * vec4(inPosition, 1.0) + (ubo.proj * ubo.view * vec4(instancePos, 1.0));
     fragNormal = rotMat * mat3(boneTransform) * inNormal;
     fragNormal = rotMat * inNormal;
+    fragColor = instanceRot;
+    fragColor = vec3(1.0, instanceRot.y, 1.0);
     fragTexCoord = inTexCoord;
 }

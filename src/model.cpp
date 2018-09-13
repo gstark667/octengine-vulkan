@@ -359,47 +359,17 @@ void model_create_index_buffer(model_t *model, VkDevice device, VkPhysicalDevice
     vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
-/*model_instance_t *model_create_instance(model_t *model)
-{
-    model->instances.push_back({glm::vec3(0, 0, 0), glm::vec3(0.f, 0.f, 0.f), 1.f, 0});
-    return &model->instances.back();
-}*/
-
-void model_copy_index_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
-{
-    VkDeviceSize bufferSize = (sizeof(model->instances[0]) * model->instances.size());
-    std::cout << "buff size" << bufferSize << std::endl;
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
-
-    void *data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, model->instances.data(), (size_t) bufferSize);
-    vkUnmapMemory(device, stagingBufferMemory);
-
-    if (!model->instanceBuffer)
-        //create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &model->instanceBuffer, &model->instanceBufferMemory);
-        create_buffer(device, physicalDevice, 32, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &model->instanceBuffer, &model->instanceBufferMemory);
-
-    copy_buffer(device, commandPool, graphicsQueue, stagingBuffer, model->instanceBuffer, bufferSize);
-
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-}
-
 void model_create_instance_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
     model->instanceCount = 0;
-    VkDeviceSize bufferSize = (sizeof(model_instance_t) * 256);
+    VkDeviceSize bufferSize = (sizeof(model_instance_t) * 2);
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
     create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
 
     std::vector<model_instance_t> temp;
-    for (size_t i = 0; i < 256; ++i)
+    for (size_t i = 0; i < 2; ++i)
     {
         temp.push_back({});
     }
@@ -420,13 +390,15 @@ void model_create_instance_buffer(model_t *model, VkDevice device, VkPhysicalDev
 void model_copy_instance_buffer(model_t *model, std::vector<gameobject_t*> instances, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
     model->instanceCount = instances.size();
-    VkDeviceSize bufferSize = (sizeof(model_instance_t) * model->instanceCount);
+    VkDeviceSize bufferSize = (sizeof(model_instance_t) * instances.size());
+    std::cout << bufferSize << " = " << sizeof(model_instance_t) << " * " << instances.size() << std::endl;
     std::vector<model_instance_t> temp;
     for (std::vector<gameobject_t*>::iterator it = instances.begin(); it != instances.end(); ++it)
     {
         model_instance_t item;
         item.pos = (*it)->pos;
         item.rot = (*it)->rot;
+        std::cout << "copy: " << item.rot.x << ":" << item.rot.y << ":" << item.rot.z << std::endl;
         item.scale = (*it)->scale;
         item.textureIdx = (*it)->textureIdx;
         temp.push_back(item);
@@ -439,6 +411,7 @@ void model_copy_instance_buffer(model_t *model, std::vector<gameobject_t*> insta
     void *data;
     vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
     memcpy(data, temp.data(), (size_t)bufferSize);
+
     vkUnmapMemory(device, stagingBufferMemory);
 
     copy_buffer(device, commandPool, graphicsQueue, stagingBuffer, model->instanceBuffer, bufferSize);
@@ -479,11 +452,10 @@ void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayou
 {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-    VkBuffer vertexBuffers[] = {model->vertexBuffer};
+    VkBuffer buffers[] = {model->vertexBuffer, model->instanceBuffer};
     VkBuffer instanceBuffers[] = {model->instanceBuffer};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindVertexBuffers(commandBuffer, 1, 1, instanceBuffers, offsets);
+    VkDeviceSize offsets[] = {0, 0};
+    vkCmdBindVertexBuffers(commandBuffer, 0, 2, buffers, offsets);
     vkCmdBindIndexBuffer(commandBuffer, model->indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);

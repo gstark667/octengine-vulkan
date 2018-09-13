@@ -45,14 +45,6 @@ swapchain_support_t application_query_swap_chain_support(application_t *app, VkP
     application_recreate_swap_chain(app);
 }*/
 
-/*void on_cursor_pos(GLFWwindow *window, double x, double y)
-{
-    application_t *app = (application_t*)glfwGetWindowUserPointer(window);
-    x -= app->pipeline.camera.width/2;
-    y -= app->pipeline.camera.height/2;
-    pipeline_on_cursor_pos(&app->pipeline, x, y);
-}*/
-
 void application_init_window(application_t *app) {
     SDL_Init(SDL_INIT_VIDEO);
     app->window = SDL_CreateWindow(
@@ -63,28 +55,12 @@ void application_init_window(application_t *app) {
         app->windowHeight,
         SDL_WINDOW_VULKAN
     );
-    app->pipeline.camera.width = app->windowWidth;
-    app->pipeline.camera.height = app->windowHeight;
+
+    camera_resize(&app->pipeline.camera, app->windowWidth, app->windowHeight, 90.0f);
 
     //SDL_ShowCursor(SDL_DISABLE);
     SDL_SetWindowGrab(app->window, SDL_TRUE);
     SDL_SetRelativeMouseMode(SDL_TRUE);
-
-    /*glfwInit();
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-
-    app->window = glfwCreateWindow(app->windowWidth, app->windowHeight, "Vulkan", nullptr, nullptr);
-    app->pipeline.camera.width = app->windowWidth;
-    app->pipeline.camera.height = app->windowHeight;
-
-    //glfwSetInputMode(app->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    //glfwSetInputMode(app->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-    glfwSetWindowUserPointer(app->window, app);
-    glfwSetWindowSizeCallback(app->window, on_window_resized);
-    glfwSetCursorPosCallback(app->window, on_cursor_pos);*/
 }
 
 // create instance
@@ -610,23 +586,9 @@ void application_update_uniforms(application_t *app)
 
     pipeline_update(&app->pipeline, delta);
 
-    //camera_update(&app->camera, delta, app->window);
     camera_update(&app->pipeline.camera);
     app->ubo.view = app->pipeline.camera.view;
     app->ubo.proj = app->pipeline.camera.proj;
-
-    //glfwSetCursorPos(app->window, app->pipeline.camera.width/2, app->pipeline.camera.height/2);
-    //script_update(&script, inst, delta);
-    /*if (total > 1)
-    {
-        total = 0;
-        pipeline_add_gameobject(&app->pipeline, "example.dae");
-    }*/
-    //model_update(&app->model, delta);
-    //for (size_t i = 0; i < app->model.bones.size(); ++i)
-    //{
-    //    app->ubo.bones[app->model.bones[i].pos] = glm::transpose(glm::make_mat4(&app->model.bones[i].matrix.a1));
-    //}
 }
 
 void application_copy_uniforms(application_t *app)
@@ -703,8 +665,8 @@ void application_recreate_swap_chain(application_t *app) {
     SDL_GetWindowSize(app->window, &width, &height);
     if (width == 0 || height == 0)
         return;
-    app->pipeline.camera.width = width;
-    app->pipeline.camera.height = height;
+    camera_resize(&app->pipeline.camera, width, height, 90.0f);
+
     vkDeviceWaitIdle(app->device);
 
     application_cleanup_swap_chain(app);
@@ -740,8 +702,6 @@ void application_init_vulkan(application_t *app) {
 
     application_create_depth_resources(app);
     application_create_frame_buffers(app);
-
-    app->pipeline.camera.fov = 90.0f;
 
     //script_create(&script, "test.lua");
     //script_setup(&script);
