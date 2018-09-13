@@ -17,6 +17,7 @@
 #include <assimp/postprocess.h>
 
 #include "gameobject.h"
+#include "buffer.h"
 
 struct vertex_t
 {
@@ -73,12 +74,16 @@ struct model_instance_t
 
 struct model_t
 {
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
-    VkBuffer instanceBuffer = nullptr;
-    VkDeviceMemory instanceBufferMemory = nullptr;
+    buffer_t vertexBuffer;
+    buffer_t indexBuffer;
+    buffer_t instanceBuffer;
+    //VkBuffer vertexBuffer;
+    //VkDeviceMemory vertexBufferMemory;
+    //VkBuffer indexBuffer;
+    //VkDeviceMemory indexBufferMemory;
+    //VkBuffer instanceBuffer = nullptr;
+    //VkDeviceMemory instanceBufferMemory = nullptr;
+
     VkBuffer uniformBuffer;
     VkDeviceMemory uniformBufferMemory;
 

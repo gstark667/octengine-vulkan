@@ -377,7 +377,7 @@ void pipeline_update(pipeline_t *pipeline, float delta)
     }
     pipeline->tempGameobjects.clear();
 
-    std::cout << "----------------------" << std::endl;
+    //std::cout << "----------------------" << std::endl;
     for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
     {
         for (std::vector<gameobject_t*>::iterator it2 = pipeline->gameobjects[it->first].begin(); it2 != pipeline->gameobjects[it->first].end(); ++it2)
