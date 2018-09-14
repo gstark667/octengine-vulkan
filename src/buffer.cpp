@@ -10,6 +10,7 @@ void buffer_create(buffer_t *buffer, VkDevice device, VkPhysicalDevice physicalD
     buffer->usage = usage;
     buffer->properties = properties;
     buffer->size = size;
+    buffer->physicalDevice = physicalDevice;
     if (size == 0)
         size = 1;
 
@@ -38,31 +39,56 @@ void buffer_create(buffer_t *buffer, VkDevice device, VkPhysicalDevice physicalD
     vkBindBufferMemory(device, buffer->buffer, buffer->memory, 0);
 }
 
+void buffer_resize(buffer_t *buffer, VkDevice device, size_t size)
+{
+    buffer_destroy(buffer, device);
+    buffer_create(buffer, device, buffer->physicalDevice, buffer->usage, buffer->properties, size);
+    buffer->size = size;
+}
+
 void buffer_copy(buffer_t *buffer, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, void *data, size_t size)
 {
-    if (buffer->size < size)
+    if (buffer->size != size)
     {
-        buffer_destroy(buffer, device);
-        buffer_create(buffer, device, physicalDevice, buffer->usage, buffer->properties, size);
+        buffer_resize(buffer, device, size);
     }
 
     buffer_t stagingBuffer;
     buffer_create(&stagingBuffer, device, physicalDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, size);
 
-    void *tempData;
-    vkMapMemory(device, stagingBuffer.memory, 0, size, 0, &tempData);
-    memcpy(tempData, data, size);
-    vkUnmapMemory(device, stagingBuffer.memory);
-
     VkCommandBuffer commandBuffer = begin_single_time_commands(device, commandPool);
 
-    VkBufferCopy copyRegion = {};
-    copyRegion.size = buffer->size;
-    vkCmdCopyBuffer(commandBuffer, stagingBuffer.buffer, buffer->buffer, 1, &copyRegion);
+    buffer_stage(buffer, &stagingBuffer, device, commandBuffer, data, size);
+    buffer_inline_copy(buffer, &stagingBuffer, commandBuffer);
 
     end_single_time_commands(device, commandPool, graphicsQueue, commandBuffer);
 
     buffer_destroy(&stagingBuffer, device);
+}
+
+void buffer_stage(buffer_t *dst, buffer_t *src, VkDevice device, VkCommandBuffer commandBuffer, void *data, size_t size)
+{
+    if (dst->size != size)
+    {
+        buffer_resize(dst, device, size);
+    }
+
+    if (src->size != size)
+    {
+        buffer_resize(src, device, size);
+    }
+
+    void *tempData;
+    vkMapMemory(device, src->memory, 0, size, 0, &tempData);
+    memcpy(tempData, data, size);
+    vkUnmapMemory(device, src->memory);
+}
+
+void buffer_inline_copy(buffer_t *dst, buffer_t *src, VkCommandBuffer commandBuffer)
+{
+    VkBufferCopy copyRegion = {};
+    copyRegion.size = dst->size;
+    vkCmdCopyBuffer(commandBuffer, src->buffer, dst->buffer, 1, &copyRegion);
 }
 
 void buffer_destroy(buffer_t *buffer, VkDevice device)
