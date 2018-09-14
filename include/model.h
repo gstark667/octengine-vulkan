@@ -64,6 +64,7 @@ struct bone_t
     std::vector<bone_t*> children;
 };
 
+#define MODEL_INSTANCE_SIZE sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(float) + sizeof(uint32_t)
 struct model_instance_t
 {
     glm::vec3 pos = glm::vec3(0.0f);

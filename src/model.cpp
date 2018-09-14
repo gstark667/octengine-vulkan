@@ -318,107 +318,6 @@ void model_load(model_t *model, std::string path)
     model_load_node(model, scene->mRootNode);
 }
 
-/*void model_create_vertex_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
-{
-    VkDeviceSize bufferSize = (sizeof(model->vertices[0]) * model->vertices.size());
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
-
-    void *data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, model->vertices.data(), (size_t) bufferSize);
-    vkUnmapMemory(device, stagingBufferMemory);
-
-    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &model->vertexBuffer, &model->vertexBufferMemory);
-
-    copy_buffer(device, commandPool, graphicsQueue, stagingBuffer, model->vertexBuffer, bufferSize);
-
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-}
-
-void model_create_index_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue) {
-    VkDeviceSize bufferSize = (sizeof(model->indices[0]) * model->indices.size());
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
-
-    void *data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, model->indices.data(), (size_t) bufferSize);
-    vkUnmapMemory(device, stagingBufferMemory);
-
-    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &model->indexBuffer, &model->indexBufferMemory);
-
-    copy_buffer(device, commandPool, graphicsQueue, stagingBuffer, model->indexBuffer, bufferSize);
-
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-}
-
-void model_create_instance_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
-{
-    model->instanceCount = 0;
-    VkDeviceSize bufferSize = (sizeof(model_instance_t) * 2);
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
-
-    std::vector<model_instance_t> temp;
-    for (size_t i = 0; i < 2; ++i)
-    {
-        temp.push_back({});
-    }
-
-    void *data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, temp.data(), (size_t)bufferSize);
-    vkUnmapMemory(device, stagingBufferMemory);
-
-    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &model->instanceBuffer, &model->instanceBufferMemory);
-
-    copy_buffer(device, commandPool, graphicsQueue, stagingBuffer, model->instanceBuffer, bufferSize);
-
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-}
-
-void model_copy_instance_buffer(model_t *model, std::vector<gameobject_t*> instances, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
-{
-    model->instanceCount = instances.size();
-    VkDeviceSize bufferSize = (sizeof(model->instances[0]) * instances.size());
-    std::cout << bufferSize << " = " << sizeof(model->instances[0]) << " * " << instances.size() << std::endl;
-    std::vector<model_instance_t> temp;
-    for (std::vector<gameobject_t*>::iterator it = instances.begin(); it != instances.end(); ++it)
-    {
-        model_instance_t item;
-        item.pos = (*it)->pos;
-        item.rot = (*it)->rot;
-        std::cout << "copy: " << item.rot.x << ":" << item.rot.y << ":" << item.rot.z << std::endl;
-        item.scale = (*it)->scale;
-        item.textureIdx = (*it)->textureIdx;
-        temp.push_back(item);
-    }
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    create_buffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
-
-    void *data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, temp.data(), (size_t)bufferSize);
-
-    vkUnmapMemory(device, stagingBufferMemory);
-
-    copy_buffer(device, commandPool, graphicsQueue, stagingBuffer, model->instanceBuffer, bufferSize);
-
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-}*/
-
 void model_create_vertex_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
     VkDeviceSize bufferSize = (sizeof(model->vertices[0]) * model->vertices.size());
@@ -436,8 +335,9 @@ void model_create_instance_buffer(model_t *model, VkDevice device, VkPhysicalDev
 {
     std::vector<model_instance_t> temp;
     temp.push_back({});
+    temp.push_back({});
     model->instanceBuffer.count = 0;
-    VkDeviceSize bufferSize = (sizeof(temp[0]) * temp.size());
+    VkDeviceSize bufferSize = (sizeof(model_instance_t) * temp.size());
     buffer_create(&model->instanceBuffer, device, physicalDevice, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, bufferSize);
     buffer_copy(&model->instanceBuffer, device, physicalDevice, commandPool, graphicsQueue, temp.data(), bufferSize);
 }
@@ -446,7 +346,7 @@ void model_copy_instance_buffer(model_t *model, std::vector<gameobject_t*> insta
 {
     model->instanceCount = instances.size();
     std::vector<model_instance_t> temp;
-    VkDeviceSize bufferSize = (sizeof(struct model_instance_t) * instances.size());
+    VkDeviceSize bufferSize = (sizeof(model_instance_t) * instances.size());
     for (std::vector<gameobject_t*>::iterator it = instances.begin(); it != instances.end(); ++it)
     {
         model_instance_t item;
