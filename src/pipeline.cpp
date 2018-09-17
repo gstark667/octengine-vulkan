@@ -330,7 +330,7 @@ gameobject_t *pipeline_add_gameobject(pipeline_t *pipeline, std::string modelPat
 {
     std::cout << "dirtying pipeline" << std::endl;
     pipeline->isDirty = true;
-    if (pipeline->models.find(modelPath) == pipeline->models.end())
+    if (modelPath != "" && pipeline->models.find(modelPath) == pipeline->models.end())
         pipeline_add_model(pipeline, modelPath);
 
     gameobject_t *temp = new gameobject_t();
@@ -377,17 +377,19 @@ void pipeline_update(pipeline_t *pipeline, float delta)
     }
     pipeline->tempGameobjects.clear();
 
-    //std::cout << "----------------------" << std::endl;
-    for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
+    for (std::map<std::string, std::vector<gameobject_t*>>::iterator it = pipeline->gameobjects.begin(); it != pipeline->gameobjects.end(); ++it)
     {
-        for (std::vector<gameobject_t*>::iterator it2 = pipeline->gameobjects[it->first].begin(); it2 != pipeline->gameobjects[it->first].end(); ++it2)
+        for (std::vector<gameobject_t*>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
         {
             for (std::set<script_t*>::iterator it3 = (*it2)->scripts.begin(); it3 != (*it2)->scripts.end(); ++it3)
             {
                 script_update(*it3, pipeline, *it2, delta);
             }
         }
+    }
 
+    for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
+    {
         model_update(&it->second, delta);
         model_copy_instance_buffer(&it->second, pipeline->gameobjects[it->first], pipeline->device, pipeline->physicalDevice, pipeline->commandPool, pipeline->graphicsQueue);
     }
@@ -419,9 +421,10 @@ void pipeline_cleanup(pipeline_t *pipeline, VkDevice device)
 
 void pipeline_on_cursor_pos(pipeline_t *pipeline, double x, double y)
 {
-    for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
+
+    for (std::map<std::string, std::vector<gameobject_t*>>::iterator it = pipeline->gameobjects.begin(); it != pipeline->gameobjects.end(); ++it)
     {
-        for (std::vector<gameobject_t*>::iterator it2 = pipeline->gameobjects[it->first].begin(); it2 != pipeline->gameobjects[it->first].end(); ++it2)
+        for (std::vector<gameobject_t*>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
         {
             for (std::set<script_t*>::iterator it3 = (*it2)->scripts.begin(); it3 != (*it2)->scripts.end(); ++it3)
             {
@@ -433,9 +436,10 @@ void pipeline_on_cursor_pos(pipeline_t *pipeline, double x, double y)
 
 void pipeline_on_button_down(pipeline_t *pipeline, std::string buttonCode)
 {
-    for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
+
+    for (std::map<std::string, std::vector<gameobject_t*>>::iterator it = pipeline->gameobjects.begin(); it != pipeline->gameobjects.end(); ++it)
     {
-        for (std::vector<gameobject_t*>::iterator it2 = pipeline->gameobjects[it->first].begin(); it2 != pipeline->gameobjects[it->first].end(); ++it2)
+        for (std::vector<gameobject_t*>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
         {
             for (std::set<script_t*>::iterator it3 = (*it2)->scripts.begin(); it3 != (*it2)->scripts.end(); ++it3)
             {
@@ -447,9 +451,9 @@ void pipeline_on_button_down(pipeline_t *pipeline, std::string buttonCode)
 
 void pipeline_on_button_up(pipeline_t *pipeline, std::string buttonCode)
 {
-    for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
+    for (std::map<std::string, std::vector<gameobject_t*>>::iterator it = pipeline->gameobjects.begin(); it != pipeline->gameobjects.end(); ++it)
     {
-        for (std::vector<gameobject_t*>::iterator it2 = pipeline->gameobjects[it->first].begin(); it2 != pipeline->gameobjects[it->first].end(); ++it2)
+        for (std::vector<gameobject_t*>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
         {
             for (std::set<script_t*>::iterator it3 = (*it2)->scripts.begin(); it3 != (*it2)->scripts.end(); ++it3)
             {

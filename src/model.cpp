@@ -358,7 +358,6 @@ void model_copy_instance_buffer(model_t *model, std::vector<gameobject_t*> insta
         model->instances[i].rot = instances[i]->rot;
         model->instances[i].scale = instances[i]->scale;
         model->instances[i].textureIdx = instances[i]->textureIdx;
-        std::cout << instances[i]->pos.x << ":" << instances[i]->pos.y << ":" << instances[i]->pos.z << " " << instances[i]->rot.x << ":" << instances[i]->rot.y << ":" << instances[i]->rot.z << std::endl;
     }
 
     VkCommandBuffer commandBuffer = begin_single_time_commands(device, commandPool);
@@ -402,7 +401,6 @@ void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayou
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-    VkBuffer buffers[] = {model->vertexBuffer.buffer, model->instanceBuffer.buffer};
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->vertexBuffer.buffer, offsets);
     vkCmdBindVertexBuffers(commandBuffer, 1, 1, &model->instanceBuffer.buffer, offsets);

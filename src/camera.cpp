@@ -15,7 +15,7 @@ void camera_update(camera_t *camera)
 {
     if (!camera->object)
         return;
-    //camera->view = glm::yawPitchRoll(camera->object->rot.y, camera->object->rot.x, camera->object->rot.z);
+
     camera->view = glm::rotate(glm::mat4(1.0f), camera->object->rot.x, glm::vec3(1.0f, 0.0f, 0.0f));
     camera->view *= glm::rotate(glm::mat4(1.0f), camera->object->rot.y, glm::vec3(0.0f, 1.0f, 0.0f));
     camera->view *= glm::rotate(glm::mat4(1.0f), camera->object->rot.z, glm::vec3(0.0f, 0.0f, 1.0f));
