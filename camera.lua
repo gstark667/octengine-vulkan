@@ -8,6 +8,8 @@ function setup(scene, object)
     gameobject_set_number(object, "back", 0)
     gameobject_set_number(object, "left", 0)
     gameobject_set_number(object, "right", 0)
+    gameobject_set_number(object, "up", 0)
+    gameobject_set_number(object, "down", 0)
     gameobject_set_number(object, "x_rot", 0)
     gameobject_set_number(object, "y_rot", 0)
 end
@@ -18,10 +20,12 @@ function update(scene, object, delta)
     gameobject_set_rotation(object, y_rot, x_rot, 0)
 
     x_speed = (gameobject_get_number(object, "left") - gameobject_get_number(object, "right")) * delta * 3
+    y_speed = (gameobject_get_number(object, "up") - gameobject_get_number(object, "down")) * delta * 3
     z_speed = (gameobject_get_number(object, "forward") - gameobject_get_number(object, "back")) * delta * 3
     x_vel = math.cos(x_rot) * x_speed - math.sin(x_rot) * z_speed
+    y_vel = y_speed
     z_vel = math.sin(x_rot) * x_speed + math.cos(x_rot) * z_speed
-    gameobject_transform(object, x_vel, 0, z_vel)
+    gameobject_transform(object, x_vel, y_vel, z_vel)
 end
 
 function on_cursor_pos(scene, object, x, y)
@@ -45,6 +49,10 @@ function on_button_down(scene, object, button_code)
         gameobject_set_number(object, "left", 1)
     elseif button_code == "D" then
         gameobject_set_number(object, "right", 1)
+    elseif button_code == "E" then
+        gameobject_set_number(object, "up", 1)
+    elseif button_code == "Q" then
+        gameobject_set_number(object, "down", 1)
     end
 end
 
@@ -57,5 +65,9 @@ function on_button_up(scene, object, button_code)
         gameobject_set_number(object, "left", 0)
     elseif button_code == "D" then
         gameobject_set_number(object, "right", 0)
+    elseif button_code == "E" then
+        gameobject_set_number(object, "up", 0)
+    elseif button_code == "Q" then
+        gameobject_set_number(object, "down", 0)
     end
 end
