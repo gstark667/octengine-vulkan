@@ -6,7 +6,9 @@ extern "C"
 #include <lua.h>
 }
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -24,11 +26,19 @@ struct gameobject_t
     float scale = 1.0f;
     uint32_t textureIdx = 0;
 
+    glm::vec3 globalPos = glm::vec3(0.0f);
+    glm::vec3 globalRot = glm::vec3(0.0f);
+
+    gameobject_t *parent = NULL;
+
     std::set<script_t*> scripts;
 
     std::map<std::string, std::string> strings;
     std::map<std::string, lua_Integer> integers;
     std::map<std::string, lua_Number> numbers;
 };
+
+void gameobject_update_global(gameobject_t *gameobject);
+void gameobject_update(gameobject_t *gameobject, void *scene, float delta);
 
 #endif

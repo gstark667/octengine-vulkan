@@ -19,6 +19,7 @@ set(HEADERS
     include/image.h
     include/texture.h
     include/pipeline.h
+    include/gameobject.h
     include/buffer.h
     include/model.h
     include/camera.h
@@ -32,6 +33,7 @@ set(SOURCES
     src/image.cpp
     src/texture.cpp
     src/pipeline.cpp
+    src/gameobject.cpp
     src/buffer.cpp
     src/model.cpp
     src/camera.cpp

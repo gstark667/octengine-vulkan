@@ -16,10 +16,10 @@ void camera_update(camera_t *camera)
     if (!camera->object)
         return;
 
-    camera->view = glm::rotate(glm::mat4(1.0f), camera->object->rot.x, glm::vec3(1.0f, 0.0f, 0.0f));
-    camera->view *= glm::rotate(glm::mat4(1.0f), camera->object->rot.y, glm::vec3(0.0f, 1.0f, 0.0f));
-    camera->view *= glm::rotate(glm::mat4(1.0f), camera->object->rot.z, glm::vec3(0.0f, 0.0f, 1.0f));
-    camera->view *= glm::translate(glm::mat4(1.0f), camera->object->pos);
+    camera->view = glm::rotate(glm::mat4(1.0f), camera->object->globalRot.x, glm::vec3(1.0f, 0.0f, 0.0f));
+    camera->view *= glm::rotate(glm::mat4(1.0f), camera->object->globalRot.y, glm::vec3(0.0f, 1.0f, 0.0f));
+    camera->view *= glm::rotate(glm::mat4(1.0f), camera->object->globalRot.z, glm::vec3(0.0f, 0.0f, 1.0f));
+    camera->view *= glm::translate(glm::mat4(1.0f), camera->object->globalPos);
 }
 
 void camera_resize(camera_t *camera, int width, int height, float fov)

@@ -314,7 +314,7 @@ void model_load(model_t *model, std::string path)
 
     model->globalInverseTransform = scene->mRootNode->mTransformation;
     model->globalInverseTransform.Inverse();
-    
+
     model_load_node(model, scene->mRootNode);
 }
 
@@ -354,8 +354,8 @@ void model_copy_instance_buffer(model_t *model, std::vector<gameobject_t*> insta
     VkDeviceSize bufferSize = (sizeof(model_instance_t) * instances.size());
     for (size_t i = 0; i < instances.size(); ++i)
     {
-        model->instances[i].pos = instances[i]->pos;
-        model->instances[i].rot = instances[i]->rot;
+        model->instances[i].pos = instances[i]->globalPos;
+        model->instances[i].rot = instances[i]->globalRot;
         model->instances[i].scale = instances[i]->scale;
         model->instances[i].textureIdx = instances[i]->textureIdx;
     }

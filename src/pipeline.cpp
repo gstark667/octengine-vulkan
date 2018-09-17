@@ -381,10 +381,15 @@ void pipeline_update(pipeline_t *pipeline, float delta)
     {
         for (std::vector<gameobject_t*>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
         {
-            for (std::set<script_t*>::iterator it3 = (*it2)->scripts.begin(); it3 != (*it2)->scripts.end(); ++it3)
-            {
-                script_update(*it3, pipeline, *it2, delta);
-            }
+            gameobject_update(*it2, (void*)pipeline, delta);
+        }
+    }
+
+    for (std::map<std::string, std::vector<gameobject_t*>>::iterator it = pipeline->gameobjects.begin(); it != pipeline->gameobjects.end(); ++it)
+    {
+        for (std::vector<gameobject_t*>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
+        {
+            gameobject_update_global(*it2);
         }
     }
 

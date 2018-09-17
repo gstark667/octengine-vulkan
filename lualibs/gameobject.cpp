@@ -72,6 +72,16 @@ static int gameobject_set_scale(lua_State *L)
 }
 
 
+static int gameobject_set_parent(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    gameobject_t *parent = (gameobject_t*)lua_tointeger(L, 2);
+    object->parent = (gameobject_t*)parent;
+    std::cout << "set parent: " << (void*)object->parent << std::endl;
+    return 0;
+}
+
+
 static int gameobject_set_string(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
@@ -80,6 +90,7 @@ static int gameobject_set_string(lua_State *L)
     object->strings[name] = std::string(value);
     return 0;
 }
+
 
 static int gameobject_get_string(lua_State *L)
 {
@@ -137,6 +148,7 @@ int luaopen_gameobject(lua_State *L)
     lua_register(L, "gameobject_set_rotation", gameobject_set_rotation);
     lua_register(L, "gameobject_scale", gameobject_scale);
     lua_register(L, "gameobject_set_scale", gameobject_set_scale);
+    lua_register(L, "gameobject_set_parent", gameobject_set_parent);
     lua_register(L, "gameobject_set_string", gameobject_set_string);
     lua_register(L, "gameobject_get_string", gameobject_get_string);
     lua_register(L, "gameobject_set_integer", gameobject_set_integer);
