@@ -91,7 +91,7 @@ struct model_t
     std::vector<vertex_t> vertices;
     std::vector<uint16_t> indices;
     std::vector<bone_t> bones;
-    std::vector<gameobject_t> instances;
+    std::vector<model_instance_t> instances;
 
     size_t instanceCount = 0;
 

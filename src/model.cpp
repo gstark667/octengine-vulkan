@@ -20,7 +20,7 @@ VkVertexInputBindingDescription instance_get_binding_description()
 {
     VkVertexInputBindingDescription bindingDescription;
     bindingDescription.binding = 1;
-    bindingDescription.stride = sizeof(gameobject_t);
+    bindingDescription.stride = sizeof(model_instance_t);
     bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
 
     return bindingDescription;
@@ -336,7 +336,6 @@ void model_create_instance_buffer(model_t *model, VkDevice device, VkPhysicalDev
     std::vector<model_instance_t> temp;
     temp.push_back({});
     temp.push_back({});
-    model->instanceBuffer.count = 0;
     VkDeviceSize bufferSize = (sizeof(model_instance_t) * temp.size());
     buffer_create(&model->instanceBuffer, device, physicalDevice, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, bufferSize);
     buffer_copy(&model->instanceBuffer, device, physicalDevice, commandPool, graphicsQueue, temp.data(), bufferSize);
@@ -359,13 +358,13 @@ void model_copy_instance_buffer(model_t *model, std::vector<gameobject_t*> insta
         model->instances[i].rot = instances[i]->rot;
         model->instances[i].scale = instances[i]->scale;
         model->instances[i].textureIdx = instances[i]->textureIdx;
+        std::cout << instances[i]->pos.x << ":" << instances[i]->pos.y << ":" << instances[i]->pos.z << " " << instances[i]->rot.x << ":" << instances[i]->rot.y << ":" << instances[i]->rot.z << std::endl;
     }
 
     VkCommandBuffer commandBuffer = begin_single_time_commands(device, commandPool);
     buffer_stage(&model->instanceBuffer, &model->instanceStagingBuffer, device, commandBuffer, model->instances.data(), bufferSize);
     buffer_inline_copy(&model->instanceBuffer, &model->instanceStagingBuffer, commandBuffer);
     end_single_time_commands(device, commandPool, graphicsQueue, commandBuffer);
-    //buffer_copy(&model->instanceBuffer, device, physicalDevice, commandPool, graphicsQueue, model->instances.data(), bufferSize);
 }
 
 void model_create_buffers(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
@@ -377,6 +376,8 @@ void model_create_buffers(model_t *model, VkDevice device, VkPhysicalDevice phys
 
 void model_update_bone(model_t *model, bone_t *bone, float time, aiMatrix4x4 parentMatrix)
 {
+    if (bone == NULL)
+        return;
     bone->matrix = parentMatrix
         * interpolate_position(bone, time)
         * interpolate_rotation(bone, time)
@@ -398,14 +399,14 @@ void model_update(model_t *model, float delta)
 
 void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet)
 {
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
     VkBuffer buffers[] = {model->vertexBuffer.buffer, model->instanceBuffer.buffer};
-    VkDeviceSize offsets[] = {0, 0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 2, buffers, offsets);
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->vertexBuffer.buffer, offsets);
+    vkCmdBindVertexBuffers(commandBuffer, 1, 1, &model->instanceBuffer.buffer, offsets);
     vkCmdBindIndexBuffer(commandBuffer, model->indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
-
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
     std::cout << model->instances.size() << std::endl;
     vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model->indices.size()), model->instances.size(), 0, 0, 0);
