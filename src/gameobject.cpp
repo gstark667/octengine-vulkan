@@ -7,8 +7,6 @@ void gameobject_update_global(gameobject_t *gameobject)
     {
         gameobject_update_global(gameobject->parent);
 
-        //gameobject->globalRot = gameobject->parent->globalRot;
-
         glm::mat4 matrix = glm::rotate(glm::mat4(1.0f), gameobject->parent->rot.x, glm::vec3(1.0f, 0.0f, 0.0f));
         matrix *= glm::rotate(glm::mat4(1.0f), gameobject->parent->rot.y, glm::vec3(0.0f, 1.0f, 0.0f));
         matrix *= glm::rotate(glm::mat4(1.0f), gameobject->parent->rot.z, glm::vec3(0.0f, 0.0f, 1.0f));
@@ -17,6 +15,7 @@ void gameobject_update_global(gameobject_t *gameobject)
         glm::vec4 newPos = glm::vec4(gameobject->pos, 0.0f) * matrix;
 
         gameobject->globalPos = glm::vec3(newPos.x, newPos.y, newPos.z);
+        gameobject->globalRot = gameobject->rot + gameobject->parent->globalRot;
     }
     else
     {

@@ -246,7 +246,10 @@ void model_load(model_t *model, std::string path)
             vertex_t newVertex;
             newVertex.pos = {vertex[0], vertex[1], vertex[2]};
             newVertex.normal = {normals[0], normals[1], normals[2]};
-            newVertex.texCoord = {uv[0][vert][0], uv[0][vert][1]};
+            if (uv[0])
+                newVertex.texCoord = {uv[0][vert][0], uv[0][vert][1]};
+            else
+                newVertex.texCoord = {0, 0};
             newVertex.weights = {0.0f, 0.0f, 0.0f, 0.0f};
             newVertex.bones = {0, 0, 0, 0};
             model->vertices.push_back(newVertex);
@@ -393,7 +396,9 @@ void model_update(model_t *model, float delta)
     while (model->time > 2.5f)
         model->time -= 2.5f;
     // TODO make this pick the actual root bone (instead of assuming 0)
-    model_update_bone(model, &model->bones[0], model->time, aiMatrix4x4());
+    //std::cout << model->bones.size() << std::endl;
+    //if (model->bones.size() > 0)
+    //    model_update_bone(model, &model->bones[0], model->time, aiMatrix4x4());
 }
 
 void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet)
