@@ -2,8 +2,9 @@ require("scene")
 require("gameobject")
 
 function setup(scene, object)
-    camera = scene_add_gameobject(scene, "cube.dae")
+    camera = scene_add_gameobject(scene, "")
     scene_add_script(scene, camera, "camera.lua")
+    gameobject_transform(camera, 0, 0, 10)
 
     other1 = scene_add_gameobject(scene, "example.dae")
     scene_add_script(scene, other1, "test.lua")

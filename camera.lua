@@ -19,9 +19,9 @@ function update(scene, object, delta)
     y_rot = gameobject_get_number(object, "y_rot")
     gameobject_set_rotation(object, y_rot, x_rot, 0)
 
-    x_speed = (gameobject_get_number(object, "left") - gameobject_get_number(object, "right")) * delta * 3
+    x_speed = (gameobject_get_number(object, "right") - gameobject_get_number(object, "left")) * delta * 3
     y_speed = (gameobject_get_number(object, "up") - gameobject_get_number(object, "down")) * delta * 3
-    z_speed = (gameobject_get_number(object, "forward") - gameobject_get_number(object, "back")) * delta * 3
+    z_speed = (gameobject_get_number(object, "back") - gameobject_get_number(object, "forward")) * delta * 3
     x_vel = math.cos(x_rot) * x_speed - math.sin(x_rot) * z_speed
     y_vel = y_speed
     z_vel = math.sin(x_rot) * x_speed + math.cos(x_rot) * z_speed
