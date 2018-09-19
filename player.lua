@@ -13,7 +13,7 @@ function setup(scene, object)
     gameobject_set_integer(object, "camera", camera)
 
     gameobject_set_number(object, "acceleration", 100)
-    gameobject_set_number(object, "max_velocity", 10)
+    gameobject_set_number(object, "max_velocity", 5)
     gameobject_set_number(object, "jump_speed", 5)
 
     gameobject_set_number(object, "x_axis", 0)
@@ -116,4 +116,12 @@ function on_button_up(scene, object, button_code)
         x_axis = gameobject_get_number(object, "x_axis")
         gameobject_set_number(object, "x_axis", x_axis - 1)
     end
+end
+
+function on_collision_enter(scene, object, other)
+    print("collision enter")
+end
+
+function on_collision_exit(scene, object, other)
+    print("collision exit")
 end

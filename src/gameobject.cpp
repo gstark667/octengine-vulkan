@@ -38,3 +38,19 @@ void gameobject_update(gameobject_t *gameobject, void *scene, float delta)
     }
 }
 
+void gameobject_on_collision_enter(gameobject_t *gameobject, gameobject_t *other, void *scene)
+{
+    for (std::set<script_t*>::iterator it = gameobject->scripts.begin(); it != gameobject->scripts.end(); ++it)
+    {
+        script_on_collision_enter(*it, scene, gameobject, other);
+    }
+}
+
+void gameobject_on_collision_exit(gameobject_t *gameobject, gameobject_t *other, void *scene)
+{
+    for (std::set<script_t*>::iterator it = gameobject->scripts.begin(); it != gameobject->scripts.end(); ++it)
+    {
+        script_on_collision_exit(*it, scene, gameobject, other);
+    }
+}
+

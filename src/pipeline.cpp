@@ -386,7 +386,7 @@ void pipeline_update(pipeline_t *pipeline, float delta)
         }
     }
 
-    physics_world_update(&pipeline->world, delta);
+    physics_world_update(&pipeline->world, pipeline, delta);
 
     for (std::map<std::string, std::vector<gameobject_t*>>::iterator it = pipeline->gameobjects.begin(); it != pipeline->gameobjects.end(); ++it)
     {

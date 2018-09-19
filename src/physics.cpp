@@ -1,24 +1,9 @@
 #include "physics.h"
+#include "gameobject.h"
 
-#include <iostream>
-
-int i = 0;
-bool physics_collision_callback(btManifoldPoint& cp,const btCollisionObjectWrapper* obj1,int id1,int index1,const btCollisionObjectWrapper* obj2,int id2,int index2)
-{
-    std::cout << "added" << i << std::endl;
-    i += 1;
-    return false;
-}
-
-bool physics_contact_processed_callback(btManifoldPoint& cp, void* body0, void* body1)
-{
-    return false;
-}
 
 void physics_world_init(physics_world_t *world)
 {
-    gContactAddedCallback = physics_collision_callback;
-    gContactProcessedCallback = physics_contact_processed_callback;
     world->broadphase = new btDbvtBroadphase();
 
     world->collisionConfiguration = new btDefaultCollisionConfiguration();
@@ -30,9 +15,42 @@ void physics_world_init(physics_world_t *world)
     world->dynamicsWorld->setGravity(btVector3(0, -10.0f, 0));
 }
 
-void physics_world_update(physics_world_t *world, float delta)
+void physics_world_update(physics_world_t *world, void *scene, float delta)
 {
     world->dynamicsWorld->stepSimulation(delta, 10);
+
+    std::set<std::pair<void*, void*>> newCollisions;
+    size_t manifoldCount = world->dispatcher->getNumManifolds();
+    for (size_t i = 0; i < manifoldCount; ++i)
+    {
+        btPersistentManifold* contactManifold = world->dispatcher->getManifoldByIndexInternal(i);
+        btCollisionObject* obA = (btCollisionObject*)contactManifold->getBody0();
+        btCollisionObject* obB = (btCollisionObject*)contactManifold->getBody1();
+        void *a = (gameobject_t*)obA->getUserPointer();
+        void *b = (gameobject_t*)obB->getUserPointer();
+        
+        newCollisions.insert(std::pair<void*, void*>(a, b));
+    }
+
+    for (std::set<std::pair<void*, void*>>::iterator it = newCollisions.begin(); it != newCollisions.end(); ++it)
+    {
+        if (world->collisions.find(*it) == world->collisions.end())
+        {
+            gameobject_on_collision_enter((gameobject_t*)it->first, (gameobject_t*)it->second, scene);
+            gameobject_on_collision_enter((gameobject_t*)it->second, (gameobject_t*)it->first, scene);
+        }
+    }
+
+    for (std::set<std::pair<void*, void*>>::iterator it = world->collisions.begin(); it != world->collisions.end(); ++it)
+    {
+        if (newCollisions.find(*it) == newCollisions.end())
+        {
+            gameobject_on_collision_exit((gameobject_t*)it->first, (gameobject_t*)it->second, scene);
+            gameobject_on_collision_exit((gameobject_t*)it->second, (gameobject_t*)it->first, scene);
+        }
+    }
+
+    world->collisions = newCollisions;
 }
 
 void physics_world_add(physics_world_t *world, physics_object_t *object)
@@ -49,25 +67,25 @@ void physics_world_destroy(physics_world_t *world)
     delete world->broadphase;
 }
 
-void physics_object_init_box(physics_object_t *object, float mass, float x, float y, float z)
+void physics_object_init_box(physics_object_t *object, void *user, float mass, float x, float y, float z)
 {
     object->collisionShape = new btBoxShape(btVector3(x, y, z));
-    physics_object_init(object, mass);
+    physics_object_init(object, user, mass);
 }
 
-void physics_object_init_sphere(physics_object_t *object, float mass, float radius)
+void physics_object_init_sphere(physics_object_t *object, void *user, float mass, float radius)
 {
     object->collisionShape = new btSphereShape(radius);
-    physics_object_init(object, mass);
+    physics_object_init(object, user, mass);
 }
 
-void physics_object_init_capsule(physics_object_t *object, float mass, float radius, float height)
+void physics_object_init_capsule(physics_object_t *object, void *user, float mass, float radius, float height)
 {
     object->collisionShape = new btCapsuleShape(radius, height);
-    physics_object_init(object, mass);
+    physics_object_init(object, user, mass);
 }
 
-void physics_object_init(physics_object_t *object, float mass)
+void physics_object_init(physics_object_t *object, void *user, float mass)
 {
     object->motionState = new btDefaultMotionState(btTransform(
         btQuaternion(0, 0, 0, 1),
@@ -84,6 +102,7 @@ void physics_object_init(physics_object_t *object, float mass)
     object->rigidBody = new btRigidBody(rigidBodyCI);
     object->rigidBody->setCollisionFlags(object->rigidBody->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
     object->rigidBody->setActivationState(DISABLE_DEACTIVATION);
+    object->rigidBody->setUserPointer(user);
 }
 
 glm::vec3 physics_object_get_position(physics_object_t *object)

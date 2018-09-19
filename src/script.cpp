@@ -88,6 +88,34 @@ void script_on_button_up(script_t *script, void *scene, void *object, string but
     lua_pop(script->lua, 1);
 }
 
+void script_on_collision_enter(script_t *script, void *scene, void *object, void *other)
+{
+    lua_getglobal(script->lua, "on_collision_enter");
+    if (lua_isnil(script->lua, -1))
+        return;
+
+    lua_pushinteger(script->lua, (long long int)scene);
+    lua_pushinteger(script->lua, (long long int)object);
+    lua_pushinteger(script->lua, (long long int)other);
+    if (lua_pcall(script->lua, 3, 1, 0))
+        script_error(script, "on collision enter failed");
+    lua_pop(script->lua, 1);
+}
+
+void script_on_collision_exit(script_t *script, void *scene, void *object, void *other)
+{
+    lua_getglobal(script->lua, "on_collision_exit");
+    if (lua_isnil(script->lua, -1))
+        return;
+
+    lua_pushinteger(script->lua, (long long int)scene);
+    lua_pushinteger(script->lua, (long long int)object);
+    lua_pushinteger(script->lua, (long long int)other);
+    if (lua_pcall(script->lua, 3, 1, 0))
+        script_error(script, "on collision exit failed");
+    lua_pop(script->lua, 1);
+}
+
 void script_destroy(script_t *script)
 {
     lua_close(script->lua);

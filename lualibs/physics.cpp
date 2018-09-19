@@ -26,7 +26,7 @@ static int physics_init_box(lua_State *L)
     float y = lua_tonumber(L, 5);
     float z = lua_tonumber(L, 6);
     object->physics = (physics_object_t*)malloc(sizeof(physics_object_t));
-    physics_object_init_box(object->physics, mass, x, y, z);
+    physics_object_init_box(object->physics, object, mass, x, y, z);
     physics_object_set_position(object->physics, object->pos.x, object->pos.y, object->pos.z);
     physics_world_add(&scene->world, object->physics);
     return 0;
@@ -40,7 +40,7 @@ static int physics_init_capsule(lua_State *L)
     float radius = lua_tonumber(L, 4);
     float height = lua_tonumber(L, 5);
     object->physics = (physics_object_t*)malloc(sizeof(physics_object_t));
-    physics_object_init_capsule(object->physics, mass, radius, height);
+    physics_object_init_capsule(object->physics, object, mass, radius, height);
     physics_object_set_position(object->physics, object->pos.x, object->pos.y, object->pos.z);
     physics_world_add(&scene->world, object->physics);
     return 0;

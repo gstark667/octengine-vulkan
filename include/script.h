@@ -26,6 +26,8 @@ void script_update(script_t *script, void *scene, void *object, float delta);
 void script_on_cursor_pos(script_t *script, void *scene, void *object, double x, double y);
 void script_on_button_down(script_t *script, void *scene, void *object, std::string buttonCode);
 void script_on_button_up(script_t *script, void *scene, void *object, std::string buttonCode);
+void script_on_collision_enter(script_t *script, void *scene, void *object, void *other);
+void script_on_collision_exit(script_t *script, void *scene, void *object, void *other);
 void script_destroy(script_t *script);
 
 #endif
