@@ -43,15 +43,15 @@ void main() {
     mz[2] = vec3(0.0, 0.0, 1.0);
 
     // rotate around y
-    s = sin(instanceRot.y);
-    c = cos(instanceRot.y);
+    s = sin(-instanceRot.y);
+    c = cos(-instanceRot.y);
     my[0] = vec3(c, 0.0, s);
     my[1] = vec3(0.0, 1.0, 0.0);
     my[2] = vec3(-s, 0.0, c);
 
     // rot around x
-    s = sin(instanceRot.x);
-    c = cos(instanceRot.x);	
+    s = sin(-instanceRot.x);
+    c = cos(-instanceRot.x);	
 
     mx[0] = vec3(1.0, 0.0, 0.0);
     mx[1] = vec3(0.0, c, s);

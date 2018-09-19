@@ -32,6 +32,39 @@ static int physics_init_box(lua_State *L)
     return 0;
 }
 
+static int physics_init_capsule(lua_State *L)
+{
+    pipeline_t *scene = (pipeline_t*)lua_tointeger(L, 1);
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 2);
+    float mass = lua_tonumber(L, 3);
+    float radius = lua_tonumber(L, 4);
+    float height = lua_tonumber(L, 5);
+    object->physics = (physics_object_t*)malloc(sizeof(physics_object_t));
+    physics_object_init_capsule(object->physics, mass, radius, height);
+    physics_object_set_position(object->physics, object->pos.x, object->pos.y, object->pos.z);
+    physics_world_add(&scene->world, object->physics);
+    return 0;
+}
+
+static int physics_set_position(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    float x = lua_tonumber(L, 2);
+    float y = lua_tonumber(L, 3);
+    float z = lua_tonumber(L, 4);
+    physics_object_set_position(object->physics, x, y, z);
+    return 0;
+}
+
+static int physics_set_rotation(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    float x = lua_tonumber(L, 2);
+    float y = lua_tonumber(L, 3);
+    float z = lua_tonumber(L, 4);
+    physics_object_set_rotation(object->physics, x, y, z);
+    return 0;
+}
 
 static int physics_set_mass(lua_State *L)
 {
@@ -41,11 +74,59 @@ static int physics_set_mass(lua_State *L)
     return 0;
 }
 
+static int physics_get_velocity(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    glm::vec3 velocity = physics_object_get_velocity(object->physics);
+    lua_pushnumber(L, velocity.x);
+    lua_pushnumber(L, velocity.y);
+    lua_pushnumber(L, velocity.z);
+    return 3;
+}
+
+static int physics_set_velocity(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    float x = lua_tonumber(L, 2);
+    float y = lua_tonumber(L, 3);
+    float z = lua_tonumber(L, 4);
+    physics_object_set_velocity(object->physics, x, y, z);
+    return 0;
+}
+
+static int physics_apply_force(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    float fx = lua_tonumber(L, 2);
+    float fy = lua_tonumber(L, 3);
+    float fz = lua_tonumber(L, 4);
+    float px = lua_tonumber(L, 2);
+    float py = lua_tonumber(L, 3);
+    float pz = lua_tonumber(L, 4);
+    physics_object_apply_force(object->physics, fx, fy, fz, px, py, pz);
+    return 0;
+}
+
+static int physics_set_angular_factor(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    float factor = lua_tonumber(L, 2);
+    physics_object_set_angular_factor(object->physics, factor);
+    return 0;
+}
+
 
 int luaopen_physics(lua_State *L)
 {
     lua_register(L, "physics_init_box", physics_init_box);
+    lua_register(L, "physics_init_capsule", physics_init_capsule);
+    lua_register(L, "physics_set_position", physics_set_position);
+    lua_register(L, "physics_set_rotation", physics_set_rotation);
     lua_register(L, "physics_set_mass", physics_set_mass);
+    lua_register(L, "physics_get_velocity", physics_get_velocity);
+    lua_register(L, "physics_set_velocity", physics_set_velocity);
+    lua_register(L, "physics_apply_force", physics_apply_force);
+    lua_register(L, "physics_set_angular_factor", physics_set_angular_factor);
     return 0;
 }
 
