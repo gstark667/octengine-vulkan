@@ -1,10 +1,6 @@
 #ifndef H_APPLICATION
 #define H_APPLICATION
 
-//#define GLFW_INCLUDE_VULKAN
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-//#include <GLFW/glfw3.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_vulkan.h>
 #include <vulkan/vulkan.h>

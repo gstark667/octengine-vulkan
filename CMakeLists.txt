@@ -10,6 +10,7 @@ find_package(glfw3)
 find_package(glm)
 find_package(SDL2)
 find_package(assimp)
+find_package(Bullet)
 
 include_directories(include/)
 
@@ -18,6 +19,7 @@ set(HEADERS
     include/shader.h
     include/image.h
     include/texture.h
+    include/physics.h
     include/pipeline.h
     include/gameobject.h
     include/buffer.h
@@ -32,6 +34,7 @@ set(SOURCES
     src/shader.cpp
     src/image.cpp
     src/texture.cpp
+    src/physics.cpp
     src/pipeline.cpp
     src/gameobject.cpp
     src/buffer.cpp
@@ -63,12 +66,14 @@ ADD_CUSTOM_TARGET(
     DEPENDS shaders/ shaders/frag.spv shaders/vert.spv
 )
 
+include_directories(${BULLET_INCLUDE_DIR})
+
 ADD_LIBRARY(liboctengine SHARED ${SOURCES} ${HEADERS} ${SHADERS})
 set_target_properties(liboctengine PROPERTIES OUTPUT_NAME "octengine")
 
 add_executable(mainoctengine src/main.cpp)
 set_target_properties(mainoctengine PROPERTIES OUTPUT_NAME "octengine")
-target_link_libraries (mainoctengine ${CMAKE_THREAD_LIBS_INIT} vulkan glfw SDL2 assimp freeimage lua liboctengine)
+target_link_libraries (mainoctengine ${CMAKE_THREAD_LIBS_INIT} vulkan glfw SDL2 assimp freeimage lua liboctengine ${BULLET_LIBRARIES})
 target_include_directories (mainoctengine PUBLIC include/)
 add_dependencies(mainoctengine shader_files)
 
