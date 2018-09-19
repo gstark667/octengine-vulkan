@@ -17,6 +17,7 @@ extern "C"
 #include <map>
 
 #include "script.h"
+#include "physics.h"
 
 
 struct gameobject_t
@@ -30,6 +31,7 @@ struct gameobject_t
     glm::vec3 globalRot = glm::vec3(0.0f);
 
     gameobject_t *parent = NULL;
+    physics_object_t *physics = NULL;
 
     std::set<script_t*> scripts;
 

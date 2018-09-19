@@ -308,6 +308,8 @@ void pipeline_create(pipeline_t *pipeline, uint32_t width, uint32_t height, std:
     pipeline_create_uniform_buffer(pipeline, device, physicalDevice);
     pipeline_create_descriptor_set(pipeline, device);
     pipeline_create_graphics(pipeline, width, height, device);
+
+    physics_world_init(&pipeline->world);
 }
 
 void pipeline_recreate(pipeline_t *pipeline, uint32_t width, uint32_t height, VkDevice device, VkFormat colorFormat, VkFormat depthFormat)
@@ -329,7 +331,6 @@ void pipeline_add_model(pipeline_t *pipeline, std::string modelPath)
 
 gameobject_t *pipeline_add_gameobject(pipeline_t *pipeline, std::string modelPath)
 {
-    std::cout << "dirtying pipeline" << std::endl;
     pipeline->isDirty = true;
     if (modelPath != "" && pipeline->models.find(modelPath) == pipeline->models.end())
         pipeline_add_model(pipeline, modelPath);
@@ -358,7 +359,6 @@ void pipeline_add_script(pipeline_t *pipeline, gameobject_t *object, std::string
 
 void pipeline_render(pipeline_t *pipeline, VkCommandBuffer commandBuffer)
 {
-    std::cout << "rendering pipeline" << std::endl;
     pipeline->isDirty = false;
     for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
     {
@@ -386,6 +386,8 @@ void pipeline_update(pipeline_t *pipeline, float delta)
         }
     }
 
+    physics_world_update(&pipeline->world, delta);
+
     for (std::map<std::string, std::vector<gameobject_t*>>::iterator it = pipeline->gameobjects.begin(); it != pipeline->gameobjects.end(); ++it)
     {
         for (std::vector<gameobject_t*>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
@@ -403,11 +405,8 @@ void pipeline_update(pipeline_t *pipeline, float delta)
 
 void pipeline_load(pipeline_t *pipeline, std::string path)
 {
-    std::cout << "creating script" << std::endl;
     script_create(&pipeline->script, path);
-    std::cout << "setup script" << std::endl;
     script_setup(&pipeline->script, pipeline, NULL);
-    std::cout << "done with setup" << std::endl;
 }
 
 void pipeline_cleanup(pipeline_t *pipeline, VkDevice device)
@@ -423,6 +422,7 @@ void pipeline_cleanup(pipeline_t *pipeline, VkDevice device)
     vkDestroyDescriptorSetLayout(device, pipeline->descriptorSetLayout, nullptr);
     vkDestroyBuffer(device, pipeline->uniformBuffer, nullptr);
     vkFreeMemory(device, pipeline->uniformBufferMemory, nullptr);
+    physics_world_destroy(&pipeline->world);
 }
 
 void pipeline_on_cursor_pos(pipeline_t *pipeline, double x, double y)

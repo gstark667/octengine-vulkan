@@ -85,3 +85,7 @@ ADD_LIBRARY(scene SHARED lualibs/scene.cpp ${HEADERS})
 SET_TARGET_PROPERTIES(scene PROPERTIES PREFIX "")
 TARGET_LINK_LIBRARIES(scene lua liboctengine)
 
+ADD_LIBRARY(physics SHARED lualibs/physics.cpp ${HEADERS})
+SET_TARGET_PROPERTIES(physics PROPERTIES PREFIX "")
+TARGET_LINK_LIBRARIES(physics lua)
+

@@ -7,6 +7,7 @@
 #include "model.h" 
 #include "camera.h"
 #include "gameobject.h" 
+#include "physics.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -54,6 +55,8 @@ struct pipeline_t
 
     VkCommandPool commandPool;
     VkQueue graphicsQueue;
+
+    physics_world_t world;
 };
 
 void pipeline_create(pipeline_t *pipeline, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkFormat colorFormat, VkFormat depthFormat, VkCommandPool commandPool, VkQueue graphicsQueue);

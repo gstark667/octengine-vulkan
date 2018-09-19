@@ -60,7 +60,7 @@ void main() {
     mat3 rotMat = mz * my * mx;
 
     gl_Position = ubo.proj * ubo.view * mat4(rotMat) * boneTransform * vec4(inPosition, 1.0) + (ubo.proj * ubo.view * vec4(instancePos, 1.0));
-    gl_Position = ubo.proj * ubo.view * mat4(rotMat) * vec4(inPosition, 1.0) + (ubo.proj * ubo.view * vec4(instancePos, 1.0));
+    gl_Position = ubo.proj * ubo.view * mat4(rotMat) * vec4(inPosition * instanceScale, 1.0) + (ubo.proj * ubo.view * vec4(instancePos, 1.0));
     fragNormal = rotMat * mat3(boneTransform) * inNormal;
     fragNormal = rotMat * inNormal;
     fragColor = vec3(1.0, 1.0, 1.0);

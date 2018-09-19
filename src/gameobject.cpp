@@ -3,7 +3,12 @@
 
 void gameobject_update_global(gameobject_t *gameobject)
 {
-    if (gameobject->parent)
+    if (gameobject->physics)
+    {
+        gameobject->globalPos = physics_object_get_position(gameobject->physics);
+        gameobject->globalRot = physics_object_get_rotation(gameobject->physics);
+    }
+    else if (gameobject->parent)
     {
         gameobject_update_global(gameobject->parent);
 

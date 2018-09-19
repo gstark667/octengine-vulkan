@@ -77,7 +77,6 @@ static int gameobject_set_parent(lua_State *L)
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     gameobject_t *parent = (gameobject_t*)lua_tointeger(L, 2);
     object->parent = (gameobject_t*)parent;
-    std::cout << "set parent: " << (void*)object->parent << std::endl;
     return 0;
 }
 

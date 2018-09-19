@@ -10,151 +10,42 @@ extern "C"
 #include <iostream>
 
 #include "gameobject.h"
+#include "pipeline.h"
+#include "physics.h"
 
 
 extern "C"
 {
 
-static int gameobject_transform(lua_State *L)
+static int physics_init_box(lua_State *L)
 {
-    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
-    float x = lua_tonumber(L, 2);
-    float y = lua_tonumber(L, 3);
-    float z = lua_tonumber(L, 4);
-    object->pos += glm::vec3(x, y, z);
-    return 0;
-}
-
-static int gameobject_set_transform(lua_State *L)
-{
-    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
-    float x = lua_tonumber(L, 2);
-    float y = lua_tonumber(L, 3);
-    float z = lua_tonumber(L, 4);
-    object->pos = glm::vec3(x, y, z);
-    return 0;
-}
-
-static int gameobject_rotate(lua_State *L)
-{
-    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
-    float x = lua_tonumber(L, 2);
-    float y = lua_tonumber(L, 3);
-    float z = lua_tonumber(L, 4);
-    object->rot += glm::vec3(x, y, z);
-    return 0;
-}
-
-static int gameobject_set_rotation(lua_State *L)
-{
-    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
-    float x = lua_tonumber(L, 2);
-    float y = lua_tonumber(L, 3);
-    float z = lua_tonumber(L, 4);
-    object->rot = glm::vec3(x, y, z);
-    return 0;
-}
-
-static int gameobject_scale(lua_State *L)
-{
-    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
-    float scale = lua_tonumber(L, 2);
-    object->scale *= scale;
-    return 0;
-}
-
-static int gameobject_set_scale(lua_State *L)
-{
-    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
-    float scale = lua_tonumber(L, 2);
-    object->scale = scale;
+    pipeline_t *scene = (pipeline_t*)lua_tointeger(L, 1);
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 2);
+    float mass = lua_tonumber(L, 3);
+    float x = lua_tonumber(L, 4);
+    float y = lua_tonumber(L, 5);
+    float z = lua_tonumber(L, 6);
+    object->physics = (physics_object_t*)malloc(sizeof(physics_object_t));
+    physics_object_init_box(object->physics, mass, x, y, z);
+    physics_object_set_position(object->physics, object->pos.x, object->pos.y, object->pos.z);
+    physics_world_add(&scene->world, object->physics);
     return 0;
 }
 
 
-static int gameobject_set_parent(lua_State *L)
+static int physics_set_mass(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
-    gameobject_t *parent = (gameobject_t*)lua_tointeger(L, 2);
-    object->parent = (gameobject_t*)parent;
-    std::cout << "set parent: " << (void*)object->parent << std::endl;
+    float mass = lua_tonumber(L, 2);
+    physics_object_set_mass(object->physics, mass);
     return 0;
 }
 
 
-static int gameobject_set_string(lua_State *L)
+int luaopen_physics(lua_State *L)
 {
-    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
-    const char *name = lua_tostring(L, 2);
-    const char *value = lua_tostring(L, 3);
-    object->strings[name] = std::string(value);
-    return 0;
-}
-
-
-static int gameobject_get_string(lua_State *L)
-{
-    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
-    const char *name = lua_tostring(L, 2);
-    std::string value = object->strings[name];
-    lua_pushstring(L, value.c_str());
-    return 1;
-}
-
-
-static int gameobject_set_integer(lua_State *L)
-{
-    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
-    const char *name = lua_tostring(L, 2);
-    lua_Integer value = lua_tointeger(L, 3);
-    object->integers[name] = value;
-    return 0;
-}
-
-static int gameobject_get_integer(lua_State *L)
-{
-    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
-    const char *name = lua_tostring(L, 2);
-    lua_Integer value = object->integers[name];
-    lua_pushinteger(L, value);
-    return 1;
-}
-
-
-static int gameobject_set_number(lua_State *L)
-{
-    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
-    const char *name = lua_tostring(L, 2);
-    lua_Number value = lua_tonumber(L, 3);
-    object->numbers[name] = value;
-    return 0;
-}
-
-static int gameobject_get_number(lua_State *L)
-{
-    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
-    const char *name = lua_tostring(L, 2);
-    lua_Number value = object->numbers[name];
-    lua_pushnumber(L, value);
-    return 1;
-}
-
-
-int luaopen_gameobject(lua_State *L)
-{
-    lua_register(L, "gameobject_transform", gameobject_transform);
-    lua_register(L, "gameobject_set_transform", gameobject_set_transform);
-    lua_register(L, "gameobject_rotate", gameobject_rotate);
-    lua_register(L, "gameobject_set_rotation", gameobject_set_rotation);
-    lua_register(L, "gameobject_scale", gameobject_scale);
-    lua_register(L, "gameobject_set_scale", gameobject_set_scale);
-    lua_register(L, "gameobject_set_parent", gameobject_set_parent);
-    lua_register(L, "gameobject_set_string", gameobject_set_string);
-    lua_register(L, "gameobject_get_string", gameobject_get_string);
-    lua_register(L, "gameobject_set_integer", gameobject_set_integer);
-    lua_register(L, "gameobject_get_integer", gameobject_get_integer);
-    lua_register(L, "gameobject_set_number", gameobject_set_number);
-    lua_register(L, "gameobject_get_number", gameobject_get_number);
+    lua_register(L, "physics_init_box", physics_init_box);
+    lua_register(L, "physics_set_mass", physics_set_mass);
     return 0;
 }
 
