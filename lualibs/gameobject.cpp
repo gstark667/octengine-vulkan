@@ -152,6 +152,28 @@ static int gameobject_get_number(lua_State *L)
 }
 
 
+static int gameobject_set_texture(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    object->textureIdx = lua_tointeger(L, 2);
+    return 0;
+}
+
+static int gameobject_set_normal(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    object->textureIdx = lua_tointeger(L, 2);
+    return 0;
+}
+
+static int gameobject_set_pbr(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    object->textureIdx = lua_tointeger(L, 2);
+    return 0;
+}
+
+
 int EXPORT luaopen_gameobject(lua_State *L)
 {
     lua_register(L, "gameobject_transform", gameobject_transform);
@@ -168,6 +190,9 @@ int EXPORT luaopen_gameobject(lua_State *L)
     lua_register(L, "gameobject_get_integer", gameobject_get_integer);
     lua_register(L, "gameobject_set_number", gameobject_set_number);
     lua_register(L, "gameobject_get_number", gameobject_get_number);
+    lua_register(L, "gameobject_set_texture", gameobject_set_texture);
+    lua_register(L, "gameobject_set_normal", gameobject_set_normal);
+    lua_register(L, "gameobject_set_pbr", gameobject_set_pbr);
     return 0;
 }
 
