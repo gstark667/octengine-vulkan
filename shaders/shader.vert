@@ -22,6 +22,7 @@ layout(location = 8) in int instanceTex;
 layout(location = 9) out vec3 fragNormal;
 layout(location = 10) out vec3 fragColor;
 layout(location = 11) out vec2 fragTexCoord;
+layout(location = 12) out int fragTexIdx;
 
 out gl_PerVertex {
     vec4 gl_Position;
@@ -65,4 +66,5 @@ void main() {
     fragNormal = rotMat * inNormal;
     fragColor = vec3(1.0, 1.0, 1.0);
     fragTexCoord = inTexCoord;
+    fragTexIdx = instanceTex;
 }
