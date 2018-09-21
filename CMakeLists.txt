@@ -6,7 +6,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -Wall -DGLM_FORCE_RADIANS 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(glfw3)
+find_package(Vulkan)
 find_package(glm)
 find_package(SDL2)
 find_package(assimp)

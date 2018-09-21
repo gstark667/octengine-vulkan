@@ -5,6 +5,12 @@ extern "C"
 #include <lualib.h>
 }
 
+#ifdef _WIN32
+#define EXPORT __stdcall __declspec(dllexport)
+#else
+#define EXPORT
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
@@ -116,7 +122,7 @@ static int physics_set_angular_factor(lua_State *L)
 }
 
 
-int luaopen_physics(lua_State *L)
+int EXPORT luaopen_physics(lua_State *L)
 {
     lua_register(L, "physics_init_box", physics_init_box);
     lua_register(L, "physics_init_capsule", physics_init_capsule);

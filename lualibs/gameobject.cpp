@@ -5,6 +5,12 @@ extern "C"
 #include <lualib.h>
 }
 
+#ifdef _WIN32
+#define EXPORT __stdcall __declspec(dllexport)
+#else
+#define EXPORT
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
@@ -146,7 +152,7 @@ static int gameobject_get_number(lua_State *L)
 }
 
 
-int luaopen_gameobject(lua_State *L)
+int EXPORT luaopen_gameobject(lua_State *L)
 {
     lua_register(L, "gameobject_transform", gameobject_transform);
     lua_register(L, "gameobject_set_transform", gameobject_set_transform);

@@ -5,6 +5,12 @@ extern "C"
 #include <lualib.h>
 }
 
+#ifdef _WIN32
+#define EXPORT __stdcall __declspec(dllexport)
+#else
+#define EXPORT
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
@@ -41,7 +47,7 @@ static int scene_set_camera(lua_State *L)
     return 0;
 }
 
-int luaopen_scene(lua_State *L)
+int EXPORT luaopen_scene(lua_State *L)
 {
     lua_register(L, "scene_add_gameobject", scene_add_gameobject);
     lua_register(L, "scene_add_script", scene_add_script);
