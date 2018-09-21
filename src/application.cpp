@@ -482,7 +482,7 @@ void application_create_command_pool(application_t *app) {
 
 // create depth resources
 void application_create_depth_resources(application_t *app) {
-    image_create(&app->depthImage, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    image_create(&app->depthImage, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, 1, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     image_create_view(&app->depthImage, app->device, app->depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
     image_transition_layout(&app->depthImage, app->device, app->commandPool, app->graphicsQueue, app->depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
@@ -690,7 +690,8 @@ void application_init_vulkan(application_t *app) {
 
     application_create_command_pool(app);
 
-    texture_load(&app->pipeline.texture, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "example.png");
+    texture_add(&app->pipeline.texture, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "example.png");
+    texture_add(&app->pipeline.texture, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "example2.png");
     app->depthFormat = application_find_depth_format(app);
     pipeline_create(&app->pipeline, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue);
     /*gameobject_t *obj = pipeline_add_gameobject(&app->pipeline, "example.dae");

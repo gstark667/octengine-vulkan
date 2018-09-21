@@ -6,7 +6,7 @@
 int main()
 {
     application_t app;
-    app.enableValidationLayers = false;
+    app.enableValidationLayers = true;
     app.windowWidth = 800;
     app.windowHeight = 600;
     app.windowWidth = 1280;

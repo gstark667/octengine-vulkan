@@ -92,8 +92,6 @@ function update(scene, object, delta)
     cur_y = cur_y + gravity * delta + y_axis * jump_speed
     cur_vel = math.sqrt(cur_x * cur_x + cur_z * cur_z)
 
-    print(cur_vel)
-
     input_vel = math.sqrt(x_axis * x_axis + z_axis * z_axis)
     if input_vel > 1 then
         x_axis = x_axis / input_vel
