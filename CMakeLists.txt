@@ -21,6 +21,7 @@ set(HEADERS
     include/texture.h
     include/physics.h
     include/pipeline.h
+    include/scene.h
     include/gameobject.h
     include/buffer.h
     include/framebuffer.h
@@ -37,6 +38,7 @@ set(SOURCES
     src/texture.cpp
     src/physics.cpp
     src/pipeline.cpp
+    src/scene.cpp
     src/gameobject.cpp
     src/buffer.cpp
     src/framebuffer.cpp

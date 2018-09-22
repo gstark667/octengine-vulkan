@@ -38,6 +38,30 @@ void gameobject_update(gameobject_t *gameobject, void *scene, float delta)
     }
 }
 
+void gameobject_on_cursor_pos(gameobject_t *gameobject, void *scene, double x, double y)
+{
+    for (std::set<script_t*>::iterator it = gameobject->scripts.begin(); it != gameobject->scripts.end(); ++it)
+    {
+        script_on_cursor_pos(*it, scene, gameobject, x, y);
+    }
+}
+
+void gameobject_on_button_down(gameobject_t *gameobject, void *scene, std::string buttonCode)
+{
+    for (std::set<script_t*>::iterator it = gameobject->scripts.begin(); it != gameobject->scripts.end(); ++it)
+    {
+        script_on_button_down(*it, scene, gameobject, buttonCode);
+    }
+}
+
+void gameobject_on_button_up(gameobject_t *gameobject, void *scene, std::string buttonCode)
+{
+    for (std::set<script_t*>::iterator it = gameobject->scripts.begin(); it != gameobject->scripts.end(); ++it)
+    {
+        script_on_button_up(*it, scene, gameobject, buttonCode);
+    }
+}
+
 void gameobject_on_collision_enter(gameobject_t *gameobject, gameobject_t *other, void *scene)
 {
     for (std::set<script_t*>::iterator it = gameobject->scripts.begin(); it != gameobject->scripts.end(); ++it)

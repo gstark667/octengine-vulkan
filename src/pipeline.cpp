@@ -308,8 +308,6 @@ void pipeline_create(pipeline_t *pipeline, uint32_t width, uint32_t height, std:
     pipeline_create_uniform_buffer(pipeline, device, physicalDevice);
     pipeline_create_descriptor_set(pipeline, device);
     pipeline_create_graphics(pipeline, width, height, device);
-
-    physics_world_init(&pipeline->world);
 }
 
 void pipeline_recreate(pipeline_t *pipeline, uint32_t width, uint32_t height, VkDevice device, VkFormat colorFormat, VkFormat depthFormat)
@@ -322,99 +320,8 @@ void pipeline_recreate(pipeline_t *pipeline, uint32_t width, uint32_t height, Vk
     pipeline_create_render_pass(pipeline, device, colorFormat, depthFormat);
 }
 
-void pipeline_add_model(pipeline_t *pipeline, std::string modelPath)
-{
-    pipeline->models[modelPath] = {};
-    model_load(&pipeline->models[modelPath], modelPath);
-    model_create_buffers(&pipeline->models[modelPath], pipeline->device, pipeline->physicalDevice, pipeline->commandPool, pipeline->graphicsQueue);
-}
-
-gameobject_t *pipeline_add_gameobject(pipeline_t *pipeline, std::string modelPath)
-{
-    pipeline->isDirty = true;
-    if (modelPath != "" && pipeline->models.find(modelPath) == pipeline->models.end())
-        pipeline_add_model(pipeline, modelPath);
-
-    gameobject_t *temp = new gameobject_t();
-    pipeline->tempGameobjects[modelPath].push_back(temp);
-    return temp;
-}
-
-void pipeline_add_script(pipeline_t *pipeline, gameobject_t *object, std::string scriptPath)
-{
-    script_t *script = NULL;
-    if (pipeline->scripts.find(scriptPath) == pipeline->scripts.end())
-    {
-        script = new script_t();
-        script_create(script, scriptPath);
-        script_setup(script, pipeline, object);
-    }
-    else
-    {
-        script = pipeline->scripts[scriptPath];
-    }
-
-    object->scripts.insert(script);
-}
-
-void pipeline_render(pipeline_t *pipeline, VkCommandBuffer commandBuffer)
-{
-    pipeline->isDirty = false;
-    for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
-    {
-        model_render(&it->second, commandBuffer, pipeline->layout, pipeline->pipeline, pipeline->descriptorSet);
-    }
-}
-
-void pipeline_update(pipeline_t *pipeline, float delta)
-{
-    for (std::map<std::string, std::vector<gameobject_t*>>::iterator it = pipeline->tempGameobjects.begin(); it != pipeline->tempGameobjects.end(); ++it)
-    {
-        for (std::vector<gameobject_t*>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
-        {
-            pipeline->gameobjects[it->first].push_back(*it2);
-        }
-        it->second.clear();
-    }
-    pipeline->tempGameobjects.clear();
-
-    for (std::map<std::string, std::vector<gameobject_t*>>::iterator it = pipeline->gameobjects.begin(); it != pipeline->gameobjects.end(); ++it)
-    {
-        for (std::vector<gameobject_t*>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
-        {
-            gameobject_update(*it2, (void*)pipeline, delta);
-        }
-    }
-
-    physics_world_update(&pipeline->world, pipeline, delta);
-
-    for (std::map<std::string, std::vector<gameobject_t*>>::iterator it = pipeline->gameobjects.begin(); it != pipeline->gameobjects.end(); ++it)
-    {
-        for (std::vector<gameobject_t*>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
-        {
-            gameobject_update_global(*it2);
-        }
-    }
-
-    for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
-    {
-        model_update(&it->second, delta);
-        model_copy_instance_buffer(&it->second, pipeline->gameobjects[it->first], pipeline->device, pipeline->physicalDevice, pipeline->commandPool, pipeline->graphicsQueue);
-    }
-}
-
-void pipeline_load(pipeline_t *pipeline, std::string path)
-{
-    script_create(&pipeline->script, path);
-    script_setup(&pipeline->script, pipeline, NULL);
-}
-
 void pipeline_cleanup(pipeline_t *pipeline, VkDevice device)
 {
-    for (std::map<std::string, model_t>::iterator it = pipeline->models.begin(); it != pipeline->models.end(); ++it)
-    {
-        model_cleanup(&it->second, device);
-    }
     vkDestroyPipeline(device, pipeline->pipeline, nullptr);
     vkDestroyPipelineLayout(device, pipeline->layout, nullptr);
     vkDestroyRenderPass(device, pipeline->renderPass, nullptr);
@@ -422,50 +329,5 @@ void pipeline_cleanup(pipeline_t *pipeline, VkDevice device)
     vkDestroyDescriptorSetLayout(device, pipeline->descriptorSetLayout, nullptr);
     vkDestroyBuffer(device, pipeline->uniformBuffer, nullptr);
     vkFreeMemory(device, pipeline->uniformBufferMemory, nullptr);
-    physics_world_destroy(&pipeline->world);
-}
-
-void pipeline_on_cursor_pos(pipeline_t *pipeline, double x, double y)
-{
-
-    for (std::map<std::string, std::vector<gameobject_t*>>::iterator it = pipeline->gameobjects.begin(); it != pipeline->gameobjects.end(); ++it)
-    {
-        for (std::vector<gameobject_t*>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
-        {
-            for (std::set<script_t*>::iterator it3 = (*it2)->scripts.begin(); it3 != (*it2)->scripts.end(); ++it3)
-            {
-                script_on_cursor_pos(*it3, pipeline, *it2, x, y);
-            }
-        }
-    }
-}
-
-void pipeline_on_button_down(pipeline_t *pipeline, std::string buttonCode)
-{
-
-    for (std::map<std::string, std::vector<gameobject_t*>>::iterator it = pipeline->gameobjects.begin(); it != pipeline->gameobjects.end(); ++it)
-    {
-        for (std::vector<gameobject_t*>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
-        {
-            for (std::set<script_t*>::iterator it3 = (*it2)->scripts.begin(); it3 != (*it2)->scripts.end(); ++it3)
-            {
-                script_on_button_down(*it3, pipeline, *it2, buttonCode);
-            }
-        }
-    }
-}
-
-void pipeline_on_button_up(pipeline_t *pipeline, std::string buttonCode)
-{
-    for (std::map<std::string, std::vector<gameobject_t*>>::iterator it = pipeline->gameobjects.begin(); it != pipeline->gameobjects.end(); ++it)
-    {
-        for (std::vector<gameobject_t*>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
-        {
-            for (std::set<script_t*>::iterator it3 = (*it2)->scripts.begin(); it3 != (*it2)->scripts.end(); ++it3)
-            {
-                script_on_button_up(*it3, pipeline, *it2, buttonCode);
-            }
-        }
-    }
 }
 

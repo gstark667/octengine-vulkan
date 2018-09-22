@@ -16,6 +16,8 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+struct model_t;
+
 #include "gameobject.h"
 #include "buffer.h"
 

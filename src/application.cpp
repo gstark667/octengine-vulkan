@@ -46,7 +46,7 @@ void application_init_window(application_t *app) {
         SDL_WINDOW_VULKAN
     );
 
-    camera_resize(&app->pipeline.camera, app->windowWidth, app->windowHeight, 90.0f);
+    camera_resize(&app->scene.camera, app->windowWidth, app->windowHeight, 90.0f);
 
     SDL_SetWindowGrab(app->window, SDL_TRUE);
     SDL_SetRelativeMouseMode(SDL_TRUE);
@@ -534,7 +534,8 @@ void application_create_command_buffers(application_t *app) {
 
         vkCmdBeginRenderPass(app->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        pipeline_render(&app->pipeline, app->commandBuffers[i]);
+        //pipeline_render(&app->pipeline, app->commandBuffers[i]);
+        scene_render(&app->scene, app->commandBuffers[i], app->pipeline.layout, app->pipeline.pipeline, app->pipeline.descriptorSet);
 
         vkCmdEndRenderPass(app->commandBuffers[i]);
 
@@ -568,11 +569,12 @@ void application_update_uniforms(application_t *app)
     lastTime = std::chrono::high_resolution_clock::now();
     total += delta;
 
-    pipeline_update(&app->pipeline, delta);
+    //pipeline_update(&app->pipeline, delta);
+    scene_update(&app->scene, delta);
 
-    camera_update(&app->pipeline.camera);
-    app->ubo.view = app->pipeline.camera.view;
-    app->ubo.proj = app->pipeline.camera.proj;
+    camera_update(&app->scene.camera);
+    app->ubo.view = app->scene.camera.view;
+    app->ubo.proj = app->scene.camera.proj;
 }
 
 void application_copy_uniforms(application_t *app)
@@ -645,11 +647,10 @@ void application_cleanup_swap_chain(application_t *app) {
 // recreate swapchain
 void application_recreate_swap_chain(application_t *app) {
     int width, height; 
-    //glfwGetWindowSize(app->window, &width, &height);
     SDL_GetWindowSize(app->window, &width, &height);
     if (width == 0 || height == 0)
         return;
-    camera_resize(&app->pipeline.camera, width, height, 90.0f);
+    camera_resize(&app->scene.camera, width, height, 90.0f);
 
     vkDeviceWaitIdle(app->device);
 
@@ -678,23 +679,10 @@ void application_init_vulkan(application_t *app) {
     texture_add(&app->pipeline.texture, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "normal.png");
     app->depthFormat = application_find_depth_format(app);
     pipeline_create(&app->pipeline, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue);
-    /*gameobject_t *obj = pipeline_add_gameobject(&app->pipeline, "example.dae");
-    gameobject_t *obj2 = pipeline_add_gameobject(&app->pipeline, "example.dae");
-    pipeline_add_script(&app->pipeline, obj, "test.lua");
-    pipeline_add_script(&app->pipeline, obj2, "camera.lua");
-    //pipeline_add_gameobject(&app->pipeline, "cube.dae");
-    //pipeline_add_gameobject(&app->pipeline, "cube.dae");*/
+    scene_create(&app->scene, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
 
     application_create_depth_resources(app);
     application_create_frame_buffers(app);
-
-    //script_create(&script, "test.lua");
-    //script_setup(&script);
-    //scene_create(&app->scene, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
-    //inst = scene_add_model(&app->scene, "example.dae", "example.png", "shaders/vert.spv", "shaders/frag.spv");
-    //model_load(&app->model, "example.dae");
-    //model_create_buffers(&app->model, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
-
     application_update_uniforms(app);
     application_copy_uniforms(app);
     application_create_command_buffers(app);
@@ -703,7 +691,7 @@ void application_init_vulkan(application_t *app) {
 
 void application_main_loop(application_t *app) {
     //while (!glfwWindowShouldClose(app->window)) {
-    pipeline_load(&app->pipeline, "scene_0.lua");
+    scene_load(&app->scene, "scene_0.lua");
     bool running = true;
     while (running) {
         int x = 0;
@@ -738,17 +726,20 @@ void application_main_loop(application_t *app) {
         }
 
         if (x != 0 || y != 0)
-            pipeline_on_cursor_pos(&app->pipeline, (double)x, (double)y);
+            scene_on_cursor_pos(&app->scene, (double)x, (double)y);
+            //pipeline_on_cursor_pos(&app->pipeline, (double)x, (double)y);
 
         for (auto it = downs.begin(); it != downs.end(); ++it)
-            pipeline_on_button_down(&app->pipeline, *it);
+            scene_on_button_down(&app->scene, *it);
+            //pipeline_on_button_down(&app->pipeline, *it);
         for (auto it = ups.begin(); it != ups.end(); ++it)
-            pipeline_on_button_up(&app->pipeline, *it);
+            scene_on_button_up(&app->scene, *it);
+            //pipeline_on_button_up(&app->pipeline, *it);
 
         application_update_uniforms(app);
         application_copy_uniforms(app);
 
-        if (app->pipeline.isDirty)
+        if (app->scene.isDirty)
         {
             std::cout << "making render" << std::endl;
             application_create_command_buffers(app);
@@ -766,6 +757,7 @@ void application_cleanup(application_t *app) {
 
     pipeline_cleanup(&app->pipeline, app->device);
     texture_cleanup(&app->pipeline.texture, app->device);
+    scene_cleanup(&app->scene);
     //model_cleanup(&app->model, app->device);
 
     vkDestroySemaphore(app->device, app->renderFinishedSemaphore, nullptr);

@@ -19,6 +19,10 @@ extern "C"
 #include "script.h"
 #include "physics.h"
 
+struct gameobject_t;
+
+#include "model.h"
+
 
 struct gameobject_t
 {
@@ -30,6 +34,7 @@ struct gameobject_t
     glm::vec3 globalPos = glm::vec3(0.0f);
     glm::vec3 globalRot = glm::vec3(0.0f);
 
+    model_t *model = NULL;
     gameobject_t *parent = NULL;
     physics_object_t *physics = NULL;
 
@@ -42,6 +47,9 @@ struct gameobject_t
 
 void gameobject_update_global(gameobject_t *gameobject);
 void gameobject_update(gameobject_t *gameobject, void *scene, float delta);
+void gameobject_on_cursor_pos(gameobject_t *gameobject, void *scene, double x, double y);
+void gameobject_on_button_down(gameobject_t *gameobject, void *scene, std::string buttonCode);
+void gameobject_on_button_up(gameobject_t *gameobject, void *scene, std::string buttonCode);
 void gameobject_on_collision_enter(gameobject_t *gameobject, gameobject_t *other, void *scene);
 void gameobject_on_collision_exit(gameobject_t *gameobject, gameobject_t *other, void *scene);
 

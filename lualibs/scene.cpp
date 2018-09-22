@@ -15,43 +15,63 @@ extern "C"
 #include <stdio.h>
 #include <iostream>
 
-#include "pipeline.h"
+#include "scene.h"
 
 
 extern "C"
 {
 
-static int scene_add_gameobject(lua_State *L)
+static int libscene_add_gameobject(lua_State *L)
 {
-    pipeline_t *scene = (pipeline_t*)lua_tointeger(L, 1);
-    const char *name = lua_tostring(L, 2);
-    gameobject_t *object = pipeline_add_gameobject(scene, name);
+    scene_t *scene = (scene_t*)lua_tointeger(L, 1);
+    gameobject_t *object = scene_add_gameobject(scene);
     lua_pushinteger(L, (lua_Integer)object);
     return 1;
 }
 
-static int scene_add_script(lua_State *L)
+static int libscene_add_script(lua_State *L)
 {
-    pipeline_t *scene = (pipeline_t*)lua_tointeger(L, 1);
+    scene_t *scene = (scene_t*)lua_tointeger(L, 1);
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 2);
     const char *name = lua_tostring(L, 3);
-    pipeline_add_script(scene, object, name);
+    scene_add_script(scene, object, name);
     return 0;
 }
 
-static int scene_set_camera(lua_State *L)
+static int libscene_set_camera(lua_State *L)
 {
-    pipeline_t *scene = (pipeline_t*)lua_tointeger(L, 1);
+    scene_t *scene = (scene_t*)lua_tointeger(L, 1);
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 2);
     scene->camera.object = object;
     return 0;
 }
 
+static int libscene_set_model(lua_State *L)
+{
+    scene_t *scene = (scene_t*)lua_tointeger(L, 1);
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 2);
+    const char *model = lua_tostring(L, 3);
+    scene_set_model(scene, object, model);
+    return 0;
+}
+
+static int libscene_set_texture(lua_State *L)
+{
+    scene_t *scene = (scene_t*)lua_tointeger(L, 1);
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 2);
+    const char *texture = lua_tostring(L, 3);
+    scene_set_texture(scene, object, texture);
+    return 0;
+}
+
+
 int EXPORT luaopen_scene(lua_State *L)
 {
-    lua_register(L, "scene_add_gameobject", scene_add_gameobject);
-    lua_register(L, "scene_add_script", scene_add_script);
-    lua_register(L, "scene_set_camera", scene_set_camera);
+    lua_register(L, "scene_add_gameobject", libscene_add_gameobject);
+    lua_register(L, "scene_add_script", libscene_add_script);
+    lua_register(L, "scene_set_camera", libscene_set_camera);
+    lua_register(L, "scene_set_model", libscene_set_model);
+    lua_register(L, "scene_set_texture", libscene_set_texture);
     return 0;
 }
 

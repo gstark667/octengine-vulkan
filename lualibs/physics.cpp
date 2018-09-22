@@ -16,7 +16,7 @@ extern "C"
 #include <iostream>
 
 #include "gameobject.h"
-#include "pipeline.h"
+#include "scene.h"
 #include "physics.h"
 
 
@@ -25,7 +25,7 @@ extern "C"
 
 static int physics_init_box(lua_State *L)
 {
-    pipeline_t *scene = (pipeline_t*)lua_tointeger(L, 1);
+    scene_t *scene = (scene_t*)lua_tointeger(L, 1);
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 2);
     float mass = lua_tonumber(L, 3);
     float x = lua_tonumber(L, 4);
@@ -40,7 +40,7 @@ static int physics_init_box(lua_State *L)
 
 static int physics_init_capsule(lua_State *L)
 {
-    pipeline_t *scene = (pipeline_t*)lua_tointeger(L, 1);
+    scene_t *scene = (scene_t*)lua_tointeger(L, 1);
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 2);
     float mass = lua_tonumber(L, 3);
     float radius = lua_tonumber(L, 4);

@@ -52,15 +52,26 @@ bool texture_add(texture_t *texture, VkDevice device, VkPhysicalDevice physicalD
     if (texture->data[path].height > texture->height)
         texture->height = texture->data[path].height;
 
-    if (texture->data.size() == 2)
     texture_load(texture, device, physicalDevice, commandPool, graphicsQueue);
 
     return true;
 }
 
 
+size_t texture_get(texture_t *texture, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, std::string path)
+{
+    if (texture->data.find(path) == texture->data.end())
+        texture_add(texture, device, physicalDevice, commandPool, graphicsQueue, path);
+
+    return texture->data[path].index;
+}
+
+
 void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
+    if (texture->image.image)
+        texture_cleanup(texture, device);
+        
     size_t size = 0;
     for (std::map<std::string, texture_data_t>::iterator it = texture->data.begin(); it != texture->data.end(); ++it)
     {
@@ -91,6 +102,7 @@ void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physical
         std::cout << "coyping: " << offset << ", " << it->second.data.size() << ", " << size << std::endl;
         memcpy(data + offset, (void*)it->second.data.data(), it->second.data.size());
         offset += it->second.data.size();
+        it->second.index = layer;
         ++layer;
     }
     vkUnmapMemory(device, stagingBufferMemory);

@@ -6,9 +6,9 @@ struct image_t
 {
     uint32_t width, height;
     uint32_t layers;
-    VkImage image;
-    VkDeviceMemory memory;
-    VkImageView view;
+    VkImage image = NULL;
+    VkDeviceMemory memory = NULL;
+    VkImageView view = NULL;
 };
 
 void image_create(image_t *image, VkDevice device, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, uint32_t layers, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
