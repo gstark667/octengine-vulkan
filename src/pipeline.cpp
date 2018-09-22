@@ -7,40 +7,65 @@
 
 #include <iostream>
 
-void pipeline_create_render_pass(pipeline_t *pipeline, VkDevice device, VkFormat colorFormat, VkFormat depthFormat) {
-    VkAttachmentDescription colorAttachment = {};
-    colorAttachment.format = colorFormat;
-    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-    VkAttachmentReference colorAttachmentRef = {};
-    colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice device, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlagBits usage, VkCommandPool commandPool, VkQueue graphicsQueue)
+{
+    attachment->format = format;
+    attachment->usage = usage;
 
-    VkAttachmentDescription depthAttachment = {};
-    depthAttachment.format = depthFormat;
-    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    image_create(&attachment->image, device, physicalDevice, width, height, 1, format, VK_IMAGE_TILING_OPTIMAL, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    image_create_view(&attachment->image, device, format, VK_IMAGE_ASPECT_DEPTH_BIT);
+    if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+    {
+        attachment->layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        attachment->finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    }
+    else
+    {
+        attachment->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        attachment->finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    }
+    image_transition_layout(&attachment->image, device, commandPool, graphicsQueue, format, VK_IMAGE_LAYOUT_UNDEFINED, attachment->layout);
+}
 
-    VkAttachmentReference depthAttachmentRef = {};
-    depthAttachmentRef.attachment = 1;
-    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+void pipeline_create_render_pass(pipeline_t *pipeline, VkFormat colorFormat, VkFormat depthFormat) {
+    std::cout << "making render pass: " << pipeline->attachments.size() << std::endl;
+    std::vector<VkAttachmentDescription> descriptions;
+    std::vector<VkAttachmentReference> colorRefs;
+    VkAttachmentReference depthRef;
+    for (std::vector<pipeline_attachment_t>::iterator it = pipeline->attachments.begin(); it != pipeline->attachments.end(); ++it)
+    {
+        VkAttachmentDescription attachment = {};
+        attachment.format = it->format;
+        attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+        attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachment.finalLayout = it->finalLayout;
+
+        VkAttachmentReference attachmentRef = {};
+        attachmentRef.attachment = descriptions.size();
+        attachmentRef.layout = it->layout;
+        if (it->usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+        {
+            std::cout << "depth" << std::endl;
+            depthRef = attachmentRef;
+        }
+        else
+        {
+            std::cout << "color" << std::endl;
+            colorRefs.push_back(attachmentRef);
+        }
+        descriptions.push_back(attachment);
+    }
 
     VkSubpassDescription subpass = {};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentRef;
-    subpass.pDepthStencilAttachment = &depthAttachmentRef;
+    subpass.colorAttachmentCount = colorRefs.size();
+    subpass.pColorAttachments = colorRefs.data();
+    subpass.pDepthStencilAttachment = &depthRef;
 
     VkSubpassDependency dependency = {};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -50,17 +75,16 @@ void pipeline_create_render_pass(pipeline_t *pipeline, VkDevice device, VkFormat
     dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-    std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
     VkRenderPassCreateInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-    renderPassInfo.pAttachments = attachments.data();
+    renderPassInfo.attachmentCount = descriptions.size();
+    renderPassInfo.pAttachments = descriptions.data();
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
 
-    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &pipeline->renderPass) != VK_SUCCESS) {
+    if (vkCreateRenderPass(pipeline->device, &renderPassInfo, nullptr, &pipeline->renderPass) != VK_SUCCESS) {
         throw std::runtime_error("failed to create render pass!");
     }
 }
@@ -295,14 +319,16 @@ void pipeline_create_graphics(pipeline_t *pipeline, uint32_t width, uint32_t hei
     vkDestroyShaderModule(device, shader.vertShaderModule, nullptr);
 }
 
-void pipeline_create(pipeline_t *pipeline, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkFormat colorFormat, VkFormat depthFormat, VkCommandPool commandPool, VkQueue graphicsQueue) {
+void pipeline_create(pipeline_t *pipeline, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkFormat colorFormat, VkFormat depthFormat, VkCommandPool commandPool, VkQueue graphicsQueue, std::vector<pipeline_attachment_t> attachments) {
     pipeline->device = device;
     pipeline->physicalDevice = physicalDevice;
     pipeline->vertShader = vertShader;
     pipeline->fragShader = fragShader;
     pipeline->commandPool = commandPool;
     pipeline->graphicsQueue = graphicsQueue;
-    pipeline_create_render_pass(pipeline, device, colorFormat, depthFormat);
+    std::cout << attachments.size() << std::endl;
+    pipeline->attachments = attachments;
+    pipeline_create_render_pass(pipeline, colorFormat, depthFormat);
     pipeline_create_descriptor_set_layout(pipeline, device);
     pipeline_create_descriptor_pool(pipeline, device);
     pipeline_create_uniform_buffer(pipeline, device, physicalDevice);
@@ -317,7 +343,7 @@ void pipeline_recreate(pipeline_t *pipeline, uint32_t width, uint32_t height, Vk
     vkDestroyRenderPass(device, pipeline->renderPass, nullptr);
 
     pipeline_create_graphics(pipeline, width, height, device);
-    pipeline_create_render_pass(pipeline, device, colorFormat, depthFormat);
+    pipeline_create_render_pass(pipeline, colorFormat, depthFormat);
 }
 
 void pipeline_cleanup(pipeline_t *pipeline, VkDevice device)

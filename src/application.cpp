@@ -467,9 +467,23 @@ void application_create_command_pool(application_t *app) {
 
 // create depth resources
 void application_create_depth_resources(application_t *app) {
-    image_create(&app->depthImage, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, 1, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    image_create_view(&app->depthImage, app->device, app->depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-    image_transition_layout(&app->depthImage, app->device, app->commandPool, app->graphicsQueue, app->depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    pipeline_attachment_t colorAttachment;
+    colorAttachment.image.image = app->swapChainImages[0];
+    colorAttachment.image.view = app->swapChainImageViews[0];
+    colorAttachment.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    colorAttachment.format = app->swapChainImageFormat;
+    colorAttachment.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    pipeline_attachment_t depthAttachment;
+    pipeline_attachment_create(&depthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+    app->depthImage = depthAttachment.image;
+
+    app->attachments.push_back(colorAttachment);
+    app->attachments.push_back(depthAttachment);
+    //image_create(&app->depthImage, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, 1, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    //image_create_view(&app->depthImage, app->device, app->depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    //image_transition_layout(&app->depthImage, app->device, app->commandPool, app->graphicsQueue, app->depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
 // create frame buffers
@@ -678,10 +692,10 @@ void application_init_vulkan(application_t *app) {
     texture_add(&app->pipeline.texture, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "default.png");
     texture_add(&app->pipeline.texture, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "normal.png");
     app->depthFormat = application_find_depth_format(app);
-    pipeline_create(&app->pipeline, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue);
+    application_create_depth_resources(app);
+    pipeline_create(&app->pipeline, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue, app->attachments);
     scene_create(&app->scene, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
 
-    application_create_depth_resources(app);
     application_create_frame_buffers(app);
     application_update_uniforms(app);
     application_copy_uniforms(app);
