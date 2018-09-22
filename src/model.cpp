@@ -336,15 +336,12 @@ void model_create_index_buffer(model_t *model, VkDevice device, VkPhysicalDevice
 
 void model_create_instance_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-    std::vector<model_instance_t> temp;
-    temp.push_back({});
-    temp.push_back({});
-    VkDeviceSize bufferSize = (sizeof(model_instance_t) * temp.size());
+    VkDeviceSize bufferSize = 0;
     buffer_create(&model->instanceBuffer, device, physicalDevice, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, bufferSize);
-    buffer_copy(&model->instanceBuffer, device, physicalDevice, commandPool, graphicsQueue, temp.data(), bufferSize);
+    buffer_copy(&model->instanceBuffer, device, physicalDevice, commandPool, graphicsQueue, NULL, bufferSize);
 
     buffer_create(&model->instanceStagingBuffer, device, physicalDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, bufferSize);
-    buffer_copy(&model->instanceStagingBuffer, device, physicalDevice, commandPool, graphicsQueue, temp.data(), bufferSize);
+    buffer_copy(&model->instanceStagingBuffer, device, physicalDevice, commandPool, graphicsQueue, NULL, bufferSize);
 }
 
 void model_copy_instance_buffer(model_t *model, std::vector<gameobject_t*> instances, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)

@@ -12,7 +12,11 @@ void buffer_create(buffer_t *buffer, VkDevice device, VkPhysicalDevice physicalD
     buffer->size = size;
     buffer->physicalDevice = physicalDevice;
     if (size == 0)
-        size = 1;
+    {
+        buffer->buffer = NULL;
+        buffer->memory = NULL;
+        return;
+    }
 
     VkBufferCreateInfo bufferInfo = {};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -48,6 +52,9 @@ void buffer_resize(buffer_t *buffer, VkDevice device, size_t size)
 
 void buffer_copy(buffer_t *buffer, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, void *data, size_t size)
 {
+    if (size == 0)
+        return;
+
     if (buffer->size != size)
     {
         buffer_resize(buffer, device, size);
@@ -68,6 +75,8 @@ void buffer_copy(buffer_t *buffer, VkDevice device, VkPhysicalDevice physicalDev
 
 void buffer_stage(buffer_t *dst, buffer_t *src, VkDevice device, VkCommandBuffer commandBuffer, void *data, size_t size)
 {
+    if (size == 0)
+        return;
     if (dst->size != size)
     {
         buffer_resize(dst, device, size);
@@ -94,7 +103,9 @@ void buffer_inline_copy(buffer_t *dst, buffer_t *src, VkCommandBuffer commandBuf
 void buffer_destroy(buffer_t *buffer, VkDevice device)
 {
     buffer->size = 0;
-    vkDestroyBuffer(device, buffer->buffer, nullptr);
-    vkFreeMemory(device, buffer->memory, nullptr);
+    if (buffer->buffer)
+        vkDestroyBuffer(device, buffer->buffer, nullptr);
+    if (buffer->memory)
+        vkFreeMemory(device, buffer->memory, nullptr);
 }
 
