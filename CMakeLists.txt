@@ -23,6 +23,7 @@ set(HEADERS
     include/pipeline.h
     include/gameobject.h
     include/buffer.h
+    include/framebuffer.h
     include/model.h
     include/camera.h
     include/script.h
@@ -38,6 +39,7 @@ set(SOURCES
     src/pipeline.cpp
     src/gameobject.cpp
     src/buffer.cpp
+    src/framebuffer.cpp
     src/model.cpp
     src/camera.cpp
     src/script.cpp

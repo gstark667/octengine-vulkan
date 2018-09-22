@@ -61,7 +61,11 @@ bool texture_add(texture_t *texture, VkDevice device, VkPhysicalDevice physicalD
 
 void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-    size_t size = texture->width * texture->height * texture->data.size() * 4;
+    size_t size = 0;
+    for (std::map<std::string, texture_data_t>::iterator it = texture->data.begin(); it != texture->data.end(); ++it)
+    {
+        size += it->second.width * it->second.height * 4;
+    }
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
     create_buffer(device, physicalDevice, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
@@ -118,7 +122,7 @@ void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physical
     samplerInfo.maxAnisotropy = 16;
     samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     samplerInfo.unnormalizedCoordinates = VK_FALSE;
-    samplerInfo.compareEnable = VK_FALSE;
+    samplerInfo.compareEnable = VK_TRUE;
     samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     samplerInfo.mipLodBias = 0.0f;

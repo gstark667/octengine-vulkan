@@ -11,6 +11,14 @@ layout(location = 12) flat in int fragTexIdx;
 layout(location = 0) out vec4 outColor;
 
 void main() {
-    float shade = max(dot(fragNormal, vec3(2, 2, 0)), 0.5);
-    outColor = texture(texSampler, vec3(fragTexCoord, fragTexIdx)) * vec4(fragColor.x * shade, fragColor.y * shade, fragColor.z * shade, 1.0f);
+    vec3 normal = (texture(texSampler, vec3(fragTexCoord, 1)).rgb * 2 - 1);
+
+    vec3 tangent = normalize(normal - fragNormal * dot(normal, fragNormal));
+    vec3 bitangent = cross(tangent, fragNormal);
+    mat3 TBN = mat3(tangent, bitangent, fragNormal);
+
+    normal = TBN * normal;
+
+    float shade = max(dot(normal, normalize(vec3(1, 1, 1))), 0.5);
+    outColor = texture(texSampler, vec3(fragTexCoord, fragTexIdx)) * shade;
 }

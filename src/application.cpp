@@ -34,16 +34,6 @@ swapchain_support_t application_query_swap_chain_support(application_t *app, VkP
     return details;
 }
 
-// init window
-/*void on_window_resized(GLFWwindow *window, int width, int height) {
-    std::cout << "resize" << std::endl;
-    application_t *app = (application_t*)glfwGetWindowUserPointer(window);
-    app->windowWidth = width;
-    app->windowHeight = height;
-    app->pipeline.camera.width = width;
-    app->pipeline.camera.height = height;
-    application_recreate_swap_chain(app);
-}*/
 
 void application_init_window(application_t *app) {
     SDL_Init(SDL_INIT_VIDEO);
@@ -58,7 +48,6 @@ void application_init_window(application_t *app) {
 
     camera_resize(&app->pipeline.camera, app->windowWidth, app->windowHeight, 90.0f);
 
-    //SDL_ShowCursor(SDL_DISABLE);
     SDL_SetWindowGrab(app->window, SDL_TRUE);
     SDL_SetRelativeMouseMode(SDL_TRUE);
 }
@@ -93,7 +82,7 @@ std::vector<const char*> application_get_required_extensions(application_t *app)
 {
     uint32_t sdlExtensionCount = 0;
     const char** sdlExtensions;
-    //glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
     SDL_Vulkan_GetInstanceExtensions(app->window, &sdlExtensionCount, NULL);
     sdlExtensions = new const char *[sdlExtensionCount];
     SDL_Vulkan_GetInstanceExtensions(app->window, &sdlExtensionCount, sdlExtensions);
@@ -186,10 +175,6 @@ void application_setup_debug_callback(application_t *app) {
 void application_create_surface(application_t *app)
 {
     SDL_Vulkan_CreateSurface(app->window, app->instance, &app->surface);
-    //if (glfwCreateWindowSurface(app->instance, app->window, nullptr, &app->surface) != VK_SUCCESS)
-    //{
-    //    throw std::runtime_error("failed to create window surface!");
-    //}
 }
 
 // pick physical device
@@ -549,7 +534,6 @@ void application_create_command_buffers(application_t *app) {
 
         vkCmdBeginRenderPass(app->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        //scene_render(&app->scene, app->commandBuffers[i], app->pipeline.layout, app->pipeline.pipeline, app->pipeline.descriptorSet);
         pipeline_render(&app->pipeline, app->commandBuffers[i]);
 
         vkCmdEndRenderPass(app->commandBuffers[i]);
@@ -690,8 +674,8 @@ void application_init_vulkan(application_t *app) {
 
     application_create_command_pool(app);
 
-    texture_add(&app->pipeline.texture, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "example.png");
-    texture_add(&app->pipeline.texture, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "example2.png");
+    texture_add(&app->pipeline.texture, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "default.png");
+    texture_add(&app->pipeline.texture, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "normal.png");
     app->depthFormat = application_find_depth_format(app);
     pipeline_create(&app->pipeline, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue);
     /*gameobject_t *obj = pipeline_add_gameobject(&app->pipeline, "example.dae");
