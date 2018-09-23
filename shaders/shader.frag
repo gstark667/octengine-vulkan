@@ -19,6 +19,6 @@ void main() {
 
     normal = TBN * normal;
 
-    float shade = max(dot(normal, normalize(vec3(1, 1, 1))), 0.5);
+    float shade = max(dot(normal, vec3(0.8, 0.8, 0.8)), 0.5);
     outColor = texture(texSampler, vec3(fragTexCoord, fragTexIdx)) * shade;
 }

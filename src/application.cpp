@@ -483,22 +483,20 @@ void application_create_depth_resources(application_t *app) {
     app->attachments.push_back(depthAttachment);
 
 
-    pipeline_attachment_t albedo;
-    pipeline_attachment_create(&albedo, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+    pipeline_attachment_create(&app->albedo, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
 
     pipeline_attachment_t normal;
-    pipeline_attachment_create(&normal, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+    pipeline_attachment_create(&app->normal, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
 
     pipeline_attachment_t position;
-    pipeline_attachment_create(&position, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+    pipeline_attachment_create(&app->position, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
 
-    pipeline_attachment_t offscreenDepthAttachment;
-    pipeline_attachment_create(&offscreenDepthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+    pipeline_attachment_create(&app->offscreenDepthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
 
-    app->offscreenAttachments.push_back(albedo);
-    app->offscreenAttachments.push_back(normal);
-    app->offscreenAttachments.push_back(position);
-    app->offscreenAttachments.push_back(offscreenDepthAttachment);
+    app->offscreenAttachments.push_back(app->albedo);
+    app->offscreenAttachments.push_back(app->normal);
+    app->offscreenAttachments.push_back(app->position);
+    app->offscreenAttachments.push_back(app->offscreenDepthAttachment);
 }
 
 // create frame buffers
@@ -692,7 +690,7 @@ void application_recreate_swap_chain(application_t *app) {
 
     application_create_swap_chain(app);
     application_create_image_views(app);
-    pipeline_recreate(&app->pipeline, app->windowWidth, app->windowHeight, app->device, app->swapChainImageFormat, app->depthFormat);
+    pipeline_recreate(&app->pipeline, app->windowWidth, app->windowHeight, app->device);
     application_create_depth_resources(app);
     application_create_frame_buffers(app);
     application_create_command_buffers(app);
@@ -721,8 +719,8 @@ void application_init_vulkan(application_t *app) {
     descriptor_set_add_texture(&app->descriptorSet, &app->scene.textures, 1, false);
     descriptor_set_create(&app->descriptorSet);
 
-    pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue, app->attachments, false);
-    //pipeline_create(&app->offscreenPipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/offscreen_vert.spv", "shaders/offscreen_frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue, app->offscreenAttachments, true);
+    pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->attachments, false);
+    pipeline_create(&app->offscreenPipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/offscreen_vert.spv", "shaders/offscreen_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->offscreenAttachments, true);
 
     application_create_frame_buffers(app);
     application_update_uniforms(app);
@@ -796,7 +794,8 @@ void application_main_loop(application_t *app) {
 void application_cleanup(application_t *app) {
     application_cleanup_swap_chain(app);
 
-    pipeline_cleanup(&app->pipeline, app->device);
+    pipeline_cleanup(&app->pipeline);
+    pipeline_cleanup(&app->offscreenPipeline);
     scene_cleanup(&app->scene);
     descriptor_set_cleanup(&app->descriptorSet);
     //model_cleanup(&app->model, app->device);

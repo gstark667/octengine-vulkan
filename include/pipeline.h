@@ -26,19 +26,12 @@ struct pipeline_attachment_t
 
 struct pipeline_t
 {
-    texture_t texture;
-
     std::string vertShader, fragShader;
 
     VkDevice device;
     VkPhysicalDevice physicalDevice;
 
-    /*VkDescriptorPool descriptorPool;
-    VkDescriptorSet descriptorSet;
-    VkDescriptorSetLayout descriptorSetLayout;
-
-    VkBuffer uniformBuffer;
-    VkDeviceMemory uniformBufferMemory;*/
+    uint32_t width, height;
 
     descriptor_set_t *descriptorSet;
 
@@ -49,6 +42,8 @@ struct pipeline_t
     VkCommandPool commandPool;
     VkQueue graphicsQueue;
 
+    VkFramebuffer framebuffer = NULL;
+
     std::vector<pipeline_attachment_t> attachments;
     bool offscreen;
 };
@@ -57,8 +52,8 @@ void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice devi
 std::vector<VkImageView> pipeline_attachment_views(std::vector<pipeline_attachment_t> attachments);
 void pipeline_attachment_destroy(pipeline_attachment_t *attachment, VkDevice device);
 
-void pipeline_create(pipeline_t *pipeline, descriptor_set_t *descriptorSet, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkFormat colorFormat, VkFormat depthFormat, VkCommandPool commandPool, VkQueue graphicsQueue, std::vector<pipeline_attachment_t> attachments, bool offscreen);
-void pipeline_recreate(pipeline_t *pipeline, uint32_t width, uint32_t height, VkDevice device, VkFormat colorFormat, VkFormat depthFormat);
-void pipeline_cleanup(pipeline_t *pipeline, VkDevice device);
+void pipeline_create(pipeline_t *pipeline, descriptor_set_t *descriptorSet, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, std::vector<pipeline_attachment_t> attachments, bool offscreen);
+void pipeline_recreate(pipeline_t *pipeline, uint32_t width, uint32_t height, VkDevice device);
+void pipeline_cleanup(pipeline_t *pipeline);
 
 #endif
