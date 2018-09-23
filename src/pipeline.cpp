@@ -14,18 +14,38 @@ void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice devi
     attachment->usage = usage;
 
     image_create(&attachment->image, device, physicalDevice, width, height, 1, format, VK_IMAGE_TILING_OPTIMAL, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    image_create_view(&attachment->image, device, format, VK_IMAGE_ASPECT_DEPTH_BIT);
+    VkImageAspectFlags aspectFlags;
     if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
     {
+        std::cout << "depth" << std::endl;
         attachment->layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         attachment->finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        aspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
     }
     else
     {
+        std::cout << "color" << std::endl;
         attachment->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         attachment->finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
     }
-    image_transition_layout(&attachment->image, device, commandPool, graphicsQueue, format, VK_IMAGE_LAYOUT_UNDEFINED, attachment->layout);
+    image_create_view(&attachment->image, device, format, aspectFlags);
+    //image_transition_layout(&attachment->image, device, commandPool, graphicsQueue, format, VK_IMAGE_LAYOUT_UNDEFINED, attachment->layout);
+}
+
+std::vector<VkImageView> pipeline_attachment_views(std::vector<pipeline_attachment_t> attachments)
+{
+    std::vector<VkImageView> output;
+    for (std::vector<pipeline_attachment_t>::iterator it = attachments.begin(); it != attachments.end(); ++it)
+    {
+        output.push_back(it->image.view);
+    }
+    return output;
+}
+
+void pipeline_attachment_destroy(pipeline_attachment_t *attachment, VkDevice device)
+{
+    image_cleanup(&attachment->image, device);
 }
 
 void pipeline_create_render_pass(pipeline_t *pipeline, VkFormat colorFormat, VkFormat depthFormat) {

@@ -80,6 +80,7 @@ struct application_t
     image_t depthImage;
 
     pipeline_t pipeline;
+    pipeline_t offscreenPipeline;
 
     model_t model;
     texture_t texture;
@@ -90,6 +91,7 @@ struct application_t
     std::vector<VkCommandBuffer> commandBuffers;
 
     std::vector<pipeline_attachment_t> attachments;
+    std::vector<pipeline_attachment_t> offscreenAttachments;
 
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;

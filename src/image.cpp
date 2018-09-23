@@ -4,6 +4,7 @@
 #include "util.h"
 
 #include <stdexcept>
+#include <iostream>
 
 
 bool has_stencil_component(VkFormat format) {
@@ -59,7 +60,6 @@ void image_create_view(image_t *image, VkDevice device, VkFormat format, VkImage
     else
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
     viewInfo.format = format;
-    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     viewInfo.subresourceRange.baseMipLevel = 0;
     viewInfo.subresourceRange.levelCount = 1;
     viewInfo.subresourceRange.baseArrayLayer = 0;
@@ -107,6 +107,7 @@ void image_transition_layout(image_t *image, VkDevice device, VkCommandPool comm
         sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
     } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        std::cout << "shader read only" << std::endl;
         barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 

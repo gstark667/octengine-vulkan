@@ -481,9 +481,24 @@ void application_create_depth_resources(application_t *app) {
 
     app->attachments.push_back(colorAttachment);
     app->attachments.push_back(depthAttachment);
-    //image_create(&app->depthImage, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, 1, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    //image_create_view(&app->depthImage, app->device, app->depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-    //image_transition_layout(&app->depthImage, app->device, app->commandPool, app->graphicsQueue, app->depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+
+    pipeline_attachment_t albedo;
+    pipeline_attachment_create(&albedo, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+
+    pipeline_attachment_t normal;
+    pipeline_attachment_create(&normal, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+
+    pipeline_attachment_t position;
+    pipeline_attachment_create(&position, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+
+    pipeline_attachment_t offscreenDepthAttachment;
+    pipeline_attachment_create(&offscreenDepthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+
+    app->offscreenAttachments.push_back(albedo);
+    app->offscreenAttachments.push_back(normal);
+    app->offscreenAttachments.push_back(position);
+    app->offscreenAttachments.push_back(offscreenDepthAttachment);
 }
 
 // create frame buffers
@@ -491,7 +506,7 @@ void application_create_frame_buffers(application_t *app) {
     app->swapChainFramebuffers.resize(app->swapChainImageViews.size());
 
     for (size_t i = 0; i < app->swapChainImageViews.size(); i++) {
-        std::array<VkImageView, 2> attachments= {
+        std::array<VkImageView, 2> views = {
             app->swapChainImageViews[i],
             app->depthImage.view
         };
@@ -499,8 +514,8 @@ void application_create_frame_buffers(application_t *app) {
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = app->pipeline.renderPass;
-        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-        framebufferInfo.pAttachments = attachments.data();
+        framebufferInfo.attachmentCount = views.size();
+        framebufferInfo.pAttachments = views.data();
         framebufferInfo.width = app->swapChainExtent.width;
         framebufferInfo.height = app->swapChainExtent.height;
         framebufferInfo.layers = 1;
@@ -644,6 +659,11 @@ void application_draw_frame(application_t *app) {
 // cleanup swapchain
 void application_cleanup_swap_chain(application_t *app) {
     image_cleanup(&app->depthImage, app->device);
+
+    for (std::vector<pipeline_attachment_t>::iterator it = app->offscreenAttachments.begin(); it != app->offscreenAttachments.end(); ++it)
+    {
+        pipeline_attachment_destroy(&(*it), app->device);
+    }
 
     for (auto framebuffer: app->swapChainFramebuffers) {
         vkDestroyFramebuffer(app->device, framebuffer, nullptr);
