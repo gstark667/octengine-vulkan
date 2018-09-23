@@ -401,9 +401,5 @@ void pipeline_cleanup(pipeline_t *pipeline, VkDevice device)
     vkDestroyPipeline(device, pipeline->pipeline, nullptr);
     vkDestroyPipelineLayout(device, pipeline->layout, nullptr);
     vkDestroyRenderPass(device, pipeline->renderPass, nullptr);
-    vkDestroyDescriptorPool(device, pipeline->descriptorSet->descriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(device, pipeline->descriptorSet->descriptorSetLayout, nullptr);
-    vkDestroyBuffer(device, pipeline->descriptorSet->uniformBuffer, nullptr);
-    vkFreeMemory(device, pipeline->descriptorSet->uniformBufferMemory, nullptr);
 }
 
