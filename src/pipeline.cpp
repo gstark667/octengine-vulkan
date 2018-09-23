@@ -320,6 +320,47 @@ void pipeline_create(pipeline_t *pipeline, descriptor_set_t *descriptorSet, uint
     }
 }
 
+void pipeline_begin_render(pipeline_t *pipeline, VkCommandBuffer commandBuffer)
+{
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+    VkRenderPassBeginInfo renderPassInfo = {};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = pipeline->renderPass;
+    renderPassInfo.framebuffer = pipeline->framebuffer;
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = {pipeline->width, pipeline->height};
+
+    std::vector<VkClearValue> clearValues;
+    for (auto it = pipeline->attachments.begin(); it != pipeline->attachments.end(); ++it)
+    {
+        VkClearValue clearValue;
+        if (it->usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+            clearValue.depthStencil = {1.0f, 0};
+        else
+            clearValue.color = {0.0f, 0.0f, 0.0f, 1.0f};
+        clearValues.push_back(clearValue);
+    }
+
+    renderPassInfo.clearValueCount = clearValues.size();
+    renderPassInfo.pClearValues = clearValues.data();
+
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+};
+
+void pipeline_end_render(pipeline_t *pipeline, VkCommandBuffer commandBuffer)
+{
+    vkCmdEndRenderPass(commandBuffer);
+
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to record command buffer!");
+    }
+}
+
 void pipeline_recreate(pipeline_t *pipeline, uint32_t width, uint32_t height, VkDevice device)
 {
     vkDestroyPipeline(device, pipeline->pipeline, nullptr);

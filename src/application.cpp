@@ -539,36 +539,10 @@ void application_create_command_buffers(application_t *app) {
     }
 
     for (size_t i = 0; i < app->commandBuffers.size(); i++) {
-        VkCommandBufferBeginInfo beginInfo = {};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-
-        vkBeginCommandBuffer(app->commandBuffers[i], &beginInfo);
-
-        VkRenderPassBeginInfo renderPassInfo = {};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = app->pipeline.renderPass;
-        renderPassInfo.framebuffer = app->swapChainFramebuffers[i];
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = app->swapChainExtent;
-
-        std::array<VkClearValue, 2> clearValues = {};
-        clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
-        clearValues[1].depthStencil = {1.0f, 0};
-
-        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-        renderPassInfo.pClearValues = clearValues.data();
-
-        vkCmdBeginRenderPass(app->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        //pipeline_render(&app->pipeline, app->commandBuffers[i]);
+        app->pipeline.framebuffer = app->swapChainFramebuffers[i];
+        pipeline_begin_render(&app->pipeline, app->commandBuffers[i]);
         scene_render(&app->scene, app->commandBuffers[i], app->pipeline.layout, app->pipeline.pipeline, app->descriptorSet.descriptorSet);
-
-        vkCmdEndRenderPass(app->commandBuffers[i]);
-
-        if (vkEndCommandBuffer(app->commandBuffers[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to record command buffer!");
-        }
+        pipeline_end_render(&app->pipeline, app->commandBuffers[i]);
     }
 }
 
@@ -707,8 +681,6 @@ void application_init_vulkan(application_t *app) {
 
     application_create_command_pool(app);
 
-    //texture_add(&app->pipeline.texture, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "default.png");
-    //texture_add(&app->pipeline.texture, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "normal.png");
     app->depthFormat = application_find_depth_format(app);
     application_create_depth_resources(app);
 
@@ -718,9 +690,13 @@ void application_init_vulkan(application_t *app) {
     descriptor_set_add_buffer(&app->descriptorSet, sizeof(uniform_buffer_object_t), 0, true);
     descriptor_set_add_texture(&app->descriptorSet, &app->scene.textures, 1, false);
     descriptor_set_create(&app->descriptorSet);
-
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->attachments, false);
-    pipeline_create(&app->offscreenPipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/offscreen_vert.spv", "shaders/offscreen_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->offscreenAttachments, true);
+
+    descriptor_set_setup(&app->offscreenDescriptorSet, app->device, app->physicalDevice);
+    descriptor_set_add_buffer(&app->offscreenDescriptorSet, sizeof(uniform_buffer_object_t), 0, true);
+    descriptor_set_add_texture(&app->offscreenDescriptorSet, &app->scene.textures, 1, false);
+    descriptor_set_create(&app->offscreenDescriptorSet);
+    pipeline_create(&app->offscreenPipeline, &app->offscreenDescriptorSet, app->windowWidth, app->windowHeight, "shaders/offscreen_vert.spv", "shaders/offscreen_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->offscreenAttachments, true);
 
     application_create_frame_buffers(app);
     application_update_uniforms(app);
@@ -798,6 +774,7 @@ void application_cleanup(application_t *app) {
     pipeline_cleanup(&app->offscreenPipeline);
     scene_cleanup(&app->scene);
     descriptor_set_cleanup(&app->descriptorSet);
+    descriptor_set_cleanup(&app->offscreenDescriptorSet);
     //model_cleanup(&app->model, app->device);
 
     vkDestroySemaphore(app->device, app->renderFinishedSemaphore, nullptr);
