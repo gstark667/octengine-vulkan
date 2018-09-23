@@ -22,6 +22,7 @@
 #include "texture.h"
 #include "scene.h"
 #include "script.h"
+#include "descriptorset.h"
 
 
 struct queue_family_t
@@ -92,6 +93,8 @@ struct application_t
 
     std::vector<pipeline_attachment_t> attachments;
     std::vector<pipeline_attachment_t> offscreenAttachments;
+
+    descriptor_set_t descriptorSet;
 
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;

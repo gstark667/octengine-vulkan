@@ -133,7 +133,7 @@ void pipeline_create_render_pass(pipeline_t *pipeline, VkFormat colorFormat, VkF
         throw std::runtime_error("failed to create render pass!");
     }
 }
-
+/*
 void pipeline_create_descriptor_set_layout(pipeline_t *pipeline, VkDevice device) {
     VkDescriptorSetLayoutBinding uboLayoutBinding = {};
     uboLayoutBinding.binding = 0;
@@ -225,6 +225,7 @@ void pipeline_create_descriptor_set(pipeline_t *pipeline, VkDevice device) {
 
     vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }
+*/
 
 void pipeline_create_graphics(pipeline_t *pipeline, uint32_t width, uint32_t height, VkDevice device)
 {
@@ -320,7 +321,7 @@ void pipeline_create_graphics(pipeline_t *pipeline, uint32_t width, uint32_t hei
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &pipeline->descriptorSetLayout;
+    pipelineLayoutInfo.pSetLayouts = &pipeline->descriptorSet->descriptorSetLayout;
     //pipelineLayoutInfo.setLayoutCount = 0;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
 
@@ -364,22 +365,23 @@ void pipeline_create_graphics(pipeline_t *pipeline, uint32_t width, uint32_t hei
     vkDestroyShaderModule(device, shader.vertShaderModule, nullptr);
 }
 
-void pipeline_create(pipeline_t *pipeline, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkFormat colorFormat, VkFormat depthFormat, VkCommandPool commandPool, VkQueue graphicsQueue, std::vector<pipeline_attachment_t> attachments, bool offscreen) {
+void pipeline_create(pipeline_t *pipeline, descriptor_set_t *descriptorSet, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkFormat colorFormat, VkFormat depthFormat, VkCommandPool commandPool, VkQueue graphicsQueue, std::vector<pipeline_attachment_t> attachments, bool offscreen) {
     pipeline->device = device;
     pipeline->physicalDevice = physicalDevice;
     pipeline->vertShader = vertShader;
     pipeline->fragShader = fragShader;
     pipeline->commandPool = commandPool;
     pipeline->graphicsQueue = graphicsQueue;
+    pipeline->descriptorSet = descriptorSet;
     pipeline->attachments = attachments;
     pipeline->offscreen = offscreen;
     pipeline_create_render_pass(pipeline, colorFormat, depthFormat);
     if (!offscreen)
     {
-        pipeline_create_descriptor_set_layout(pipeline, device);
+/*        pipeline_create_descriptor_set_layout(pipeline, device);
         pipeline_create_descriptor_pool(pipeline, device);
         pipeline_create_uniform_buffer(pipeline, device, physicalDevice);
-        pipeline_create_descriptor_set(pipeline, device);
+        pipeline_create_descriptor_set(pipeline, device);*/
         pipeline_create_graphics(pipeline, width, height, device);
     }
 }
@@ -399,9 +401,9 @@ void pipeline_cleanup(pipeline_t *pipeline, VkDevice device)
     vkDestroyPipeline(device, pipeline->pipeline, nullptr);
     vkDestroyPipelineLayout(device, pipeline->layout, nullptr);
     vkDestroyRenderPass(device, pipeline->renderPass, nullptr);
-    vkDestroyDescriptorPool(device, pipeline->descriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(device, pipeline->descriptorSetLayout, nullptr);
-    vkDestroyBuffer(device, pipeline->uniformBuffer, nullptr);
-    vkFreeMemory(device, pipeline->uniformBufferMemory, nullptr);
+    vkDestroyDescriptorPool(device, pipeline->descriptorSet->descriptorPool, nullptr);
+    vkDestroyDescriptorSetLayout(device, pipeline->descriptorSet->descriptorSetLayout, nullptr);
+    vkDestroyBuffer(device, pipeline->descriptorSet->uniformBuffer, nullptr);
+    vkFreeMemory(device, pipeline->descriptorSet->uniformBufferMemory, nullptr);
 }
 

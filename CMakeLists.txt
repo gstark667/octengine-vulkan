@@ -25,6 +25,7 @@ set(HEADERS
     include/gameobject.h
     include/buffer.h
     include/framebuffer.h
+    include/descriptorset.h
     include/model.h
     include/camera.h
     include/script.h
@@ -42,6 +43,7 @@ set(SOURCES
     src/gameobject.cpp
     src/buffer.cpp
     src/framebuffer.cpp
+    src/descriptorset.cpp
     src/model.cpp
     src/camera.cpp
     src/script.cpp

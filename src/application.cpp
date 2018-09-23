@@ -564,7 +564,7 @@ void application_create_command_buffers(application_t *app) {
         vkCmdBeginRenderPass(app->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         //pipeline_render(&app->pipeline, app->commandBuffers[i]);
-        scene_render(&app->scene, app->commandBuffers[i], app->pipeline.layout, app->pipeline.pipeline, app->pipeline.descriptorSet);
+        scene_render(&app->scene, app->commandBuffers[i], app->pipeline.layout, app->pipeline.pipeline, app->descriptorSet.descriptorSet);
 
         vkCmdEndRenderPass(app->commandBuffers[i]);
 
@@ -609,9 +609,9 @@ void application_update_uniforms(application_t *app)
 void application_copy_uniforms(application_t *app)
 {
     void *data;
-    vkMapMemory(app->device, app->pipeline.uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
+    vkMapMemory(app->device, app->descriptorSet.uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
     memcpy(data, &app->ubo, sizeof(app->ubo));
-    vkUnmapMemory(app->device, app->pipeline.uniformBufferMemory);
+    vkUnmapMemory(app->device, app->descriptorSet.uniformBufferMemory);
 }
 
 // draw frame
@@ -713,9 +713,12 @@ void application_init_vulkan(application_t *app) {
     texture_add(&app->pipeline.texture, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "normal.png");
     app->depthFormat = application_find_depth_format(app);
     application_create_depth_resources(app);
-    pipeline_create(&app->pipeline, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue, app->attachments, false);
-    pipeline_create(&app->offscreenPipeline, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue, app->offscreenAttachments, true);
+
     scene_create(&app->scene, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
+    app->descriptorSet.texture = &app->scene.textures;
+    descriptor_set_create(&app->descriptorSet, app->device, app->physicalDevice);
+    pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue, app->attachments, false);
+    //pipeline_create(&app->offscreenPipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue, app->offscreenAttachments, true);
 
     application_create_frame_buffers(app);
     application_update_uniforms(app);
@@ -793,6 +796,7 @@ void application_cleanup(application_t *app) {
     pipeline_cleanup(&app->pipeline, app->device);
     texture_cleanup(&app->pipeline.texture, app->device);
     scene_cleanup(&app->scene);
+    descriptor_set_cleanup(&app->descriptorSet, app->device);
     //model_cleanup(&app->model, app->device);
 
     vkDestroySemaphore(app->device, app->renderFinishedSemaphore, nullptr);
