@@ -25,7 +25,8 @@ void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice devi
     else
     {
         std::cout << "color" << std::endl;
-        attachment->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        //attachment->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        attachment->layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         attachment->finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
     }
