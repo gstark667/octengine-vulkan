@@ -67,9 +67,33 @@ ADD_CUSTOM_COMMAND(
     COMMAND glslangValidator -V ${CMAKE_SOURCE_DIR}/shaders/shader.vert -o shaders/vert.spv
 )
 
+ADD_CUSTOM_COMMAND(
+    OUTPUT shaders/offscreen_frag.spv
+    DEPENDS ${CMAKE_SOURCE_DIR}/shaders/offscreen.frag
+    COMMAND glslangValidator -V ${CMAKE_SOURCE_DIR}/shaders/offscreen.frag -o shaders/offscreen_frag.spv
+)
+
+ADD_CUSTOM_COMMAND(
+    OUTPUT shaders/offscreen_vert.spv
+    DEPENDS ${CMAKE_SOURCE_DIR}/shaders/offscreen.vert
+    COMMAND glslangValidator -V ${CMAKE_SOURCE_DIR}/shaders/offscreen.vert -o shaders/offscreen_vert.spv
+)
+
+ADD_CUSTOM_COMMAND(
+    OUTPUT shaders/screen_frag.spv
+    DEPENDS ${CMAKE_SOURCE_DIR}/shaders/screen.frag
+    COMMAND glslangValidator -V ${CMAKE_SOURCE_DIR}/shaders/screen.frag -o shaders/screen_frag.spv
+)
+
+ADD_CUSTOM_COMMAND(
+    OUTPUT shaders/screen_vert.spv
+    DEPENDS ${CMAKE_SOURCE_DIR}/shaders/screen.vert
+    COMMAND glslangValidator -V ${CMAKE_SOURCE_DIR}/shaders/screen.vert -o shaders/screen_vert.spv
+)
+
 ADD_CUSTOM_TARGET(
     shader_files
-    DEPENDS shaders/ shaders/frag.spv shaders/vert.spv
+    DEPENDS shaders/ shaders/frag.spv shaders/vert.spv shaders/offscreen_frag.spv shaders/offscreen_vert.spv shaders/screen_vert.spv shaders/screen_frag.spv
 )
 
 include_directories(${BULLET_INCLUDE_DIR})

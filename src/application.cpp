@@ -718,7 +718,7 @@ void application_init_vulkan(application_t *app) {
     app->descriptorSet.texture = &app->scene.textures;
     descriptor_set_create(&app->descriptorSet, app->device, app->physicalDevice);
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue, app->attachments, false);
-    //pipeline_create(&app->offscreenPipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue, app->offscreenAttachments, true);
+    pipeline_create(&app->offscreenPipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/offscreen_vert.spv", "shaders/offscreen_frag.spv", app->device, app->physicalDevice, app->swapChainImageFormat, app->depthFormat, app->commandPool, app->graphicsQueue, app->offscreenAttachments, true);
 
     application_create_frame_buffers(app);
     application_update_uniforms(app);
@@ -728,7 +728,6 @@ void application_init_vulkan(application_t *app) {
 }
 
 void application_main_loop(application_t *app) {
-    //while (!glfwWindowShouldClose(app->window)) {
     scene_load(&app->scene, "scene_0.lua");
     bool running = true;
     while (running) {
