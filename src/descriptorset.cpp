@@ -171,7 +171,6 @@ void descriptor_set_cleanup(descriptor_set_t *descriptorSet)
 {
     vkDestroyDescriptorPool(descriptorSet->device, descriptorSet->descriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(descriptorSet->device, descriptorSet->descriptorSetLayout, nullptr);
-    vkDestroyDescriptorSet(descriptorSet->device, descriptorSet->descriptorSet, nullptr);
 
     for (auto it = descriptorSet->buffers.begin(); it != descriptorSet->buffers.end(); ++it)
     {
