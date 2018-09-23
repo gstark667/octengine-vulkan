@@ -30,7 +30,6 @@ void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice devi
         aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
     }
     image_create_view(&attachment->image, device, format, aspectFlags);
-    //image_transition_layout(&attachment->image, device, commandPool, graphicsQueue, format, VK_IMAGE_LAYOUT_UNDEFINED, attachment->layout);
 }
 
 std::vector<VkImageView> pipeline_attachment_views(std::vector<pipeline_attachment_t> attachments)
@@ -87,13 +86,39 @@ void pipeline_create_render_pass(pipeline_t *pipeline, VkFormat colorFormat, VkF
     subpass.pColorAttachments = colorRefs.data();
     subpass.pDepthStencilAttachment = &depthRef;
 
-    VkSubpassDependency dependency = {};
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    std::vector<VkSubpassDependency> dependencies;
+    if (pipeline->offscreen)
+    {
+        VkSubpassDependency dependency0, dependency1;
+        dependency0.srcSubpass = VK_SUBPASS_EXTERNAL;
+        dependency0.dstSubpass = 0;
+        dependency0.srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        dependency0.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency0.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        dependency0.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependency0.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+        dependencies.push_back(dependency0);
+
+        dependency1.srcSubpass = 0;                                                	
+        dependency1.dstSubpass = VK_SUBPASS_EXTERNAL;                                
+        dependency1.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency1.dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        dependency1.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependency1.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        dependency1.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+        dependencies.push_back(dependency1);
+    }
+    else
+    {
+        VkSubpassDependency dependency = {};
+        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+        dependency.dstSubpass = 0;
+        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.srcAccessMask = 0;
+        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependencies.push_back(dependency);
+    }
 
     VkRenderPassCreateInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -101,8 +126,8 @@ void pipeline_create_render_pass(pipeline_t *pipeline, VkFormat colorFormat, VkF
     renderPassInfo.pAttachments = descriptions.data();
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
-    renderPassInfo.dependencyCount = 1;
-    renderPassInfo.pDependencies = &dependency;
+    renderPassInfo.dependencyCount = dependencies.size();
+    renderPassInfo.pDependencies = dependencies.data();
 
     if (vkCreateRenderPass(pipeline->device, &renderPassInfo, nullptr, &pipeline->renderPass) != VK_SUCCESS) {
         throw std::runtime_error("failed to create render pass!");
@@ -339,21 +364,24 @@ void pipeline_create_graphics(pipeline_t *pipeline, uint32_t width, uint32_t hei
     vkDestroyShaderModule(device, shader.vertShaderModule, nullptr);
 }
 
-void pipeline_create(pipeline_t *pipeline, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkFormat colorFormat, VkFormat depthFormat, VkCommandPool commandPool, VkQueue graphicsQueue, std::vector<pipeline_attachment_t> attachments) {
+void pipeline_create(pipeline_t *pipeline, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkFormat colorFormat, VkFormat depthFormat, VkCommandPool commandPool, VkQueue graphicsQueue, std::vector<pipeline_attachment_t> attachments, bool offscreen) {
     pipeline->device = device;
     pipeline->physicalDevice = physicalDevice;
     pipeline->vertShader = vertShader;
     pipeline->fragShader = fragShader;
     pipeline->commandPool = commandPool;
     pipeline->graphicsQueue = graphicsQueue;
-    std::cout << attachments.size() << std::endl;
     pipeline->attachments = attachments;
+    pipeline->offscreen = offscreen;
     pipeline_create_render_pass(pipeline, colorFormat, depthFormat);
-    pipeline_create_descriptor_set_layout(pipeline, device);
-    pipeline_create_descriptor_pool(pipeline, device);
-    pipeline_create_uniform_buffer(pipeline, device, physicalDevice);
-    pipeline_create_descriptor_set(pipeline, device);
-    pipeline_create_graphics(pipeline, width, height, device);
+    if (!offscreen)
+    {
+        pipeline_create_descriptor_set_layout(pipeline, device);
+        pipeline_create_descriptor_pool(pipeline, device);
+        pipeline_create_uniform_buffer(pipeline, device, physicalDevice);
+        pipeline_create_descriptor_set(pipeline, device);
+        pipeline_create_graphics(pipeline, width, height, device);
+    }
 }
 
 void pipeline_recreate(pipeline_t *pipeline, uint32_t width, uint32_t height, VkDevice device, VkFormat colorFormat, VkFormat depthFormat)
