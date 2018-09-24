@@ -82,6 +82,7 @@ struct application_t
 
     pipeline_t pipeline;
     pipeline_t offscreenPipeline;
+    pipeline_t shadowPipeline;
 
     model_t model;
     texture_t texture;
@@ -91,16 +92,20 @@ struct application_t
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;
     VkCommandBuffer offscreenCommandBuffer;
+    VkCommandBuffer shadowCommandBuffer;
 
-    pipeline_attachment_t albedo, normal, position, offscreenDepthAttachment;
+    pipeline_attachment_t albedo, normal, position, offscreenDepthAttachment, shadowPosition, shadowDepth;
     std::vector<pipeline_attachment_t> attachments;
     std::vector<pipeline_attachment_t> offscreenAttachments;
+    std::vector<pipeline_attachment_t> shadowAttachments;
 
     descriptor_set_t descriptorSet;
     descriptor_set_t offscreenDescriptorSet;
+    descriptor_set_t shadowDescriptorSet;
 
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore offscreenSemaphore;
+    VkSemaphore shadowSemaphore;
     VkSemaphore renderFinishedSemaphore;
 
     model_t quad;

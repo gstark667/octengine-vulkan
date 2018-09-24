@@ -5,6 +5,7 @@ layout (binding = 0) uniform sampler2D samplerAlbedo;
 layout (binding = 1) uniform sampler2D samplerNormal;
 layout (binding = 2) uniform sampler2D samplerPosition;
 layout (binding = 3) uniform sampler2D samplerDepth;
+layout (binding = 4) uniform sampler2D shadowDepth;
 
 layout (location = 0) in vec2 inUV;
 
@@ -26,6 +27,7 @@ void main() {
     vec3 albedo = texture(samplerAlbedo, inUV).rgb;
     vec3 normal = texture(samplerNormal, inUV).rgb;
     vec3 position = texture(samplerPosition, inUV).rgb;
+    float shadowDepth = texture(shadowDepth, inUV).r;
     float shade = max(dot(normal, vec3(0.8, 0.8, 0.8)), 0.5);
     outFragColor = vec4(albedo * shade, 1.0);
 }

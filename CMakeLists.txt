@@ -91,9 +91,21 @@ ADD_CUSTOM_COMMAND(
     COMMAND glslangValidator -V ${CMAKE_SOURCE_DIR}/shaders/screen.vert -o shaders/screen_vert.spv
 )
 
+ADD_CUSTOM_COMMAND(
+    OUTPUT shaders/shadow_frag.spv
+    DEPENDS ${CMAKE_SOURCE_DIR}/shaders/shadow.frag
+    COMMAND glslangValidator -V ${CMAKE_SOURCE_DIR}/shaders/shadow.frag -o shaders/shadow_frag.spv
+)
+
+ADD_CUSTOM_COMMAND(
+    OUTPUT shaders/shadow_vert.spv
+    DEPENDS ${CMAKE_SOURCE_DIR}/shaders/shadow.vert
+    COMMAND glslangValidator -V ${CMAKE_SOURCE_DIR}/shaders/shadow.vert -o shaders/shadow_vert.spv
+)
+
 ADD_CUSTOM_TARGET(
     shader_files
-    DEPENDS shaders/ shaders/frag.spv shaders/vert.spv shaders/offscreen_frag.spv shaders/offscreen_vert.spv shaders/screen_vert.spv shaders/screen_frag.spv
+    DEPENDS shaders/ shaders/frag.spv shaders/vert.spv shaders/offscreen_frag.spv shaders/offscreen_vert.spv shaders/screen_vert.spv shaders/screen_frag.spv shaders/shadow_vert.spv shaders/shadow_frag.spv
 )
 
 include_directories(${BULLET_INCLUDE_DIR})
