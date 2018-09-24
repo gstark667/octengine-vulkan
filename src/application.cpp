@@ -524,6 +524,10 @@ void application_create_frame_buffers(application_t *app) {
     }
 }
 
+void application_draw_quad(application_t *app, VkCommandBuffer commandBuffer, VkPipeline pipeline)
+{
+}
+
 // create command buffers
 void application_create_command_buffers(application_t *app) {
     app->commandBuffers.resize(app->swapChainFramebuffers.size());
@@ -541,7 +545,7 @@ void application_create_command_buffers(application_t *app) {
     for (size_t i = 0; i < app->commandBuffers.size(); i++) {
         app->pipeline.framebuffer = app->swapChainFramebuffers[i];
         pipeline_begin_render(&app->pipeline, app->commandBuffers[i]);
-        scene_render(&app->scene, app->commandBuffers[i], app->pipeline.layout, app->pipeline.pipeline, app->descriptorSet.descriptorSet);
+        model_render(&app->quad, app->commandBuffers[i], app->pipeline.layout, app->pipeline.pipeline, app->descriptorSet.descriptorSet);
         pipeline_end_render(&app->pipeline, app->commandBuffers[i]);
     }
 
@@ -722,8 +726,9 @@ void application_init_vulkan(application_t *app) {
     descriptor_set_add_image(&app->descriptorSet, &app->albedo.image, 1, false);
     descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 2, false);
     descriptor_set_add_image(&app->descriptorSet, &app->position.image, 3, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 4, false);
     descriptor_set_create(&app->descriptorSet);
-    pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->attachments, false);
+    pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->attachments, false);
 
     descriptor_set_setup(&app->offscreenDescriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_buffer(&app->offscreenDescriptorSet, sizeof(uniform_buffer_object_t), 0, true);
@@ -734,6 +739,14 @@ void application_init_vulkan(application_t *app) {
     application_create_frame_buffers(app);
     application_update_uniforms(app);
     application_copy_uniforms(app);
+
+    app->quad.instances.push_back({});
+    model_load(&app->quad, "quad.dae");
+    model_create_buffers(&app->quad, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
+    for (auto it = app->quad.vertices.begin(); it != app->quad.vertices.end(); ++it)
+    {
+        std::cout << it->pos.x << ":" << it->pos.y << ":" << it->pos.z << std::endl;
+    }
     application_create_command_buffers(app);
     application_create_semaphores(app);
 }
@@ -808,7 +821,7 @@ void application_cleanup(application_t *app) {
     scene_cleanup(&app->scene);
     descriptor_set_cleanup(&app->descriptorSet);
     descriptor_set_cleanup(&app->offscreenDescriptorSet);
-    //model_cleanup(&app->model, app->device);
+    model_cleanup(&app->quad, app->device);
 
     vkDestroySemaphore(app->device, app->renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->offscreenSemaphore, nullptr);

@@ -336,12 +336,12 @@ void model_create_index_buffer(model_t *model, VkDevice device, VkPhysicalDevice
 
 void model_create_instance_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-    VkDeviceSize bufferSize = 0;
+    VkDeviceSize bufferSize = model->instances.size();
     buffer_create(&model->instanceBuffer, device, physicalDevice, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, bufferSize);
-    buffer_copy(&model->instanceBuffer, device, physicalDevice, commandPool, graphicsQueue, NULL, bufferSize);
+    buffer_copy(&model->instanceBuffer, device, physicalDevice, commandPool, graphicsQueue, model->instances.data(), bufferSize);
 
     buffer_create(&model->instanceStagingBuffer, device, physicalDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, bufferSize);
-    buffer_copy(&model->instanceStagingBuffer, device, physicalDevice, commandPool, graphicsQueue, NULL, bufferSize);
+    buffer_copy(&model->instanceStagingBuffer, device, physicalDevice, commandPool, graphicsQueue, model->instances.data(), bufferSize);
 }
 
 void model_copy_instance_buffer(model_t *model, std::vector<gameobject_t*> instances, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
@@ -408,8 +408,7 @@ void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayou
     vkCmdBindVertexBuffers(commandBuffer, 1, 1, &model->instanceBuffer.buffer, offsets);
     vkCmdBindIndexBuffer(commandBuffer, model->indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
 
-    std::cout << model->instances.size() << std::endl;
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model->indices.size()), model->instances.size(), 0, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, model->indices.size(), model->instances.size(), 0, 0, 0);
 }
 
 void model_cleanup(model_t *model, VkDevice device)

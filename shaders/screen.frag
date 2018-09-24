@@ -4,6 +4,7 @@
 layout (binding = 1) uniform sampler2D samplerAlbedo;
 layout (binding = 2) uniform sampler2D samplerNormal;
 layout (binding = 3) uniform sampler2D samplerPosition;
+layout (binding = 4) uniform sampler2D samplerDepth;
 
 layout (location = 0) in vec2 inUV;
 
@@ -22,6 +23,8 @@ layout (binding = 4) uniform UBO
 } ubo;
 
 void main() {
-    vec3 fragPos = texture(samplerPosition, inUV).rgb;
-    outFragColor = vec4(fragPos, 1.0);
+    vec3 albedo = texture(samplerAlbedo, inUV).rgb;
+    vec3 normal = texture(samplerNormal, inUV).rgb;
+    float shade = max(dot(normal, vec3(0.8, 0.8, 0.8)), 0.5);
+    outFragColor = vec4(albedo * shade, 1.0);
 }

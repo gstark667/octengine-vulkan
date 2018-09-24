@@ -102,6 +102,8 @@ struct application_t
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore offscreenSemaphore;
     VkSemaphore renderFinishedSemaphore;
+
+    model_t quad;
 };
 
 void application_recreate_swap_chain(application_t *app);

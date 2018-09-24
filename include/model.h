@@ -81,6 +81,8 @@ struct model_t
     buffer_t instanceBuffer;
     buffer_t instanceStagingBuffer;
 
+    bool instanced = true;
+
     VkBuffer uniformBuffer;
     VkDeviceMemory uniformBufferMemory;
 
