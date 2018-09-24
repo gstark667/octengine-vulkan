@@ -597,9 +597,9 @@ void application_update_uniforms(application_t *app)
 void application_copy_uniforms(application_t *app)
 {
     void *data;
-    vkMapMemory(app->device, app->descriptorSet.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
+    /*vkMapMemory(app->device, app->descriptorSet.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
     memcpy(data, &app->ubo, sizeof(app->ubo));
-    vkUnmapMemory(app->device, app->descriptorSet.buffers.at(0).uniformBufferMemory);
+    vkUnmapMemory(app->device, app->descriptorSet.buffers.at(0).uniformBufferMemory);*/
 
     vkMapMemory(app->device, app->offscreenDescriptorSet.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
     memcpy(data, &app->ubo, sizeof(app->ubo));
@@ -722,11 +722,10 @@ void application_init_vulkan(application_t *app) {
     scene_create(&app->scene, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
 
     descriptor_set_setup(&app->descriptorSet, app->device, app->physicalDevice);
-    descriptor_set_add_buffer(&app->descriptorSet, sizeof(uniform_buffer_object_t), 0, true);
-    descriptor_set_add_image(&app->descriptorSet, &app->albedo.image, 1, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 2, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->position.image, 3, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 4, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->albedo.image, 0, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 1, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->position.image, 2, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 3, false);
     descriptor_set_create(&app->descriptorSet);
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->attachments, false);
 
