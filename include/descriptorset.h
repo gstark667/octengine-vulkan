@@ -14,6 +14,8 @@ struct uniform_buffer_object_t
     glm::mat4 model = glm::mat4(0.0f);
     glm::mat4 view = glm::mat4(0.0f);
     glm::mat4 proj = glm::mat4(0.0f);
+    glm::mat4 shadowSpace = glm::mat4(0.0f);
+    glm::vec3 lightPos = glm::vec3(1.0f, 1.0f, 1.0f);
     //glm::mat4 bones[64];
 };
 

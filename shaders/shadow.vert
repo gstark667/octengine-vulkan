@@ -5,6 +5,8 @@ layout(binding = 0) uniform uniform_buffer_object {
     mat4 model;
     mat4 view;
     mat4 proj;
+    mat4 shadowSpace;
+    vec3 lightPos;
     mat4 bones[64];
 } ubo;
 
@@ -56,5 +58,5 @@ void main()
 
     vec4 worldPos = mat4(rotMat) * vec4(inPosition * instanceScale, 1.0) + vec4(instancePos, 1.0);
     gl_Position = ubo.proj * ubo.view * mat4(rotMat) * boneTransform * vec4(inPosition, 1.0) + (ubo.proj * ubo.view * vec4(instancePos, 1.0));
-    gl_Position = ubo.proj * ubo.view * worldPos;
+    gl_Position = ubo.shadowSpace * worldPos;
 }

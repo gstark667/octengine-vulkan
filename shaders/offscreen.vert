@@ -5,6 +5,8 @@ layout(binding = 0) uniform uniform_buffer_object {
     mat4 model;
     mat4 view;
     mat4 proj;
+    mat4 shadowSpace;
+    vec3 lightPos;
     mat4 bones[64];
 } ubo;
 
@@ -24,6 +26,7 @@ layout (location = 1) out vec2 outUV;
 layout (location = 2) out vec3 outColor;
 layout (location = 3) out vec3 outWorldPos;
 layout (location = 4) out int outTexIdx;
+layout (location = 5) out vec4 outShadowPos;
 
 out gl_PerVertex {
     vec4 gl_Position;
@@ -63,6 +66,7 @@ void main() {
 
     vec4 worldPos = mat4(rotMat) * vec4(inPosition * instanceScale, 1.0) + vec4(instancePos, 1.0);
     gl_Position = ubo.proj * ubo.view * mat4(rotMat) * boneTransform * vec4(inPosition, 1.0) + (ubo.proj * ubo.view * vec4(instancePos, 1.0));
+    gl_Position = ubo.shadowSpace * worldPos;
     gl_Position = ubo.proj * ubo.view * worldPos;
     outNormal = rotMat * mat3(boneTransform) * inNormal;
     outNormal = rotMat * inNormal;
@@ -70,4 +74,5 @@ void main() {
     outColor = vec3(1.0, 1.0, 1.0);
     outTexIdx = instanceTex;
     outWorldPos = worldPos.xyz;
+    outShadowPos = ubo.shadowSpace * worldPos;
 }

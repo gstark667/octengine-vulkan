@@ -609,8 +609,8 @@ void application_update_uniforms(application_t *app)
     app->ubo.view = app->scene.camera.view;
     app->ubo.proj = app->scene.camera.proj;
 
-    app->ubo.view = glm::lookAt(glm::vec3(20.0f, 20.0f, 20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    app->ubo.proj = glm::ortho(-5.0f, 5.0f, 5.0f, -5.0f, 0.0f, 1000.0f);
+    float aspectRatio = (float)app->windowWidth/(float)app->windowHeight;
+    app->ubo.shadowSpace = glm::ortho(0.0f, 2.5f / aspectRatio, 2.5f, 0.0f, -1.0f, 100.0f) * glm::lookAt(glm::vec3(50.0f, 50.0f, 50.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void application_copy_uniforms(application_t *app)
@@ -770,7 +770,8 @@ void application_init_vulkan(application_t *app) {
     descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 1, false);
     descriptor_set_add_image(&app->descriptorSet, &app->position.image, 2, false);
     descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 3, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->shadowDepth.image, 4, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->shadowPosition.image, 4, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->shadowDepth.image, 5, false);
     descriptor_set_create(&app->descriptorSet);
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->attachments, false);
 
