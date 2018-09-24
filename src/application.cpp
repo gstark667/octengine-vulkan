@@ -719,7 +719,9 @@ void application_init_vulkan(application_t *app) {
 
     descriptor_set_setup(&app->descriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_buffer(&app->descriptorSet, sizeof(uniform_buffer_object_t), 0, true);
-    descriptor_set_add_texture(&app->descriptorSet, &app->scene.textures, 1, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->albedo.image, 1, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 2, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->position.image, 3, false);
     descriptor_set_create(&app->descriptorSet);
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/vert.spv", "shaders/frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->attachments, false);
 

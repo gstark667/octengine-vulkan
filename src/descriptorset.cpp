@@ -159,6 +159,43 @@ void descriptor_set_add_texture(descriptor_set_t *descriptorSet, texture_t *text
     descriptorSet->textures.push_back(newTexture);
 }
 
+void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, uint32_t binding, bool vertex)
+{
+    texture_t *texture = new texture_t();
+    texture->image = *image;
+    texture->width = image->width;
+    texture->height = image->height;
+
+    VkSamplerCreateInfo samplerInfo = {};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
+    samplerInfo.minFilter = VK_FILTER_LINEAR;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.anisotropyEnable = VK_TRUE;
+    samplerInfo.maxAnisotropy = 16;
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    samplerInfo.compareEnable = VK_TRUE;
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.mipLodBias = 0.0f;
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = 0.0f;
+
+    if (vkCreateSampler(descriptorSet->device, &samplerInfo, nullptr, &texture->sampler) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture sampler!");
+    }    
+
+    descriptor_texture_t newTexture;
+    newTexture.texture = texture;
+    newTexture.binding = binding;
+    newTexture.vertex = vertex;
+    newTexture.fromImage = true;
+    descriptorSet->textures.push_back(newTexture);
+}
+
 void descriptor_set_create(descriptor_set_t *descriptorSet)
 {
     descriptor_set_create_layout(descriptorSet);
@@ -176,6 +213,15 @@ void descriptor_set_cleanup(descriptor_set_t *descriptorSet)
     {
         vkDestroyBuffer(descriptorSet->device, it->uniformBuffer, nullptr);
         vkFreeMemory(descriptorSet->device, it->uniformBufferMemory, nullptr);
+    }
+
+    for (auto it = descriptorSet->textures.begin(); it != descriptorSet->textures.end(); ++it)
+    {
+        if (it->fromImage)
+        {
+            vkDestroySampler(descriptorSet->device, it->texture->sampler, nullptr);
+            delete it->texture;
+        }
     }
 }
 

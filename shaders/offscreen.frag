@@ -9,9 +9,9 @@ layout (location = 2) in vec3 inColor;
 layout (location = 3) in vec3 inWorldPos;
 layout (location = 4) flat in int inTexIdx;
 
-layout (location = 0) out vec4 outPosition;
+layout (location = 0) out vec4 outAlbedo;
 layout (location = 1) out vec4 outNormal;
-layout (location = 2) out vec4 outAlbedo;
+layout (location = 2) out vec4 outPosition;
 
 void main() {
     vec3 normal = (texture(texSampler, vec3(inUV, 1)).rgb * 2 - 1);

@@ -55,6 +55,7 @@ void image_create_view(image_t *image, VkDevice device, VkFormat format, VkImage
     VkImageViewCreateInfo viewInfo = {};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = image->image;
+    std::cout << "layers: " << image->layers << std::endl;
     if (image->layers == 1)
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
     else
