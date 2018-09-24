@@ -90,6 +90,7 @@ struct application_t
 
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;
+    VkCommandBuffer offscreenCommandBuffer;
 
     pipeline_attachment_t albedo, normal, position, offscreenDepthAttachment;
     std::vector<pipeline_attachment_t> attachments;
@@ -99,6 +100,7 @@ struct application_t
     descriptor_set_t offscreenDescriptorSet;
 
     VkSemaphore imageAvailableSemaphore;
+    VkSemaphore offscreenSemaphore;
     VkSemaphore renderFinishedSemaphore;
 };
 

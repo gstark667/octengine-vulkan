@@ -544,6 +544,17 @@ void application_create_command_buffers(application_t *app) {
         scene_render(&app->scene, app->commandBuffers[i], app->pipeline.layout, app->pipeline.pipeline, app->descriptorSet.descriptorSet);
         pipeline_end_render(&app->pipeline, app->commandBuffers[i]);
     }
+
+    // create the offscreen command buffer
+    allocInfo.commandBufferCount = 1;
+
+    if (vkAllocateCommandBuffers(app->device, &allocInfo, &app->offscreenCommandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate command buffers!");
+    }
+
+    pipeline_begin_render(&app->offscreenPipeline, app->offscreenCommandBuffer);
+    scene_render(&app->scene, app->offscreenCommandBuffer, app->offscreenPipeline.layout, app->offscreenPipeline.pipeline, app->offscreenDescriptorSet.descriptorSet);
+    pipeline_end_render(&app->offscreenPipeline, app->offscreenCommandBuffer);
 }
 
 // create semaphores
@@ -552,6 +563,7 @@ void application_create_semaphores(application_t *app) {
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     if (vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->imageAvailableSemaphore) != VK_SUCCESS ||
+        vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->offscreenSemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->renderFinishedSemaphore) != VK_SUCCESS) {
 
         throw std::runtime_error("failed to create semaphores!");
@@ -584,6 +596,10 @@ void application_copy_uniforms(application_t *app)
     vkMapMemory(app->device, app->descriptorSet.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
     memcpy(data, &app->ubo, sizeof(app->ubo));
     vkUnmapMemory(app->device, app->descriptorSet.buffers.at(0).uniformBufferMemory);
+
+    vkMapMemory(app->device, app->offscreenDescriptorSet.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
+    memcpy(data, &app->ubo, sizeof(app->ubo));
+    vkUnmapMemory(app->device, app->offscreenDescriptorSet.buffers.at(0).uniformBufferMemory);
 }
 
 // draw frame
@@ -594,22 +610,37 @@ void application_draw_frame(application_t *app) {
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore waitSemaphores[] = {app->imageAvailableSemaphore};
+    // offscreen
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.pWaitSemaphores = &app->imageAvailableSemaphore;
     submitInfo.pWaitDstStageMask = waitStages;
-
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &app->commandBuffers[imageIndex];
+    submitInfo.pCommandBuffers = &app->offscreenCommandBuffer;
 
-    VkSemaphore signalSemaphores[] = {app->renderFinishedSemaphore};
+    VkSemaphore signalSemaphores[] = {app->offscreenSemaphore};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
     if (vkQueueSubmit(app->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
+
+    // onscreen
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = &app->offscreenSemaphore;
+    submitInfo.pWaitDstStageMask = waitStages;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &app->commandBuffers[imageIndex];
+
+    signalSemaphores[0] = app->renderFinishedSemaphore;
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    if (vkQueueSubmit(app->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit draw command buffer!");
+    }
+
 
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -778,6 +809,7 @@ void application_cleanup(application_t *app) {
     //model_cleanup(&app->model, app->device);
 
     vkDestroySemaphore(app->device, app->renderFinishedSemaphore, nullptr);
+    vkDestroySemaphore(app->device, app->offscreenSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->imageAvailableSemaphore, nullptr);
 
     vkDestroyCommandPool(app->device, app->commandPool, nullptr);
