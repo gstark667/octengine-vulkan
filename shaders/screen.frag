@@ -25,6 +25,7 @@ layout (binding = 4) uniform UBO
 void main() {
     vec3 albedo = texture(samplerAlbedo, inUV).rgb;
     vec3 normal = texture(samplerNormal, inUV).rgb;
+    vec3 position = texture(samplerPosition, inUV).rgb;
     float shade = max(dot(normal, vec3(0.8, 0.8, 0.8)), 0.5);
     outFragColor = vec4(albedo * shade, 1.0);
 }

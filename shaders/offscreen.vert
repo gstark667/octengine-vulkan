@@ -61,11 +61,13 @@ void main() {
 
     mat3 rotMat = mz * my * mx;
 
+    vec4 worldPos = mat4(rotMat) * vec4(inPosition * instanceScale, 1.0) + vec4(instancePos, 1.0);
     gl_Position = ubo.proj * ubo.view * mat4(rotMat) * boneTransform * vec4(inPosition, 1.0) + (ubo.proj * ubo.view * vec4(instancePos, 1.0));
-    gl_Position = ubo.proj * ubo.view * mat4(rotMat) * vec4(inPosition * instanceScale, 1.0) + (ubo.proj * ubo.view * vec4(instancePos, 1.0));
+    gl_Position = ubo.proj * ubo.view * worldPos;
     outNormal = rotMat * mat3(boneTransform) * inNormal;
     outNormal = rotMat * inNormal;
     outUV = inTexCoord;
     outColor = vec3(1.0, 1.0, 1.0);
     outTexIdx = instanceTex;
+    outWorldPos = worldPos.xyz;
 }
