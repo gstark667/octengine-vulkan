@@ -4,6 +4,7 @@ require("physics")
 
 function setup(scene, object)
     player = scene_add_gameobject(scene)
+    scene_set_model(scene, player, "capsule.dae")
     scene_add_script(scene, player, "player.lua")
     physics_set_position(player, 0, 10, 5)
 
