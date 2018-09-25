@@ -159,7 +159,7 @@ void descriptor_set_add_texture(descriptor_set_t *descriptorSet, texture_t *text
     descriptorSet->textures.push_back(newTexture);
 }
 
-void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, uint32_t binding, bool vertex)
+void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, uint32_t binding, bool vertex, bool repeat)
 {
     texture_t *texture = new texture_t();
     texture->image = *image;
@@ -170,9 +170,10 @@ void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, u
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = VK_FILTER_LINEAR;
     samplerInfo.minFilter = VK_FILTER_LINEAR;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    
+    samplerInfo.addressModeU = repeat ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    samplerInfo.addressModeV = samplerInfo.addressModeU;
+    samplerInfo.addressModeW = samplerInfo.addressModeU;
     samplerInfo.anisotropyEnable = VK_TRUE;
     samplerInfo.maxAnisotropy = 16;
     samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;

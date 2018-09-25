@@ -609,7 +609,6 @@ void application_update_uniforms(application_t *app)
     app->ubo.view = app->scene.camera.view;
     app->ubo.proj = app->scene.camera.proj;
 
-    float aspectRatio = (float)app->windowHeight/(float)app->windowWidth;
     app->ubo.lightPos = glm::vec3(20.0f, 20.0f, 20.0f);
     app->ubo.shadowSpace = glm::perspective(glm::radians(45.0f), 1.0f, -1.0f, 1000.0f)
     * glm::lookAt(app->ubo.lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f))
@@ -770,12 +769,12 @@ void application_init_vulkan(application_t *app) {
     scene_create(&app->scene, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
 
     descriptor_set_setup(&app->descriptorSet, app->device, app->physicalDevice);
-    descriptor_set_add_image(&app->descriptorSet, &app->albedo.image, 0, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 1, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->position.image, 2, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 3, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->shadowPosition.image, 4, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->shadowDepth.image, 5, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->albedo.image, 0, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 1, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->position.image, 2, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 3, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->shadowPosition.image, 4, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->shadowDepth.image, 5, false, false);
     descriptor_set_create(&app->descriptorSet);
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->attachments, false);
 

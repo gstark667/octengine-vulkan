@@ -52,7 +52,7 @@ struct descriptor_set_t
 void descriptor_set_setup(descriptor_set_t *descriptorSet, VkDevice device, VkPhysicalDevice physicalDevice);
 void descriptor_set_add_buffer(descriptor_set_t *descriptorSet, size_t size, uint32_t binding, bool vertex);
 void descriptor_set_add_texture(descriptor_set_t *descriptorSet, texture_t *texture, uint32_t binding, bool vertex);
-void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, uint32_t binding, bool vertex);
+void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, uint32_t binding, bool vertex, bool repeat);
 void descriptor_set_create(descriptor_set_t *descriptorSet);
 void descriptor_set_cleanup(descriptor_set_t *descriptor_set);
 

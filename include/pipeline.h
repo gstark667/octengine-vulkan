@@ -46,6 +46,7 @@ struct pipeline_t
 
     std::vector<pipeline_attachment_t> attachments;
     bool offscreen;
+    bool cullBack = true;
 };
 
 void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice device, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlagBits usage, VkCommandPool, VkQueue graphicsQueue);
