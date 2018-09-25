@@ -11,12 +11,17 @@ layout(binding = 0) uniform uniform_buffer_object {
 } ubo;
 
 layout(location = 0) in vec3 inPosition;
+layout(location = 2) in vec2 inTexCoord;
 layout(location = 3) in vec4 inWeights;
 layout(location = 4) in ivec4 inBones;
 
 layout(location = 5) in vec3 instancePos;
 layout(location = 6) in vec3 instanceRot;
 layout(location = 7) in float instanceScale;
+layout(location = 8) in int instanceTex;
+
+layout(location = 0) out vec2 outUV;
+layout(location = 1) out int outTexIdx;
 
 out gl_PerVertex
 {
@@ -59,4 +64,6 @@ void main()
     vec4 worldPos = mat4(rotMat) * vec4(inPosition * instanceScale, 1.0) + vec4(instancePos, 1.0);
     gl_Position = ubo.proj * ubo.view * mat4(rotMat) * boneTransform * vec4(inPosition, 1.0) + (ubo.proj * ubo.view * vec4(instancePos, 1.0));
     gl_Position = ubo.shadowSpace * worldPos;
+    outTexIdx = instanceTex;
+    outUV = inTexCoord;
 }

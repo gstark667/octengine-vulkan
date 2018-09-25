@@ -25,5 +25,5 @@ function setup(scene, object)
     scene_set_texture(scene, plane, "normal.png")
     gameobject_transform(plane, 0, 0, 0)
     gameobject_scale(plane, 50)
-    physics_init_box(scene, plane, 0, 50, 0.1, 50)
+    physics_init_box(scene, plane, 0, 50, 0.01, 50)
 end

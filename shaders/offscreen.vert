@@ -32,6 +32,13 @@ out gl_PerVertex {
     vec4 gl_Position;
 };
 
+
+const mat4 biasMat = mat4( 
+	0.5, 0.0, 0.0, 0.0,
+	0.0, 0.5, 0.0, 0.0,
+	0.0, 0.0, 1.0, 0.0,
+0.5, 0.5, 0.0, 1.0 );
+
 void main() {
     mat4 boneTransform = ubo.bones[inBones[0]] * inWeights[0];
     boneTransform     += ubo.bones[inBones[1]] * inWeights[1];
@@ -74,5 +81,5 @@ void main() {
     outColor = vec3(1.0, 1.0, 1.0);
     outTexIdx = instanceTex;
     outWorldPos = worldPos.xyz;
-    outShadowPos = ubo.shadowSpace * worldPos;
+    outShadowPos = biasMat * ubo.shadowSpace * worldPos;
 }

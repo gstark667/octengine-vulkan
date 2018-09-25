@@ -45,9 +45,11 @@ struct application_t
         "VK_LAYER_LUNARG_standard_validation"
     };
 
-    //GLFWwindow* window;
     uint32_t windowWidth;
     uint32_t windowHeight;
+
+    uint32_t shadowHeight = 4096;
+    uint32_t shadowWidth = 4096;
 
     SDL_Window *window;
 
@@ -94,7 +96,7 @@ struct application_t
     VkCommandBuffer offscreenCommandBuffer;
     VkCommandBuffer shadowCommandBuffer;
 
-    pipeline_attachment_t albedo, normal, position, offscreenDepthAttachment, shadowPosition, shadowDepth;
+    pipeline_attachment_t albedo, normal, position, offscreenDepthAttachment, shadowPosition, shadowDepth, shadowAlbedo;
     std::vector<pipeline_attachment_t> attachments;
     std::vector<pipeline_attachment_t> offscreenAttachments;
     std::vector<pipeline_attachment_t> shadowAttachments;

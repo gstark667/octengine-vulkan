@@ -499,7 +499,7 @@ void application_create_depth_resources(application_t *app) {
     app->offscreenAttachments.push_back(app->shadowPosition);
     app->offscreenAttachments.push_back(app->offscreenDepthAttachment);
 
-    pipeline_attachment_create(&app->shadowDepth, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+    pipeline_attachment_create(&app->shadowDepth, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
     app->shadowAttachments.push_back(app->shadowDepth);
 }
 
@@ -609,8 +609,12 @@ void application_update_uniforms(application_t *app)
     app->ubo.view = app->scene.camera.view;
     app->ubo.proj = app->scene.camera.proj;
 
-    float aspectRatio = (float)app->windowWidth/(float)app->windowHeight;
-    app->ubo.shadowSpace = glm::ortho(0.0f, 2.5f / aspectRatio, 2.5f, 0.0f, -1.0f, 100.0f) * glm::lookAt(glm::vec3(50.0f, 50.0f, 50.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    float aspectRatio = (float)app->windowHeight/(float)app->windowWidth;
+    app->ubo.lightPos = glm::vec3(20.0f, 20.0f, 20.0f);
+    app->ubo.shadowSpace = glm::perspective(glm::radians(45.0f), 1.0f, -1.0f, 1000.0f)
+    * glm::lookAt(app->ubo.lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f))
+    * app->ubo.shadowSpace = glm::mat4(1.0f);
+    app->ubo.shadowSpace = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, -1.0f, 160.0f) * glm::lookAt(app->ubo.lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void application_copy_uniforms(application_t *app)
@@ -783,8 +787,9 @@ void application_init_vulkan(application_t *app) {
 
     descriptor_set_setup(&app->shadowDescriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_buffer(&app->shadowDescriptorSet, sizeof(uniform_buffer_object_t), 0, true);
+    descriptor_set_add_texture(&app->shadowDescriptorSet, &app->scene.textures, 1, false);
     descriptor_set_create(&app->shadowDescriptorSet);
-    pipeline_create(&app->shadowPipeline, &app->shadowDescriptorSet, app->windowWidth, app->windowHeight, "shaders/shadow_vert.spv", "shaders/shadow_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->shadowAttachments, true);
+    pipeline_create(&app->shadowPipeline, &app->shadowDescriptorSet, app->shadowWidth, app->shadowHeight, "shaders/shadow_vert.spv", "shaders/shadow_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->shadowAttachments, true);
 
     application_create_frame_buffers(app);
     application_update_uniforms(app);
