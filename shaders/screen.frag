@@ -71,6 +71,7 @@ void main()
     vec3 position = texture(samplerPosition, inUV).rgb;
     vec4 coord = texture(shadowCoord, inUV);
     float shadowDepth = texture(shadowDepth, coord.xy).r;
+    //float shadowDepth = texture(shadowDepth, inUV).r;
 
     float shadow = textureProj(coord, vec2(0.0, 0.0));
     shadow = filterPCF(coord);
@@ -78,5 +79,6 @@ void main()
 
     shade = min(shadow, shade);
 
+    outFragColor = vec4(shadowDepth, 0.0, 0.0, 1.0);
     outFragColor = vec4(albedo * shade, 1.0);
 }

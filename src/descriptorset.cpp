@@ -159,7 +159,7 @@ void descriptor_set_add_texture(descriptor_set_t *descriptorSet, texture_t *text
     descriptorSet->textures.push_back(newTexture);
 }
 
-void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, uint32_t binding, bool vertex, bool repeat)
+void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, uint32_t binding, bool vertex, bool repeat, bool shadow)
 {
     texture_t *texture = new texture_t();
     texture->image = *image;
@@ -171,14 +171,14 @@ void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, u
     samplerInfo.magFilter = VK_FILTER_LINEAR;
     samplerInfo.minFilter = VK_FILTER_LINEAR;
     
-    samplerInfo.addressModeU = repeat ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    samplerInfo.addressModeU = repeat ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     samplerInfo.addressModeV = samplerInfo.addressModeU;
     samplerInfo.addressModeW = samplerInfo.addressModeU;
-    samplerInfo.anisotropyEnable = VK_TRUE;
-    samplerInfo.maxAnisotropy = 16;
-    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.anisotropyEnable = shadow ? VK_FALSE : VK_TRUE;
+    samplerInfo.maxAnisotropy = shadow ? 1 : 16;
+    samplerInfo.borderColor = shadow ? VK_BORDER_COLOR_INT_OPAQUE_WHITE : VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     samplerInfo.unnormalizedCoordinates = VK_FALSE;
-    samplerInfo.compareEnable = VK_TRUE;
+    samplerInfo.compareEnable = shadow ? VK_TRUE : VK_FALSE;
     samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     samplerInfo.mipLodBias = 0.0f;
