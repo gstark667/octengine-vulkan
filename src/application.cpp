@@ -48,6 +48,9 @@ void application_init_window(application_t *app) {
 
     camera_resize(&app->scene.camera, app->windowWidth, app->windowHeight, 90.0f);
 
+    app->shadowCam.object = new gameobject_t();
+    camera_resize(&app->shadowCam, app->shadowWidth, app->shadowHeight, 90.0f);
+
     SDL_SetWindowGrab(app->window, SDL_TRUE);
     SDL_SetRelativeMouseMode(SDL_TRUE);
 }
@@ -477,22 +480,22 @@ void application_create_depth_resources(application_t *app) {
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     pipeline_attachment_t depthAttachment;
-    pipeline_attachment_create(&depthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+    pipeline_attachment_create(&depthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     app->depthImage = depthAttachment.image;
 
     app->attachments.push_back(colorAttachment);
     app->attachments.push_back(depthAttachment);
 
 
-    pipeline_attachment_create(&app->albedo, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+    pipeline_attachment_create(&app->albedo, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
-    pipeline_attachment_create(&app->normal, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+    pipeline_attachment_create(&app->normal, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
-    pipeline_attachment_create(&app->position, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+    pipeline_attachment_create(&app->position, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
-    pipeline_attachment_create(&app->shadowPosition, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+    pipeline_attachment_create(&app->shadowPosition, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
-    pipeline_attachment_create(&app->offscreenDepthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+    pipeline_attachment_create(&app->offscreenDepthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
     app->offscreenAttachments.push_back(app->albedo);
     app->offscreenAttachments.push_back(app->normal);
@@ -500,7 +503,7 @@ void application_create_depth_resources(application_t *app) {
     app->offscreenAttachments.push_back(app->shadowPosition);
     app->offscreenAttachments.push_back(app->offscreenDepthAttachment);
 
-    pipeline_attachment_create(&app->shadowDepth, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue);
+    pipeline_attachment_create(&app->shadowDepth, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, true);
     app->shadowAttachments.push_back(app->shadowDepth);
 }
 
@@ -610,9 +613,17 @@ void application_update_uniforms(application_t *app)
     app->ubo.view = app->scene.camera.view;
     app->ubo.proj = app->scene.camera.proj;
 
+    app->shadowCam.object->globalPos.x = 20.0f;
+    app->shadowCam.object->globalPos.y = 20.0f;
+    app->shadowCam.object->globalPos.z = 20.0f;
+    app->shadowCam.object->globalRot.x = glm::radians(-45.0f);
+    app->shadowCam.object->globalRot.y = glm::radians(-45.0f);
+    camera_update(&app->shadowCam);
+
     app->ubo.lightPos = glm::vec3(10.0f, 10.0f, 10.0f);
-    app->ubo.shadowSpace = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, -1.0f, 160.0f) * glm::lookAt(app->ubo.lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    //app->ubo.shadowSpace = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 160.0f) * glm::lookAt(glm::vec3(10.0f, -10.0f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, -1.0f, -1.0f));
+    app->ubo.shadowSpace = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 160.0f) * glm::lookAt(app->ubo.lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    //app->ubo.shadowSpace = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f) * glm::lookAt(glm::vec3(10.0f, -10.0f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, -1.0f));
+    //app->ubo.shadowSpace = app->shadowCam.proj * app->shadowCam.view;
 }
 
 void application_copy_uniforms(application_t *app)
@@ -775,19 +786,19 @@ void application_init_vulkan(application_t *app) {
     descriptor_set_add_image(&app->descriptorSet, &app->shadowPosition.image, 4, false, false, false);
     descriptor_set_add_image(&app->descriptorSet, &app->shadowDepth.image, 5, false, false, true);
     descriptor_set_create(&app->descriptorSet);
-    pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->attachments, false);
+    pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->attachments, false, false);
 
     descriptor_set_setup(&app->offscreenDescriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_buffer(&app->offscreenDescriptorSet, sizeof(uniform_buffer_object_t), 0, true);
     descriptor_set_add_texture(&app->offscreenDescriptorSet, &app->scene.textures, 1, false);
     descriptor_set_create(&app->offscreenDescriptorSet);
-    pipeline_create(&app->offscreenPipeline, &app->offscreenDescriptorSet, app->windowWidth, app->windowHeight, "shaders/offscreen_vert.spv", "shaders/offscreen_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->offscreenAttachments, true);
+    pipeline_create(&app->offscreenPipeline, &app->offscreenDescriptorSet, app->windowWidth, app->windowHeight, "shaders/offscreen_vert.spv", "shaders/offscreen_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->offscreenAttachments, true, false);
 
     descriptor_set_setup(&app->shadowDescriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_buffer(&app->shadowDescriptorSet, sizeof(uniform_buffer_object_t), 0, true);
     descriptor_set_add_texture(&app->shadowDescriptorSet, &app->scene.textures, 1, false);
     descriptor_set_create(&app->shadowDescriptorSet);
-    pipeline_create(&app->shadowPipeline, &app->shadowDescriptorSet, app->shadowWidth, app->shadowHeight, "shaders/shadow_vert.spv", "shaders/shadow_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->shadowAttachments, true);
+    pipeline_create(&app->shadowPipeline, &app->shadowDescriptorSet, app->shadowWidth, app->shadowHeight, "shaders/shadow_vert.spv", "shaders/shadow_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->shadowAttachments, true, true);
 
     application_create_frame_buffers(app);
     application_update_uniforms(app);

@@ -59,7 +59,6 @@ float filterPCF(vec4 sc)
             shadowFactor += textureProj(sc, vec2(dx*x, dy*y));
             count++;
         }
-    
     }
     return shadowFactor / count;
 }
@@ -70,15 +69,15 @@ void main()
     vec3 normal = texture(samplerNormal, inUV).rgb;
     vec3 position = texture(samplerPosition, inUV).rgb;
     vec4 coord = texture(shadowCoord, inUV);
-    float shadowDepth = texture(shadowDepth, coord.xy).r;
+    //float shadowDepth = texture(shadowDepth, coord.xy).r;
     //float shadowDepth = texture(shadowDepth, inUV).r;
 
-    float shadow = textureProj(coord, vec2(0.0, 0.0));
-    shadow = filterPCF(coord);
+    //float shadow = textureProj(coord, vec2(0.0, 0.0));
+    float shadow = filterPCF(coord);
     float shade = max(dot(normal, vec3(0.8, 0.8, 0.8)), ambient);
-
     shade = min(shadow, shade);
 
-    outFragColor = vec4(shadowDepth, 0.0, 0.0, 1.0);
+    //outFragColor = vec4(shadowDepth, 0.0, 0.0, 1.0);
+    //outFragColor = vec4(shadow);
     outFragColor = vec4(albedo * shade, 1.0);
 }

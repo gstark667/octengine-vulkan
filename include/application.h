@@ -110,6 +110,8 @@ struct application_t
     VkSemaphore shadowSemaphore;
     VkSemaphore renderFinishedSemaphore;
 
+    camera_t shadowCam;
+
     model_t quad;
 };
 
