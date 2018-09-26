@@ -81,5 +81,5 @@ void main() {
     outColor = vec3(1.0, 1.0, 1.0);
     outTexIdx = instanceTex;
     outWorldPos = worldPos.xyz;
-    outShadowPos = biasMat * ubo.shadowSpace * worldPos;
+    outShadowPos = ubo.shadowSpace * worldPos;
 }

@@ -798,6 +798,7 @@ void application_init_vulkan(application_t *app) {
     descriptor_set_add_buffer(&app->shadowDescriptorSet, sizeof(uniform_buffer_object_t), 0, true);
     descriptor_set_add_texture(&app->shadowDescriptorSet, &app->scene.textures, 1, false);
     descriptor_set_create(&app->shadowDescriptorSet);
+    app->shadowPipeline.cullBack = true;
     pipeline_create(&app->shadowPipeline, &app->shadowDescriptorSet, app->shadowWidth, app->shadowHeight, "shaders/shadow_vert.spv", "shaders/shadow_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->shadowAttachments, true, true);
 
     application_create_frame_buffers(app);
