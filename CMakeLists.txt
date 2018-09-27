@@ -115,7 +115,7 @@ set_target_properties(liboctengine PROPERTIES OUTPUT_NAME "octengine")
 
 add_executable(mainoctengine src/main.cpp)
 set_target_properties(mainoctengine PROPERTIES OUTPUT_NAME "octengine")
-target_link_libraries (mainoctengine ${CMAKE_THREAD_LIBS_INIT} vulkan glfw SDL2 assimp freeimage lua liboctengine ${BULLET_LIBRARIES})
+target_link_libraries (mainoctengine ${CMAKE_THREAD_LIBS_INIT} vulkan SDL2 assimp freeimage lua liboctengine ${BULLET_LIBRARIES})
 target_include_directories (mainoctengine PUBLIC include/)
 add_dependencies(mainoctengine shader_files)
 
