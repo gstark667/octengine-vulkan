@@ -16,6 +16,8 @@ void image_create(image_t *image, VkDevice device, VkPhysicalDevice physicalDevi
     image->width = width;
     image->height = height;
     image->layers = layers;
+    image->format = format;
+    image->usage = usage;
 
     VkImageCreateInfo imageInfo = {};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -51,7 +53,7 @@ void image_create(image_t *image, VkDevice device, VkPhysicalDevice physicalDevi
     vkBindImageMemory(device, image->image, image->memory, 0);
 }
 
-void image_create_view(image_t *image, VkDevice device, VkFormat format, VkImageAspectFlags aspectFlags) {
+void image_create_view(image_t *image, VkDevice device, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t layer, bool allLayers) {
     VkImageViewCreateInfo viewInfo = {};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = image->image;
@@ -63,8 +65,8 @@ void image_create_view(image_t *image, VkDevice device, VkFormat format, VkImage
     viewInfo.format = format;
     viewInfo.subresourceRange.baseMipLevel = 0;
     viewInfo.subresourceRange.levelCount = 1;
-    viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = image->layers;
+    viewInfo.subresourceRange.baseArrayLayer = layer;
+    viewInfo.subresourceRange.layerCount = allLayers ? image->layers : 1;
     viewInfo.subresourceRange.aspectMask = aspectFlags;
 
     if (vkCreateImageView(device, &viewInfo, nullptr, &image->view) != VK_SUCCESS) {

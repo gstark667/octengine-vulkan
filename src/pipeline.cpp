@@ -8,7 +8,7 @@
 #include <iostream>
 
 
-void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice device, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlagBits usage, VkCommandPool commandPool, VkQueue graphicsQueue, bool shadow)
+void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice device, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkCommandPool commandPool, VkQueue graphicsQueue, bool shadow)
 {
     attachment->format = format;
     attachment->usage = usage;
@@ -30,7 +30,7 @@ void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice devi
         aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
     }
     image_create(&attachment->image, device, physicalDevice, width, height, 1, format, VK_IMAGE_TILING_OPTIMAL, usage | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    image_create_view(&attachment->image, device, format, aspectFlags);
+    image_create_view(&attachment->image, device, format, aspectFlags, 0, false);
 }
 
 std::vector<VkImageView> pipeline_attachment_views(std::vector<pipeline_attachment_t> attachments)
@@ -41,6 +41,24 @@ std::vector<VkImageView> pipeline_attachment_views(std::vector<pipeline_attachme
         output.push_back(it->image.view);
     }
     return output;
+}
+
+void pipeline_attachment_from_image(pipeline_attachment_t *attachment, VkDevice device, VkImageAspectFlags aspectFlags, image_t image, uint32_t layer, bool shadow)
+{
+    attachment->format = image.format;
+    attachment->usage = image.usage;
+    attachment->image = image;
+    if (image.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+    {
+        attachment->layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        attachment->finalLayout = shadow ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    }
+    else
+    {
+        attachment->layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        attachment->finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    }
+    image_create_view(&attachment->image, device, attachment->format, aspectFlags, layer, false); 
 }
 
 void pipeline_attachment_destroy(pipeline_attachment_t *attachment, VkDevice device)

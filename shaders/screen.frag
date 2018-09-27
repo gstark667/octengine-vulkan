@@ -6,7 +6,7 @@ layout (binding = 1) uniform sampler2D samplerNormal;
 layout (binding = 2) uniform sampler2D samplerPosition;
 layout (binding = 3) uniform sampler2D samplerDepth;
 layout (binding = 4) uniform sampler2D shadowCoord;
-layout (binding = 5) uniform sampler2D shadowDepth;
+layout (binding = 5) uniform sampler2DArray shadowDepth;
 
 layout (location = 0) in vec2 inUV;
 
@@ -21,7 +21,7 @@ float textureProj(vec4 P, vec2 off)
     shadowCoord.st = shadowCoord.st * 0.5 + 0.5;
     if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0) 
     {
-        float dist = texture(shadowDepth, shadowCoord.st + off).r;
+        float dist = texture(shadowDepth, vec3(shadowCoord.st + off, 0)).r;
         if (shadowCoord.w > 0.0 && dist < shadowCoord.z - 0.0005)
         {
             shadow = ambient;
@@ -32,7 +32,7 @@ float textureProj(vec4 P, vec2 off)
 
 float filterPCF(vec4 sc)
 {
-    ivec2 texDim = textureSize(shadowDepth, 0);
+    ivec2 texDim = textureSize(shadowDepth, 0).xy;
     float scale = 1.0;
     float dx = scale * 1.0 / float(texDim.x);
     float dy = scale * 1.0 / float(texDim.y);

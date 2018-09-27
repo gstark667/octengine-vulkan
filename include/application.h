@@ -48,8 +48,8 @@ struct application_t
     uint32_t windowWidth;
     uint32_t windowHeight;
 
-    uint32_t shadowHeight = 4096;
-    uint32_t shadowWidth = 4096;
+    uint32_t shadowHeight = 2048;
+    uint32_t shadowWidth = 2048;
 
     SDL_Window *window;
 
@@ -84,7 +84,8 @@ struct application_t
 
     pipeline_t pipeline;
     pipeline_t offscreenPipeline;
-    pipeline_t shadowPipeline;
+    pipeline_t shadowPipeline1;
+    pipeline_t shadowPipeline2;
 
     model_t model;
     texture_t texture;
@@ -94,20 +95,24 @@ struct application_t
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;
     VkCommandBuffer offscreenCommandBuffer;
-    VkCommandBuffer shadowCommandBuffer;
+    VkCommandBuffer shadowCommandBuffer1, shadowCommandBuffer2;
 
-    pipeline_attachment_t albedo, normal, position, offscreenDepthAttachment, shadowPosition, shadowDepth, shadowAlbedo;
+    image_t shadowImageArray;
+    pipeline_attachment_t albedo, normal, position, offscreenDepthAttachment, shadowPosition, shadowDepth1, shadowDepth2;
     std::vector<pipeline_attachment_t> attachments;
     std::vector<pipeline_attachment_t> offscreenAttachments;
-    std::vector<pipeline_attachment_t> shadowAttachments;
+    std::vector<pipeline_attachment_t> shadowAttachments1;
+    std::vector<pipeline_attachment_t> shadowAttachments2;
 
     descriptor_set_t descriptorSet;
     descriptor_set_t offscreenDescriptorSet;
-    descriptor_set_t shadowDescriptorSet;
+    descriptor_set_t shadowDescriptorSet1;
+    descriptor_set_t shadowDescriptorSet2;
 
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore offscreenSemaphore;
-    VkSemaphore shadowSemaphore;
+    VkSemaphore shadowSemaphore1;
+    VkSemaphore shadowSemaphore2;
     VkSemaphore renderFinishedSemaphore;
 
     camera_t shadowCam;
