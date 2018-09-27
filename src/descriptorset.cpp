@@ -38,6 +38,7 @@ void descriptor_set_create_layout(descriptor_set_t *descriptorSet)
     layoutInfo.bindingCount = bindings.size();
     layoutInfo.pBindings = bindings.data();
 
+    std::cout << "making descriptor set" << std::endl;
     if (vkCreateDescriptorSetLayout(descriptorSet->device, &layoutInfo, nullptr, &descriptorSet->descriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");
     }
@@ -199,7 +200,6 @@ void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, u
 
 void descriptor_set_create(descriptor_set_t *descriptorSet)
 {
-    descriptor_set_create_layout(descriptorSet);
     descriptor_set_create_pool(descriptorSet);
     descriptor_set_create_layout(descriptorSet);
     descriptor_set_create_descriptor_set(descriptorSet);
@@ -207,8 +207,8 @@ void descriptor_set_create(descriptor_set_t *descriptorSet)
 
 void descriptor_set_cleanup(descriptor_set_t *descriptorSet)
 {
-    vkDestroyDescriptorPool(descriptorSet->device, descriptorSet->descriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(descriptorSet->device, descriptorSet->descriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(descriptorSet->device, descriptorSet->descriptorPool, nullptr);
 
     for (auto it = descriptorSet->buffers.begin(); it != descriptorSet->buffers.end(); ++it)
     {

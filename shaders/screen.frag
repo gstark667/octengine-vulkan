@@ -12,19 +12,7 @@ layout (location = 0) in vec2 inUV;
 
 layout (location = 0) out vec4 outFragColor;
 
-float ambient = 0.1;
-
-struct Light {
-    vec4 position;
-    vec3 color;
-    float radius;
-};
-
-layout (binding = 4) uniform UBO 
-{
-    Light lights[6];
-    vec4 viewPos;
-} ubo;
+const float ambient = 0.1;
 
 float textureProj(vec4 P, vec2 off)
 {
