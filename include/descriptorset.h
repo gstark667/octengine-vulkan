@@ -19,6 +19,14 @@ struct uniform_buffer_object_t
     //glm::mat4 bones[64];
 };
 
+struct light_ubo_t
+{
+    glm::mat4 shadowSpaces[16];
+    glm::vec3 lightPositions[16];
+    glm::vec3 lightColors[16];
+    int lightCount = 0;
+};
+
 struct descriptor_texture_t
 {
     texture_t *texture;

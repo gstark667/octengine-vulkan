@@ -33,21 +33,12 @@ void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice devi
     image_create_view(&attachment->image, device, format, aspectFlags, 0, false);
 }
 
-std::vector<VkImageView> pipeline_attachment_views(std::vector<pipeline_attachment_t> attachments)
-{
-    std::vector<VkImageView> output;
-    for (std::vector<pipeline_attachment_t>::iterator it = attachments.begin(); it != attachments.end(); ++it)
-    {
-        output.push_back(it->image.view);
-    }
-    return output;
-}
-
 void pipeline_attachment_from_image(pipeline_attachment_t *attachment, VkDevice device, VkImageAspectFlags aspectFlags, image_t image, uint32_t layer, bool shadow)
 {
     attachment->format = image.format;
     attachment->usage = image.usage;
     attachment->image = image;
+    attachment->destroy = false;
     if (image.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
     {
         attachment->layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -61,9 +52,22 @@ void pipeline_attachment_from_image(pipeline_attachment_t *attachment, VkDevice 
     image_create_view(&attachment->image, device, attachment->format, aspectFlags, layer, false); 
 }
 
+std::vector<VkImageView> pipeline_attachment_views(std::vector<pipeline_attachment_t> attachments)
+{
+    std::vector<VkImageView> output;
+    for (std::vector<pipeline_attachment_t>::iterator it = attachments.begin(); it != attachments.end(); ++it)
+    {
+        output.push_back(it->image.view);
+    }
+    return output;
+}
+
 void pipeline_attachment_destroy(pipeline_attachment_t *attachment, VkDevice device)
 {
-    image_cleanup(&attachment->image, device);
+    if (attachment->destroy)
+        image_cleanup(&attachment->image, device);
+    else
+        vkDestroyImageView(device, attachment->image.view, nullptr);
 }
 
 void pipeline_create_render_pass(pipeline_t *pipeline)
@@ -241,6 +245,7 @@ void pipeline_create_graphics(pipeline_t *pipeline, uint32_t width, uint32_t hei
     VkPipelineRasterizationStateCreateInfo rasterizer = {};
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizer.depthClampEnable = VK_FALSE;
+    rasterizer.depthBiasEnable = VK_TRUE;
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;

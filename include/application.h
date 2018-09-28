@@ -91,6 +91,7 @@ struct application_t
     texture_t texture;
     scene_t scene;
     uniform_buffer_object_t ubo;
+    light_ubo_t lightUBO;
 
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;

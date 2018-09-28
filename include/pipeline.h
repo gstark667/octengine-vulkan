@@ -22,6 +22,7 @@ struct pipeline_attachment_t
     VkFormat format;
     VkImageLayout layout;
     VkImageLayout finalLayout;
+    bool destroy = true;
 };
 
 struct pipeline_t

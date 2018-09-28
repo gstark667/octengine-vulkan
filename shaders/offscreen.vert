@@ -26,7 +26,6 @@ layout (location = 1) out vec2 outUV;
 layout (location = 2) out vec3 outColor;
 layout (location = 3) out vec3 outWorldPos;
 layout (location = 4) out int outTexIdx;
-layout (location = 5) out vec4 outShadowPos;
 
 out gl_PerVertex {
     vec4 gl_Position;
@@ -81,5 +80,4 @@ void main() {
     outColor = vec3(1.0, 1.0, 1.0);
     outTexIdx = instanceTex;
     outWorldPos = worldPos.xyz;
-    outShadowPos = ubo.shadowSpace * worldPos;
 }

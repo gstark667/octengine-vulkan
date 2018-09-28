@@ -493,14 +493,11 @@ void application_create_depth_resources(application_t *app) {
 
     pipeline_attachment_create(&app->position, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
-    pipeline_attachment_create(&app->shadowPosition, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
-
     pipeline_attachment_create(&app->offscreenDepthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
     app->offscreenAttachments.push_back(app->albedo);
     app->offscreenAttachments.push_back(app->normal);
     app->offscreenAttachments.push_back(app->position);
-    app->offscreenAttachments.push_back(app->shadowPosition);
     app->offscreenAttachments.push_back(app->offscreenDepthAttachment);
 
     image_create(&app->shadowImageArray, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, 2, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -508,11 +505,8 @@ void application_create_depth_resources(application_t *app) {
     pipeline_attachment_from_image(&app->shadowDepth1, app->device, VK_IMAGE_ASPECT_DEPTH_BIT, app->shadowImageArray, 0, true);
     app->shadowAttachments1.push_back(app->shadowDepth1);
 
-    pipeline_attachment_from_image(&app->shadowDepth2, app->device, VK_IMAGE_ASPECT_DEPTH_BIT, app->shadowImageArray, 0, true);
+    pipeline_attachment_from_image(&app->shadowDepth2, app->device, VK_IMAGE_ASPECT_DEPTH_BIT, app->shadowImageArray, 1, true);
     app->shadowAttachments2.push_back(app->shadowDepth2);
-
-    //pipeline_attachment_from_image(&app->shadowDepth, app->device, VK_IMAGE_ASPECT_DEPTH_BIT, app->shadowImageArray, 1, true);
-    //app->shadowAttachments.push_back(app->shadowDepth);
 }
 
 // create frame buffers
@@ -594,9 +588,9 @@ void application_create_command_buffers(application_t *app) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 
-    pipeline_begin_render(&app->shadowPipeline1, app->shadowCommandBuffer2);
+    pipeline_begin_render(&app->shadowPipeline2, app->shadowCommandBuffer2);
     scene_render(&app->scene, app->shadowCommandBuffer2, app->shadowPipeline2.layout, app->shadowPipeline2.pipeline, app->shadowDescriptorSet2.descriptorSet);
-    pipeline_end_render(&app->shadowPipeline1, app->shadowCommandBuffer2);
+    pipeline_end_render(&app->shadowPipeline2, app->shadowCommandBuffer2);
 }
 
 // create semaphores
@@ -640,11 +634,12 @@ void application_update_uniforms(application_t *app)
     app->shadowCam.object->globalRot.y = glm::radians(-45.0f);
     camera_update(&app->shadowCam);
 
-    app->ubo.lightPos[0] = glm::vec3(10.0f, 10.0f, 10.0f);
-    app->ubo.shadowSpace[0] = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 160.0f) * glm::lookAt(app->ubo.lightPos[0], glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    app->lightUBO.lightPositions[0] = glm::vec3(10.0f, 10.0f, 10.0f);
+    app->lightUBO.shadowSpaces[0] = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 30.0f) * glm::lookAt(app->lightUBO.lightPositions[0], glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
 
-    app->ubo.lightPos[1] = glm::vec3(10.0f, 10.0f, 10.0f);
-    app->ubo.shadowSpace[1] = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 160.0f) * glm::lookAt(app->ubo.lightPos[1], glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    app->lightUBO.lightPositions[1] = glm::vec3(-10.0f, 10.0f, 10.0f);
+    app->lightUBO.shadowSpaces[1] = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 30.0f) * glm::lookAt(app->lightUBO.lightPositions[1], glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
+
     //app->ubo.shadowSpace = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f) * glm::lookAt(glm::vec3(10.0f, -10.0f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, -1.0f));
     //app->ubo.shadowSpace = app->shadowCam.proj * app->shadowCam.view;
 }
@@ -656,14 +651,22 @@ void application_copy_uniforms(application_t *app)
     memcpy(data, &app->ubo, sizeof(app->ubo));
     vkUnmapMemory(app->device, app->descriptorSet.buffers.at(0).uniformBufferMemory);*/
 
+    vkMapMemory(app->device, app->descriptorSet.buffers.at(0).uniformBufferMemory, 0, sizeof(app->lightUBO), 0, &data);
+    memcpy(data, &app->lightUBO, sizeof(app->lightUBO));
+    vkUnmapMemory(app->device, app->descriptorSet.buffers.at(0).uniformBufferMemory);
+
     vkMapMemory(app->device, app->offscreenDescriptorSet.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
     memcpy(data, &app->ubo, sizeof(app->ubo));
     vkUnmapMemory(app->device, app->offscreenDescriptorSet.buffers.at(0).uniformBufferMemory);
 
+    app->ubo.proj = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 30.0f);
+    app->ubo.view = glm::lookAt(app->lightUBO.lightPositions[0], glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     vkMapMemory(app->device, app->shadowDescriptorSet1.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
     memcpy(data, &app->ubo, sizeof(app->ubo));
     vkUnmapMemory(app->device, app->shadowDescriptorSet1.buffers.at(0).uniformBufferMemory);
 
+    app->ubo.proj = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 30.0f);
+    app->ubo.view = glm::lookAt(app->lightUBO.lightPositions[1], glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     vkMapMemory(app->device, app->shadowDescriptorSet2.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
     memcpy(data, &app->ubo, sizeof(app->ubo));
     vkUnmapMemory(app->device, app->shadowDescriptorSet2.buffers.at(0).uniformBufferMemory);
@@ -829,8 +832,8 @@ void application_init_vulkan(application_t *app) {
     descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 1, false, false, false);
     descriptor_set_add_image(&app->descriptorSet, &app->position.image, 2, false, false, false);
     descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 3, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->shadowPosition.image, 4, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->shadowImageArray, 5, false, false, true);
+    descriptor_set_add_image(&app->descriptorSet, &app->shadowImageArray, 4, false, false, true);
+    descriptor_set_add_buffer(&app->descriptorSet, sizeof(light_ubo_t), 5, false);
     descriptor_set_create(&app->descriptorSet);
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->attachments, false, false);
 
@@ -944,6 +947,7 @@ void application_cleanup(application_t *app) {
     descriptor_set_cleanup(&app->shadowDescriptorSet1);
     descriptor_set_cleanup(&app->shadowDescriptorSet2);
     model_cleanup(&app->quad, app->device);
+    image_cleanup(&app->shadowImageArray, app->device);
 
     vkDestroySemaphore(app->device, app->renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->offscreenSemaphore, nullptr);
@@ -958,7 +962,6 @@ void application_cleanup(application_t *app) {
     vkDestroySurfaceKHR(app->instance, app->surface, nullptr);
     vkDestroyInstance(app->instance, nullptr);
 
-    //glfwDestroyWindow(app->window);
     SDL_DestroyWindow(app->window);
     SDL_Quit();
 }

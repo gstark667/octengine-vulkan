@@ -8,12 +8,10 @@ layout (location = 1) in vec2 inUV;
 layout (location = 2) in vec3 inColor;
 layout (location = 3) in vec3 inWorldPos;
 layout (location = 4) flat in int inTexIdx;
-layout (location = 5) in vec4 inShadowPos;
 
 layout (location = 0) out vec4 outAlbedo;
 layout (location = 1) out vec4 outNormal;
 layout (location = 2) out vec4 outPosition;
-layout (location = 3) out vec4 outShadowPosition;
 
 void main() {
     vec3 normal = (texture(texSampler, vec3(inUV, 1)).rgb * 2 - 1);
@@ -25,5 +23,4 @@ void main() {
     outNormal = vec4(TBN * normal, 1.0);
     outPosition = vec4(inWorldPos, 1.0);
     outAlbedo = texture(texSampler, vec3(inUV, inTexIdx));
-    outShadowPosition = inShadowPos;
 }
