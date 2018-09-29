@@ -624,8 +624,7 @@ void application_update_uniforms(application_t *app)
     scene_update(&app->scene, delta);
 
     camera_update(&app->scene.camera);
-    app->ubo.view = app->scene.camera.view;
-    app->ubo.proj = app->scene.camera.proj;
+    app->ubo.cameraMVP = app->scene.camera.proj * app->scene.camera.view;
 
     app->shadowCam.object->globalPos.x = 20.0f;
     app->shadowCam.object->globalPos.y = 20.0f;
@@ -659,14 +658,12 @@ void application_copy_uniforms(application_t *app)
     memcpy(data, &app->ubo, sizeof(app->ubo));
     vkUnmapMemory(app->device, app->offscreenDescriptorSet.buffers.at(0).uniformBufferMemory);
 
-    app->ubo.proj = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 30.0f);
-    app->ubo.view = glm::lookAt(app->lightUBO.lightPositions[0], glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    app->ubo.cameraMVP = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 30.0f) * glm::lookAt(app->lightUBO.lightPositions[0], glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     vkMapMemory(app->device, app->shadowDescriptorSet1.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
     memcpy(data, &app->ubo, sizeof(app->ubo));
     vkUnmapMemory(app->device, app->shadowDescriptorSet1.buffers.at(0).uniformBufferMemory);
 
-    app->ubo.proj = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 30.0f);
-    app->ubo.view = glm::lookAt(app->lightUBO.lightPositions[1], glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    app->ubo.cameraMVP = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 30.0f) * glm::lookAt(app->lightUBO.lightPositions[1], glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     vkMapMemory(app->device, app->shadowDescriptorSet2.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
     memcpy(data, &app->ubo, sizeof(app->ubo));
     vkUnmapMemory(app->device, app->shadowDescriptorSet2.buffers.at(0).uniformBufferMemory);

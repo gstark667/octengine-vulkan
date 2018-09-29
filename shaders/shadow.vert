@@ -2,12 +2,8 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 layout(binding = 0) uniform uniform_buffer_object {
-    mat4 model;
-    mat4 view;
-    mat4 proj;
+    mat4 cameraMVP;
     mat4 shadowSpace;
-    vec3 lightPos;
-    mat4 bones[64];
 } ubo;
 
 layout(location = 0) in vec3 inPosition;
@@ -27,10 +23,10 @@ out gl_PerVertex
 
 void main() 
 {
-    mat4 boneTransform = ubo.bones[inBones[0]] * inWeights[0];
-    boneTransform     += ubo.bones[inBones[1]] * inWeights[1];
-    boneTransform     += ubo.bones[inBones[2]] * inWeights[2];
-    boneTransform     += ubo.bones[inBones[3]] * inWeights[3];
+    //mat4 boneTransform = ubo.bones[inBones[0]] * inWeights[0];
+    //boneTransform     += ubo.bones[inBones[1]] * inWeights[1];
+    //boneTransform     += ubo.bones[inBones[2]] * inWeights[2];
+    //boneTransform     += ubo.bones[inBones[3]] * inWeights[3];
 
     mat3 mx, my, mz;
 	
@@ -59,5 +55,5 @@ void main()
     mat3 rotMat = mz * my * mx;
 
     vec4 worldPos = mat4(rotMat) * vec4(inPosition * instanceScale, 1.0) + vec4(instancePos, 1.0);
-    gl_Position = ubo.proj * ubo.view * worldPos;
+    gl_Position = ubo.cameraMVP * worldPos;
 }
