@@ -633,11 +633,14 @@ void application_update_uniforms(application_t *app)
     app->shadowCam.object->globalRot.y = glm::radians(-45.0f);
     camera_update(&app->shadowCam);
 
-    app->lightUBO.lightPositions[0] = glm::vec3(10.0f, 10.0f, 10.0f);
-    app->lightUBO.shadowSpaces[0] = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 30.0f) * glm::lookAt(app->lightUBO.lightPositions[0], glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
+    app->lightUBO.lightCount = 2;
+    app->lightUBO.lights[0].position = glm::vec4(10.0f, 10.0f, 10.0f, 1.0f);
+    app->lightUBO.lights[0].color = glm::vec4(1.0f, 0.3f, 0.3f, 1.0f);
+    app->lightUBO.lights[0].mvp = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 30.0f) * glm::lookAt(glm::vec3(app->lightUBO.lights[0].position), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
 
-    app->lightUBO.lightPositions[1] = glm::vec3(-10.0f, 10.0f, 10.0f);
-    app->lightUBO.shadowSpaces[1] = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 30.0f) * glm::lookAt(app->lightUBO.lightPositions[1], glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
+    app->lightUBO.lights[1].position = glm::vec4(-10.0f, 10.0f, 10.0f, 1.0f);
+    app->lightUBO.lights[1].color = glm::vec4(0.3f, 0.3f, 1.0f, 1.0f);
+    app->lightUBO.lights[1].mvp = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 30.0f) * glm::lookAt(glm::vec3(app->lightUBO.lights[1].position), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
 
     //app->ubo.shadowSpace = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f) * glm::lookAt(glm::vec3(10.0f, -10.0f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, -1.0f));
     //app->ubo.shadowSpace = app->shadowCam.proj * app->shadowCam.view;
@@ -658,12 +661,12 @@ void application_copy_uniforms(application_t *app)
     memcpy(data, &app->ubo, sizeof(app->ubo));
     vkUnmapMemory(app->device, app->offscreenDescriptorSet.buffers.at(0).uniformBufferMemory);
 
-    app->ubo.cameraMVP = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 30.0f) * glm::lookAt(app->lightUBO.lightPositions[0], glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    app->ubo.cameraMVP = app->lightUBO.lights[0].mvp;
     vkMapMemory(app->device, app->shadowDescriptorSet1.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
     memcpy(data, &app->ubo, sizeof(app->ubo));
     vkUnmapMemory(app->device, app->shadowDescriptorSet1.buffers.at(0).uniformBufferMemory);
 
-    app->ubo.cameraMVP = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 30.0f) * glm::lookAt(app->lightUBO.lightPositions[1], glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    app->ubo.cameraMVP = app->lightUBO.lights[1].mvp;
     vkMapMemory(app->device, app->shadowDescriptorSet2.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
     memcpy(data, &app->ubo, sizeof(app->ubo));
     vkUnmapMemory(app->device, app->shadowDescriptorSet2.buffers.at(0).uniformBufferMemory);
@@ -825,12 +828,13 @@ void application_init_vulkan(application_t *app) {
     scene_create(&app->scene, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
 
     descriptor_set_setup(&app->descriptorSet, app->device, app->physicalDevice);
-    descriptor_set_add_image(&app->descriptorSet, &app->albedo.image, 0, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 1, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->position.image, 2, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 3, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->shadowImageArray, 4, false, false, true);
-    descriptor_set_add_buffer(&app->descriptorSet, sizeof(light_ubo_t), 5, false);
+    std::cout << "light ubo size: " << sizeof(light_ubo_t) << std::endl;
+    descriptor_set_add_buffer(&app->descriptorSet, sizeof(light_ubo_t), 0, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->albedo.image, 1, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 2, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->position.image, 3, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 4, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->shadowImageArray, 5, false, false, true);
     descriptor_set_create(&app->descriptorSet);
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->attachments, false, false);
 

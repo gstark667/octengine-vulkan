@@ -16,11 +16,16 @@ struct uniform_buffer_object_t
     //glm::mat4 bones[64];
 };
 
+struct light_t
+{
+    glm::vec4 position = glm::vec4(0.0f);
+    glm::vec4 color = glm::vec4(0.0f);
+    glm::mat4 mvp = glm::mat4(1.0f);
+};
+
 struct light_ubo_t
 {
-    glm::mat4 shadowSpaces[16];
-    glm::vec3 lightPositions[16];
-    glm::vec3 lightColors[16];
+    light_t lights[16];
     int lightCount = 0;
 };
 
