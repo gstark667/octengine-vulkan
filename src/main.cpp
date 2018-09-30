@@ -9,8 +9,6 @@ int main()
     app.enableValidationLayers = true;
     app.windowWidth = 1280;
     app.windowHeight = 720;
-    app.windowWidth = 1280;
-    app.windowHeight = 720;
     app.fullscreen = false;
 
     try {

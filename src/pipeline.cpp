@@ -275,7 +275,15 @@ void pipeline_create_graphics(pipeline_t *pipeline, uint32_t width, uint32_t hei
     std::cout << "making pipeline with " << pipeline->samples << " samples" << std::endl;
     VkPipelineMultisampleStateCreateInfo multisampling = {};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampling.sampleShadingEnable = pipeline->samples == VK_FALSE;
+    if (pipeline->samples != VK_SAMPLE_COUNT_1_BIT)
+    {
+        multisampling.sampleShadingEnable = VK_TRUE;
+        multisampling.minSampleShading = 0.5f;
+    }
+    else
+    {
+        multisampling.sampleShadingEnable = VK_FALSE;
+    }
     multisampling.rasterizationSamples = pipeline->samples;
 
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
