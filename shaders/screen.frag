@@ -82,19 +82,21 @@ void main()
     for (int i = 0; i < lightUBO.lightCount; ++i)
     {
         float shade = max(dot(normal, normalize(lightUBO.lights[i].position.xyz)), 0.0);
+        shade *= filterPCF(lightUBO.lights[i].mvp * vec4(position, 1.0), i);
+        shade = max(shade, AMBIENT);
         shadedColor += lightUBO.lights[i].color.xyz * shade;
     }
 
     //float shadow = textureProj(coord, vec2(0.0, 0.0));
-    float shadow = 1.0;
-    for (int i = 0; i < lightUBO.lightCount; ++i)
-    {
-        //float shade = max(dot(normal, normalize(lightUBO.lights[i].position.xyz)), AMBIENT);
-        vec4 coord = lightUBO.lights[i].mvp * vec4(position, 1.0);
-        shadow *= filterPCF(coord, i);
-    }
-    shadow = max(shadow, AMBIENT);
-    shadedColor *= shadow;
+    //float shadow = 1.0;
+    //for (int i = 0; i < lightUBO.lightCount; ++i)
+    //{
+    //    float shade = max(dot(normal, normalize(lightUBO.lights[i].position.xyz)), AMBIENT);
+    //    vec4 coord = lightUBO.lights[i].mvp * vec4(position, 1.0);
+    //    shadow *= filterPCF(coord, i);
+    //}
+    //shadow = max(shadow, AMBIENT);
+    //shadedColor *= shadow;
     //shade = min(shadow, shade);
     //float shade = dot(normal, normalize(lightUBO.lightPositions[1]));
     //float shade = dot(normal, normalize(lightUBO.lights[1].position.xyz));

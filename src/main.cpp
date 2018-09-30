@@ -11,6 +11,7 @@ int main()
     app.windowHeight = 600;
     app.windowWidth = 1280;
     app.windowHeight = 720;
+    app.fullscreen = false;
 
     try {
         application_run(&app);

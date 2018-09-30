@@ -45,11 +45,12 @@ struct application_t
         "VK_LAYER_LUNARG_standard_validation"
     };
 
+    bool fullscreen = false;
     uint32_t windowWidth;
     uint32_t windowHeight;
 
-    uint32_t shadowHeight = 2048;
-    uint32_t shadowWidth = 2048;
+    uint32_t shadowHeight = 4096;
+    uint32_t shadowWidth = 4096;
 
     SDL_Window *window;
 

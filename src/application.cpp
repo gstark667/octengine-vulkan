@@ -43,7 +43,7 @@ void application_init_window(application_t *app) {
         SDL_WINDOWPOS_UNDEFINED,
         app->windowWidth,
         app->windowHeight,
-        SDL_WINDOW_VULKAN
+        (app->fullscreen ? SDL_WINDOW_FULLSCREEN | SDL_WINDOW_VULKAN : SDL_WINDOW_VULKAN)
     );
 
     camera_resize(&app->scene.camera, app->windowWidth, app->windowHeight, 90.0f);
@@ -634,13 +634,13 @@ void application_update_uniforms(application_t *app)
     camera_update(&app->shadowCam);
 
     app->lightUBO.lightCount = 2;
-    app->lightUBO.lights[0].position = glm::vec4(10.0f, 10.0f, 10.0f, 1.0f);
+    app->lightUBO.lights[0].position = glm::vec4(0.0f, 10.0f, 10.0f, 1.0f);
     app->lightUBO.lights[0].color = glm::vec4(1.0f, 0.3f, 0.3f, 1.0f);
-    app->lightUBO.lights[0].mvp = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 30.0f) * glm::lookAt(glm::vec3(app->lightUBO.lights[0].position), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
+    app->lightUBO.lights[0].mvp = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 60.0f) * glm::lookAt(glm::vec3(app->lightUBO.lights[0].position), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
 
-    app->lightUBO.lights[1].position = glm::vec4(-10.0f, 10.0f, 10.0f, 1.0f);
+    app->lightUBO.lights[1].position = glm::vec4(-10.0f, 10.0f, 0.0f, 1.0f);
     app->lightUBO.lights[1].color = glm::vec4(0.3f, 0.3f, 1.0f, 1.0f);
-    app->lightUBO.lights[1].mvp = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 30.0f) * glm::lookAt(glm::vec3(app->lightUBO.lights[1].position), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
+    app->lightUBO.lights[1].mvp = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 60.0f) * glm::lookAt(glm::vec3(app->lightUBO.lights[1].position), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
 
     //app->ubo.shadowSpace = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f) * glm::lookAt(glm::vec3(10.0f, -10.0f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, -1.0f));
     //app->ubo.shadowSpace = app->shadowCam.proj * app->shadowCam.view;
