@@ -243,6 +243,20 @@ bool application_is_device_suitable(application_t *app, VkPhysicalDevice device)
     return queue_family_is_complete(&indices) && extensionsSupported && swapChainAdequate;
 }
 
+void application_get_usable_samples(application_t *app) {
+    VkPhysicalDeviceProperties physicalDeviceProperties;
+    vkGetPhysicalDeviceProperties(app->physicalDevice, &physicalDeviceProperties);
+
+    VkSampleCountFlags counts = std::min(physicalDeviceProperties.limits.framebufferColorSampleCounts, physicalDeviceProperties.limits.framebufferDepthSampleCounts);
+    if (counts & VK_SAMPLE_COUNT_2_BIT) { app->sampleCount = VK_SAMPLE_COUNT_2_BIT; }
+    if (counts & VK_SAMPLE_COUNT_4_BIT) { app->sampleCount = VK_SAMPLE_COUNT_4_BIT; }
+    if (counts & VK_SAMPLE_COUNT_8_BIT) { app->sampleCount = VK_SAMPLE_COUNT_8_BIT; }
+    if (counts & VK_SAMPLE_COUNT_16_BIT) { app->sampleCount = VK_SAMPLE_COUNT_16_BIT; }
+    if (counts & VK_SAMPLE_COUNT_32_BIT) { app->sampleCount = VK_SAMPLE_COUNT_32_BIT; }
+    if (counts & VK_SAMPLE_COUNT_64_BIT) { app->sampleCount = VK_SAMPLE_COUNT_64_BIT; }
+    std::cout << "sample count: " << app->sampleCount << std::endl;
+}
+
 void application_pick_physical_device(application_t *app) {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(app->instance, &deviceCount, nullptr);
@@ -264,6 +278,8 @@ void application_pick_physical_device(application_t *app) {
     if (app->physicalDevice == VK_NULL_HANDLE) {
         throw std::runtime_error("failed to find a suitable GPU!");
     }
+
+    application_get_usable_samples(app);
 }
 
 // create logical device
@@ -285,6 +301,7 @@ void application_create_logical_device(application_t *app) {
 
     VkPhysicalDeviceFeatures deviceFeatures = {};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
+    deviceFeatures.sampleRateShading = VK_TRUE;
 
     VkDeviceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -474,33 +491,34 @@ void application_create_depth_resources(application_t *app) {
     pipeline_attachment_t colorAttachment;
     colorAttachment.image.image = app->swapChainImages[0];
     colorAttachment.image.view = app->swapChainImageViews[0];
+    colorAttachment.image.samples = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     colorAttachment.format = app->swapChainImageFormat;
     colorAttachment.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     pipeline_attachment_t depthAttachment;
-    pipeline_attachment_create(&depthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
+    pipeline_attachment_create(&depthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     app->depthImage = depthAttachment.image;
 
     app->attachments.push_back(colorAttachment);
     app->attachments.push_back(depthAttachment);
 
 
-    pipeline_attachment_create(&app->albedo, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
+    pipeline_attachment_create(&app->albedo, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
-    pipeline_attachment_create(&app->normal, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
+    pipeline_attachment_create(&app->normal, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
-    pipeline_attachment_create(&app->position, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
+    pipeline_attachment_create(&app->position, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
-    pipeline_attachment_create(&app->offscreenDepthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
+    pipeline_attachment_create(&app->offscreenDepthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
     app->offscreenAttachments.push_back(app->albedo);
     app->offscreenAttachments.push_back(app->normal);
     app->offscreenAttachments.push_back(app->position);
     app->offscreenAttachments.push_back(app->offscreenDepthAttachment);
 
-    image_create(&app->shadowImageArray, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, 2, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    image_create(&app->shadowImageArray, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, 2, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
     image_create_view(&app->shadowImageArray, app->device, app->depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 0, true);
     pipeline_attachment_from_image(&app->shadowDepth1, app->device, VK_IMAGE_ASPECT_DEPTH_BIT, app->shadowImageArray, 0, true);
     app->shadowAttachments1.push_back(app->shadowDepth1);
@@ -828,7 +846,6 @@ void application_init_vulkan(application_t *app) {
     scene_create(&app->scene, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
 
     descriptor_set_setup(&app->descriptorSet, app->device, app->physicalDevice);
-    std::cout << "light ubo size: " << sizeof(light_ubo_t) << std::endl;
     descriptor_set_add_buffer(&app->descriptorSet, sizeof(light_ubo_t), 0, false);
     descriptor_set_add_image(&app->descriptorSet, &app->albedo.image, 1, false, false, false);
     descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 2, false, false, false);
@@ -836,27 +853,27 @@ void application_init_vulkan(application_t *app) {
     descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 4, false, false, false);
     descriptor_set_add_image(&app->descriptorSet, &app->shadowImageArray, 5, false, false, true);
     descriptor_set_create(&app->descriptorSet);
-    pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->attachments, false, false);
+    pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->attachments, false, false);
 
     descriptor_set_setup(&app->offscreenDescriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_buffer(&app->offscreenDescriptorSet, sizeof(uniform_buffer_object_t), 0, true);
     descriptor_set_add_texture(&app->offscreenDescriptorSet, &app->scene.textures, 1, false);
     descriptor_set_create(&app->offscreenDescriptorSet);
-    pipeline_create(&app->offscreenPipeline, &app->offscreenDescriptorSet, app->windowWidth, app->windowHeight, "shaders/offscreen_vert.spv", "shaders/offscreen_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->offscreenAttachments, true, false);
+    pipeline_create(&app->offscreenPipeline, &app->offscreenDescriptorSet, app->windowWidth, app->windowHeight, "shaders/offscreen_vert.spv", "shaders/offscreen_frag.spv", app->device, app->physicalDevice, app->sampleCount, app->commandPool, app->graphicsQueue, app->offscreenAttachments, true, false);
 
     descriptor_set_setup(&app->shadowDescriptorSet1, app->device, app->physicalDevice);
     descriptor_set_add_buffer(&app->shadowDescriptorSet1, sizeof(uniform_buffer_object_t), 0, true);
     descriptor_set_add_texture(&app->shadowDescriptorSet1, &app->scene.textures, 1, false);
     descriptor_set_create(&app->shadowDescriptorSet1);
     app->shadowPipeline1.cullBack = true;
-    pipeline_create(&app->shadowPipeline1, &app->shadowDescriptorSet1, app->shadowWidth, app->shadowHeight, "shaders/shadow_vert.spv", "shaders/shadow_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->shadowAttachments1, true, true);
+    pipeline_create(&app->shadowPipeline1, &app->shadowDescriptorSet1, app->shadowWidth, app->shadowHeight, "shaders/shadow_vert.spv", "shaders/shadow_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->shadowAttachments1, true, true);
 
     descriptor_set_setup(&app->shadowDescriptorSet2, app->device, app->physicalDevice);
     descriptor_set_add_buffer(&app->shadowDescriptorSet2, sizeof(uniform_buffer_object_t), 0, true);
     descriptor_set_add_texture(&app->shadowDescriptorSet2, &app->scene.textures, 1, false);
     descriptor_set_create(&app->shadowDescriptorSet2);
     app->shadowPipeline2.cullBack = true;
-    pipeline_create(&app->shadowPipeline2, &app->shadowDescriptorSet2, app->shadowWidth, app->shadowHeight, "shaders/shadow_vert.spv", "shaders/shadow_frag.spv", app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->shadowAttachments2, true, true);
+    pipeline_create(&app->shadowPipeline2, &app->shadowDescriptorSet2, app->shadowWidth, app->shadowHeight, "shaders/shadow_vert.spv", "shaders/shadow_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->shadowAttachments2, true, true);
 
     application_create_frame_buffers(app);
     application_update_uniforms(app);
@@ -865,10 +882,6 @@ void application_init_vulkan(application_t *app) {
     app->quad.instances.push_back({});
     model_load(&app->quad, "quad.dae");
     model_create_buffers(&app->quad, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
-    for (auto it = app->quad.vertices.begin(); it != app->quad.vertices.end(); ++it)
-    {
-        std::cout << it->pos.x << ":" << it->pos.y << ":" << it->pos.z << std::endl;
-    }
     application_create_command_buffers(app);
     application_create_semaphores(app);
 }

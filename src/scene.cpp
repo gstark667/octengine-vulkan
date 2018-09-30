@@ -39,7 +39,6 @@ void scene_set_model(scene_t *scene, gameobject_t *object, std::string modelPath
 void scene_set_texture(scene_t *scene, gameobject_t *object, std::string texturePath)
 {
     object->textureIdx = texture_get(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue, texturePath);
-    std::cout << "setting texture idx: " << object->textureIdx << std::endl;
 }
 
 void scene_add_script(scene_t *scene, gameobject_t *object, std::string scriptPath)
@@ -61,7 +60,6 @@ void scene_add_script(scene_t *scene, gameobject_t *object, std::string scriptPa
 
 void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet)
 {   
-    std::cout << "render scene" << std::endl;
     scene->isDirty = false;
     for (std::map<std::string, model_t*>::iterator it = scene->models.begin(); it != scene->models.end(); ++it)
     {   

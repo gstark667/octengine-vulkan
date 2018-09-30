@@ -1,12 +1,11 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-layout (binding = 1) uniform sampler2D samplerAlbedo;
-layout (binding = 2) uniform sampler2D samplerNormal;
-layout (binding = 3) uniform sampler2D samplerPosition;
-layout (binding = 4) uniform sampler2D samplerDepth;
+layout (binding = 1) uniform sampler2DMS samplerAlbedo;
+layout (binding = 2) uniform sampler2DMS samplerNormal;
+layout (binding = 3) uniform sampler2DMS samplerPosition;
+layout (binding = 4) uniform sampler2DMS samplerDepth;
 layout (binding = 5) uniform sampler2DArray shadowDepth;
-//layout (binding = 4) uniform sampler2D shadowCoord;
 
 struct light {
     vec4 position;
@@ -70,14 +69,26 @@ float filterPCF(vec4 sc, int layer)
     return shadowFactor / count;
 }
 
+vec4 resolve(sampler2DMS tex, ivec2 uv)
+{
+    vec4 result = vec4(0.0);
+    for (int i = 0; i < 8; i++)
+    {
+        vec4 val = texelFetch(tex, uv, i); 
+        result += val;
+    }    
+    // Average resolved samples
+    return result / 8.0;
+}
+
 void main()
 {
-    vec3 albedo = texture(samplerAlbedo, inUV).rgb;
-    vec3 normal = texture(samplerNormal, inUV).rgb;
-    vec3 position = texture(samplerPosition, inUV).rgb;
-    //vec4 coord = texture(shadowCoord, inUV);
-    //float shadowDepth = texture(shadowDepth, coord.xy).r;
-    //float shadowDepth = texture(shadowDepth, inUV).r;
+    ivec2 attDim = textureSize(samplerAlbedo);
+    ivec2 UV = ivec2(inUV * attDim);
+
+    vec3 albedo = resolve(samplerAlbedo, UV).rgb;
+    vec3 normal = resolve(samplerNormal, UV).rgb;
+    vec3 position = resolve(samplerPosition, UV).rgb;
     vec3 shadedColor = vec3(0.0, 0.0, 0.0);
     for (int i = 0; i < lightUBO.lightCount; ++i)
     {
@@ -86,29 +97,6 @@ void main()
         shade = max(shade, AMBIENT);
         shadedColor += lightUBO.lights[i].color.xyz * shade;
     }
-
-    //float shadow = textureProj(coord, vec2(0.0, 0.0));
-    //float shadow = 1.0;
-    //for (int i = 0; i < lightUBO.lightCount; ++i)
-    //{
-    //    float shade = max(dot(normal, normalize(lightUBO.lights[i].position.xyz)), AMBIENT);
-    //    vec4 coord = lightUBO.lights[i].mvp * vec4(position, 1.0);
-    //    shadow *= filterPCF(coord, i);
-    //}
-    //shadow = max(shadow, AMBIENT);
-    //shadedColor *= shadow;
-    //shade = min(shadow, shade);
-    //float shade = dot(normal, normalize(lightUBO.lightPositions[1]));
-    //float shade = dot(normal, normalize(lightUBO.lights[1].position.xyz));
-
-    //outFragColor = vec4(shadowDepth, 0.0, 0.0, 1.0);
-    //outFragColor = vec4(shadow);
-    //outFragColor = vec4(albedo * shade, 1.0);
-    //outFragColor = vec4(albedo * shadow, 1.0);
     outFragColor = vec4(albedo * shadedColor, 1.0);
-    //outFragColor = vec4(lightUBO.lights[0].color);
-    //outFragColor = biasMat * lightUBO.shadowSpaces[0] * vec4(position, 1.0);
-    //outFragColor = texture(shadowDepth, vec3((biasMat * lightUBO.shadowSpaces[0] * vec4(position, 1.0)).xy, 0));
-    //outFragColor = texture(shadowDepth, vec3((lightUBO.shadowSpaces[0] * vec4(position, 1.0) * 0.25 +0.5).xy, 0));
-    //outFragColor = vec4(texture(shadowDepth, vec3(inUV, 0)).r, texture(shadowDepth, vec3(inUV, 1)).r, 0.0, 1.0);
 }
+

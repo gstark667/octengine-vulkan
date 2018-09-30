@@ -69,6 +69,7 @@ struct application_t
 
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
+    VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
 
     VkQueue graphicsQueue;
     VkQueue presentQueue;
@@ -82,6 +83,7 @@ struct application_t
 
     VkFormat depthFormat;
     image_t depthImage;
+    image_t resolveImage;
 
     pipeline_t pipeline;
     pipeline_t offscreenPipeline;

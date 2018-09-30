@@ -8,7 +8,7 @@
 #include <iostream>
 
 
-void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice device, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkCommandPool commandPool, VkQueue graphicsQueue, bool shadow)
+void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice device, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkSampleCountFlagBits samples, VkFormat format, VkImageUsageFlags usage, VkCommandPool commandPool, VkQueue graphicsQueue, bool shadow)
 {
     attachment->format = format;
     attachment->usage = usage;
@@ -29,7 +29,7 @@ void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice devi
         attachment->finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
     }
-    image_create(&attachment->image, device, physicalDevice, width, height, 1, format, VK_IMAGE_TILING_OPTIMAL, usage | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    image_create(&attachment->image, device, physicalDevice, width, height, 1, format, VK_IMAGE_TILING_OPTIMAL, usage | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, samples);
     image_create_view(&attachment->image, device, format, aspectFlags, 0, false);
 }
 
@@ -76,11 +76,14 @@ void pipeline_create_render_pass(pipeline_t *pipeline)
     std::vector<VkAttachmentDescription> descriptions;
     std::vector<VkAttachmentReference> colorRefs;
     VkAttachmentReference depthRef;
+    VkAttachmentReference resolveRef;
+    bool resolve = false;
     for (std::vector<pipeline_attachment_t>::iterator it = pipeline->attachments.begin(); it != pipeline->attachments.end(); ++it)
     {
+        std::cout << "adding attachment with " << it->image.samples << " samples" << std::endl;
         VkAttachmentDescription attachment = {};
         attachment.format = it->format;
-        attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+        attachment.samples = it->image.samples;
         attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -98,8 +101,16 @@ void pipeline_create_render_pass(pipeline_t *pipeline)
         }
         else
         {
-            std::cout << "color" << std::endl;
-            colorRefs.push_back(attachmentRef);
+            if (it->resolve)
+            {
+                resolve = true;
+                resolveRef = attachmentRef;
+            }
+            else
+            {
+                std::cout << "color" << std::endl;
+                colorRefs.push_back(attachmentRef);
+            }
         }
         descriptions.push_back(attachment);
     }
@@ -109,6 +120,10 @@ void pipeline_create_render_pass(pipeline_t *pipeline)
     subpass.colorAttachmentCount = colorRefs.size();
     subpass.pColorAttachments = colorRefs.data();
     subpass.pDepthStencilAttachment = &depthRef;
+    if (resolve)
+    {
+        subpass.pResolveAttachments = &resolveRef;
+    }
 
     std::vector<VkSubpassDependency> dependencies;
     if (pipeline->offscreen)
@@ -257,15 +272,16 @@ void pipeline_create_graphics(pipeline_t *pipeline, uint32_t width, uint32_t hei
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
+    std::cout << "making pipeline with " << pipeline->samples << " samples" << std::endl;
     VkPipelineMultisampleStateCreateInfo multisampling = {};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampling.sampleShadingEnable = VK_FALSE;
-    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisampling.sampleShadingEnable = pipeline->samples == VK_FALSE;
+    multisampling.rasterizationSamples = pipeline->samples;
 
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
     for (auto it = pipeline->attachments.begin(); it != pipeline->attachments.end(); ++it)
     {
-        if (it->usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+        if (it->usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT || it->resolve)
             continue;
         VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
         colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -350,9 +366,10 @@ void pipeline_create_framebuffer(pipeline_t *pipeline)
     }
 }
 
-void pipeline_create(pipeline_t *pipeline, descriptor_set_t *descriptorSet, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, std::vector<pipeline_attachment_t> attachments, bool offscreen, bool shadow) {
+void pipeline_create(pipeline_t *pipeline, descriptor_set_t *descriptorSet, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkCommandPool commandPool, VkQueue graphicsQueue, std::vector<pipeline_attachment_t> attachments, bool offscreen, bool shadow) {
     pipeline->device = device;
     pipeline->physicalDevice = physicalDevice;
+    pipeline->samples = samples;
     pipeline->width = width;
     pipeline->height = height;
     pipeline->vertShader = vertShader;

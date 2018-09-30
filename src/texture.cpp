@@ -44,8 +44,6 @@ bool texture_add(texture_t *texture, VkDevice device, VkPhysicalDevice physicalD
     if (texture->data.find(path) != texture->data.end())
         return false;
 
-    std::cout << "loading texture: " << path << std::endl;
-
     texture->data[path] = texture_get_data(path);
     if (texture->data[path].width > texture->width)
         texture->width = texture->data[path].width;
@@ -99,7 +97,6 @@ void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physical
         bufferCopyRegion.bufferOffset = offset;
 
         bufferCopyRegions.push_back(bufferCopyRegion);
-        std::cout << "coyping: " << offset << ", " << it->second.data.size() << ", " << size << std::endl;
         memcpy(data + offset, (void*)it->second.data.data(), it->second.data.size());
         offset += it->second.data.size();
         it->second.index = layer;
@@ -107,7 +104,7 @@ void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physical
     }
     vkUnmapMemory(device, stagingBufferMemory);
 
-    image_create(&texture->image, device, physicalDevice, texture->width, texture->height, texture->data.size(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    image_create(&texture->image, device, physicalDevice, texture->width, texture->height, texture->data.size(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
 
     image_transition_layout(&texture->image, device, commandPool, graphicsQueue, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     VkCommandBuffer commandBuffer = begin_single_time_commands(device, commandPool);
