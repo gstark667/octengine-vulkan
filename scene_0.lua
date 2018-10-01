@@ -20,9 +20,14 @@ function setup(scene, object)
         end
     end
 
+    sphere = scene_add_gameobject(scene)
+    scene_set_model(scene, sphere, "sphere.dae")
+    gameobject_transform(sphere, -5, 0.5, 0)
+    gameobject_scale(sphere, 0.5)
+
     plane = scene_add_gameobject(scene)
     scene_set_model(scene, plane, "plane.dae")
-    scene_set_texture(scene, plane, "normal.png")
+    --scene_set_texture(scene, plane, "normal.png")
     gameobject_transform(plane, 0, 0, 0)
     gameobject_scale(plane, 50)
     physics_init_box(scene, plane, 0, 50, 0.01, 50)

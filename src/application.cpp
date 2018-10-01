@@ -652,6 +652,10 @@ void application_update_uniforms(application_t *app)
     app->shadowCam.object->globalRot.y = glm::radians(-45.0f);
     camera_update(&app->shadowCam);
 
+    if (app->scene.camera.object)
+    {
+        app->lightUBO.cameraPos = glm::vec4(app->scene.camera.object->globalPos * 0.5f, 1.0f);
+    }
     app->lightUBO.lightCount = 2;
     app->lightUBO.lights[0].position = glm::vec4(0.0f, 10.0f, 10.0f, 1.0f);
     app->lightUBO.lights[0].color = glm::vec4(1.0f, 0.3f, 0.3f, 1.0f);

@@ -26,6 +26,7 @@ struct light_t
 struct light_ubo_t
 {
     light_t lights[16];
+    glm::vec4 cameraPos = glm::vec4(0.0f);
     int lightCount = 0;
 };
 

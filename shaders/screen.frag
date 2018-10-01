@@ -15,6 +15,7 @@ struct light {
 
 layout (binding = 0) uniform light_uniform_buffer_object {
     light lights[16];
+    vec4 cameraPos;
     int lightCount;
 } lightUBO;
 
@@ -24,6 +25,7 @@ layout (location = 0) out vec4 outFragColor;
 
 #define AMBIENT 0.2
 #define SHADOW_FACTOR 0.25
+#define PI 3.14159
 
 const mat4 biasMat = mat4(
     0.5, 0.0, 0.0, 0.0,
@@ -81,6 +83,67 @@ vec4 resolve(sampler2DMS tex, ivec2 uv)
     return result / 2.0;
 }
 
+
+// Normal Distribution
+float D_GGX(float dotNH, float roughness)
+{
+    float alpha = roughness * roughness;
+    float alpha2 = alpha * alpha;
+    float denom = dotNH * dotNH * (alpha2 - 1.0) + 1.0;
+    return (alpha2)/(PI * denom*denom); 
+}
+
+// Geometric Shadowing
+float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+    float GL = dotNL / (dotNL * (1.0 - k) + k);
+    float GV = dotNV / (dotNV * (1.0 - k) + k);
+    return GL * GV;
+}
+
+// Fresnel
+vec3 F_Schlick(float cosTheta, float metallic, vec3 albedo)
+{
+    vec3 F0 = mix(vec3(0.04), albedo, metallic); // * material.specular
+    vec3 F = F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0); 
+    return F;
+}
+
+// Specular BRDF
+vec3 BRDF(vec3 L, vec3 V, vec3 N, vec3 albedo, float metallic, float roughness)
+{
+    // Precalculate vectors and dot products    
+    vec3 H = normalize (V + L);
+    float dotNV = clamp(dot(N, V), 0.0, 1.0);
+    float dotNL = clamp(dot(N, L), 0.0, 1.0);
+    float dotLH = clamp(dot(L, H), 0.0, 1.0);
+    float dotNH = clamp(dot(N, H), 0.0, 1.0);
+
+    // Light color fixed
+    vec3 lightColor = vec3(1.0);
+
+    vec3 color = vec3(0.0);
+
+    if (dotNL > 0.0)
+    {
+        float rroughness = max(0.05, roughness);
+        // D = Normal distribution (Distribution of the microfacets)
+        float D = D_GGX(dotNH, roughness); 
+        // G = Geometric shadowing term (Microfacets shadowing)
+        float G = G_SchlicksmithGGX(dotNL, dotNV, roughness);
+        // F = Fresnel factor (Reflectance depending on angle of incidence)
+        vec3 F = F_Schlick(dotNV, metallic, albedo);
+
+        vec3 spec = D * F * G / (4.0 * dotNL * dotNV);
+
+        color += spec * dotNL * lightColor;
+    }
+
+    return color;
+}
+
 void main()
 {
     ivec2 attDim = textureSize(samplerAlbedo);
@@ -89,13 +152,20 @@ void main()
     vec3 albedo = resolve(samplerAlbedo, UV).rgb;
     vec3 normal = resolve(samplerNormal, UV).rgb;
     vec3 position = resolve(samplerPosition, UV).rgb;
+
+    vec3 N = normalize(normal);
+    vec3 V = normalize(lightUBO.cameraPos.xyz - position);
+
     vec3 shadedColor = vec3(0.0, 0.0, 0.0);
     for (int i = 0; i < lightUBO.lightCount; ++i)
     {
+        vec3 L = normalize(lightUBO.lights[0].position.xyz - position);
         float shade = max(dot(normal, normalize(lightUBO.lights[i].position.xyz)), 0.0);
-        shade *= filterPCF(lightUBO.lights[i].mvp * vec4(position, 1.0), i);
-        shade = max(shade, AMBIENT);
-        shadedColor += lightUBO.lights[i].color.xyz * shade;
+        float shadow = filterPCF(lightUBO.lights[i].mvp * vec4(position, 1.0), i);
+        shade = max(shade * shadow, AMBIENT);
+        vec3 shadeColor = lightUBO.lights[i].color.xyz * shade;
+        shadedColor += shadeColor;
+        shadedColor += BRDF(L, V, N, shadeColor, 0.4, 0.5);
     }
     outFragColor = vec4(albedo * shadedColor, 1.0);
 }
