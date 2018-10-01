@@ -29,7 +29,7 @@ void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice devi
         attachment->finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
     }
-    image_create(&attachment->image, device, physicalDevice, width, height, 1, format, VK_IMAGE_TILING_OPTIMAL, usage | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, samples);
+    image_create(&attachment->image, device, physicalDevice, width, height, 1, 1, format, VK_IMAGE_TILING_OPTIMAL, usage | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, samples);
     image_create_view(&attachment->image, device, format, aspectFlags, 0, false);
 }
 

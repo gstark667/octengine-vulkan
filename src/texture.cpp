@@ -6,6 +6,7 @@
 #include <string.h>
 #include <iostream>
 #include <stdexcept>
+#include <math.h>
 
 
 texture_data_t texture_get_data(std::string path)
@@ -73,8 +74,14 @@ void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physical
     size_t size = 0;
     for (std::map<std::string, texture_data_t>::iterator it = texture->data.begin(); it != texture->data.end(); ++it)
     {
-        size += it->second.width * it->second.height * 4;
+        size = it->second.width * it->second.height * 4;
+        break;
     }
+    size *= texture->data.size();
+
+    texture->mipLevels = (uint32_t)(std::floor(std::log2(std::max(texture->width, texture->height)))) + 1;
+    std::cout << "mip levels: " << texture->mipLevels << std::endl;
+
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
     create_buffer(device, physicalDevice, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
@@ -104,20 +111,20 @@ void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physical
     }
     vkUnmapMemory(device, stagingBufferMemory);
 
-    image_create(&texture->image, device, physicalDevice, texture->width, texture->height, texture->data.size(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
+    image_create(&texture->image, device, physicalDevice, texture->width, texture->height, texture->data.size(), texture->mipLevels, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
 
     image_transition_layout(&texture->image, device, commandPool, graphicsQueue, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     VkCommandBuffer commandBuffer = begin_single_time_commands(device, commandPool);
     vkCmdCopyBufferToImage(commandBuffer, stagingBuffer, texture->image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, bufferCopyRegions.size(), bufferCopyRegions.data());
 
     end_single_time_commands(device, commandPool, graphicsQueue, commandBuffer);
-    
 
-    image_transition_layout(&texture->image, device, commandPool, graphicsQueue, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    //image_transition_layout(&texture->image, device, commandPool, graphicsQueue, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
 
+    image_generate_mipmaps(&texture->image, device, physicalDevice, commandPool, graphicsQueue);
     image_create_view(&texture->image, device, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 0, true);
 
     VkSamplerCreateInfo samplerInfo = {};
@@ -136,7 +143,7 @@ void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physical
     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     samplerInfo.mipLodBias = 0.0f;
     samplerInfo.minLod = 0.0f;
-    samplerInfo.maxLod = 0.0f;
+    samplerInfo.maxLod = (float)texture->mipLevels;
 
     if (vkCreateSampler(device, &samplerInfo, nullptr, &texture->sampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");

@@ -254,6 +254,7 @@ void application_get_usable_samples(application_t *app) {
     if (counts & VK_SAMPLE_COUNT_16_BIT) { app->sampleCount = VK_SAMPLE_COUNT_16_BIT; }
     if (counts & VK_SAMPLE_COUNT_32_BIT) { app->sampleCount = VK_SAMPLE_COUNT_32_BIT; }
     if (counts & VK_SAMPLE_COUNT_64_BIT) { app->sampleCount = VK_SAMPLE_COUNT_64_BIT; }
+    app->sampleCount = VK_SAMPLE_COUNT_2_BIT;
     std::cout << "sample count: " << app->sampleCount << std::endl;
 }
 
@@ -518,7 +519,7 @@ void application_create_depth_resources(application_t *app) {
     app->offscreenAttachments.push_back(app->position);
     app->offscreenAttachments.push_back(app->offscreenDepthAttachment);
 
-    image_create(&app->shadowImageArray, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, 2, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
+    image_create(&app->shadowImageArray, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, 2, 1, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
     image_create_view(&app->shadowImageArray, app->device, app->depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 0, true);
     pipeline_attachment_from_image(&app->shadowDepth1, app->device, VK_IMAGE_ASPECT_DEPTH_BIT, app->shadowImageArray, 0, true);
     app->shadowAttachments1.push_back(app->shadowDepth1);

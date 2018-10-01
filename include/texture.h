@@ -22,6 +22,7 @@ struct texture_t
 {
     uint32_t width = 0;
     uint32_t height = 0;
+    uint32_t mipLevels = 4;
     image_t image;
     std::map<std::string, texture_data_t> data;
     VkSampler sampler;
