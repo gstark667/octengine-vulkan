@@ -38,6 +38,19 @@ static int physics_init_box(lua_State *L)
     return 0;
 }
 
+static int physics_init_sphere(lua_State *L)
+{
+    scene_t *scene = (scene_t*)lua_tointeger(L, 1);
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 2);
+    float mass = lua_tonumber(L, 3);
+    float radius = lua_tonumber(L, 4);
+    object->physics = (physics_object_t*)malloc(sizeof(physics_object_t));
+    physics_object_init_sphere(object->physics, object, mass, radius);
+    physics_object_set_position(object->physics, object->pos.x, object->pos.y, object->pos.z);
+    physics_world_add(&scene->world, object->physics);
+    return 0;
+}
+
 static int physics_init_capsule(lua_State *L)
 {
     scene_t *scene = (scene_t*)lua_tointeger(L, 1);
@@ -125,6 +138,7 @@ static int physics_set_angular_factor(lua_State *L)
 int EXPORT luaopen_physics(lua_State *L)
 {
     lua_register(L, "physics_init_box", physics_init_box);
+    lua_register(L, "physics_init_sphere", physics_init_sphere);
     lua_register(L, "physics_init_capsule", physics_init_capsule);
     lua_register(L, "physics_set_position", physics_set_position);
     lua_register(L, "physics_set_rotation", physics_set_rotation);
