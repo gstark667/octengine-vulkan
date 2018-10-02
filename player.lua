@@ -67,7 +67,7 @@ function update(scene, object, delta)
 
     x_rot = gameobject_get_number(object, "x_rot")
     y_rot = gameobject_get_number(object, "y_rot")
-    physics_set_rotation(object, 0, x_rot, 0)
+    physics_set_rotation(object, 0, -x_rot, 0)
     gameobject_set_rotation(camera, y_rot, 0, 0)
 
     friction = gameobject_get_number(object, "friction")
