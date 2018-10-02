@@ -49,8 +49,8 @@ struct application_t
     uint32_t windowWidth;
     uint32_t windowHeight;
 
-    uint32_t shadowHeight = 4096;
-    uint32_t shadowWidth = 4096;
+    uint32_t shadowHeight = 1024;
+    uint32_t shadowWidth = 1024;
 
     SDL_Window *window;
 
@@ -95,6 +95,7 @@ struct application_t
     scene_t scene;
     uniform_buffer_object_t ubo;
     light_ubo_t lightUBO;
+    render_ubo_t renderUBO;
 
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;

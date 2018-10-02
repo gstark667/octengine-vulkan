@@ -254,7 +254,7 @@ void application_get_usable_samples(application_t *app) {
     if (counts & VK_SAMPLE_COUNT_16_BIT) { app->sampleCount = VK_SAMPLE_COUNT_16_BIT; }
     if (counts & VK_SAMPLE_COUNT_32_BIT) { app->sampleCount = VK_SAMPLE_COUNT_32_BIT; }
     if (counts & VK_SAMPLE_COUNT_64_BIT) { app->sampleCount = VK_SAMPLE_COUNT_64_BIT; }
-    app->sampleCount = VK_SAMPLE_COUNT_8_BIT;
+    app->sampleCount = VK_SAMPLE_COUNT_2_BIT;
     std::cout << "sample count: " << app->sampleCount << std::endl;
 }
 
@@ -689,6 +689,11 @@ void application_copy_uniforms(application_t *app)
     memcpy(data, &app->lightUBO, sizeof(app->lightUBO));
     vkUnmapMemory(app->device, app->descriptorSet.buffers.at(0).uniformBufferMemory);
 
+    app->renderUBO.sampleCount = app->sampleCount;
+    vkMapMemory(app->device, app->descriptorSet.buffers.at(1).uniformBufferMemory, 0, sizeof(app->renderUBO), 0, &data);
+    memcpy(data, &app->renderUBO, sizeof(app->renderUBO));
+    vkUnmapMemory(app->device, app->descriptorSet.buffers.at(1).uniformBufferMemory);
+
     vkMapMemory(app->device, app->offscreenDescriptorSet.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
     memcpy(data, &app->ubo, sizeof(app->ubo));
     vkUnmapMemory(app->device, app->offscreenDescriptorSet.buffers.at(0).uniformBufferMemory);
@@ -861,12 +866,13 @@ void application_init_vulkan(application_t *app) {
 
     descriptor_set_setup(&app->descriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_buffer(&app->descriptorSet, sizeof(light_ubo_t), 0, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->albedo.image, 1, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 2, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->position.image, 3, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->pbr.image, 4, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 5, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->shadowImageArray, 6, false, false, true);
+    descriptor_set_add_buffer(&app->descriptorSet, sizeof(render_ubo_t), 1, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->albedo.image, 2, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 3, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->position.image, 4, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->pbr.image, 5, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 6, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->shadowImageArray, 7, false, false, true);
     descriptor_set_create(&app->descriptorSet);
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->attachments, false, false);
 

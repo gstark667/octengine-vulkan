@@ -1,12 +1,12 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-layout (binding = 1) uniform sampler2DMS samplerAlbedo;
-layout (binding = 2) uniform sampler2DMS samplerNormal;
-layout (binding = 3) uniform sampler2DMS samplerPosition;
-layout (binding = 4) uniform sampler2DMS samplerPBR;
-layout (binding = 5) uniform sampler2DMS samplerDepth;
-layout (binding = 6) uniform sampler2DArray shadowDepth;
+layout (binding = 2) uniform sampler2DMS samplerAlbedo;
+layout (binding = 3) uniform sampler2DMS samplerNormal;
+layout (binding = 4) uniform sampler2DMS samplerPosition;
+layout (binding = 5) uniform sampler2DMS samplerPBR;
+layout (binding = 6) uniform sampler2DMS samplerDepth;
+layout (binding = 7) uniform sampler2DArray shadowDepth;
 
 struct light {
     vec4 position;
@@ -19,6 +19,10 @@ layout (binding = 0) uniform light_uniform_buffer_object {
     vec4 cameraPos;
     int lightCount;
 } lightUBO;
+
+layout (binding = 1) uniform render_uniform_buffer_object {
+    int sampleCount;
+} renderUBO;
 
 layout (location = 0) in vec2 inUV;
 
@@ -75,13 +79,13 @@ float filterPCF(vec4 sc, int layer)
 vec4 resolve(sampler2DMS tex, ivec2 uv)
 {
     vec4 result = vec4(0.0);
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < renderUBO.sampleCount; i++)
     {
         vec4 val = texelFetch(tex, uv, i); 
         result += val;
     }    
     // Average resolved samples
-    return result / 8.0;
+    return result / float(renderUBO.sampleCount);
 }
 
 

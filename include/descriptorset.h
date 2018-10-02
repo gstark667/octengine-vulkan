@@ -30,6 +30,11 @@ struct light_ubo_t
     int lightCount = 0;
 };
 
+struct render_ubo_t
+{
+    int sampleCount = 2;
+};
+
 struct descriptor_texture_t
 {
     texture_t *texture;
