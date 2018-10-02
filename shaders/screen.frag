@@ -74,13 +74,13 @@ float filterPCF(vec4 sc, int layer)
 vec4 resolve(sampler2DMS tex, ivec2 uv)
 {
     vec4 result = vec4(0.0);
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < 8; i++)
     {
         vec4 val = texelFetch(tex, uv, i); 
         result += val;
     }    
     // Average resolved samples
-    return result / 2.0;
+    return result / 8.0;
 }
 
 

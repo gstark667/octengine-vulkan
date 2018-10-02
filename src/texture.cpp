@@ -40,29 +40,30 @@ texture_data_t texture_get_data(std::string path)
 }
 
 
-bool texture_add(texture_t *texture, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, std::string path)
+void texture_add(texture_t *texture, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, std::string path, bool load)
 {
-    if (texture->data.find(path) != texture->data.end())
-        return false;
+    if (texture->indicies.find(path) != texture->indicies.end())
+        return;
 
-    texture->data[path] = texture_get_data(path);
-    if (texture->data[path].width > texture->width)
-        texture->width = texture->data[path].width;
-    if (texture->data[path].height > texture->height)
-        texture->height = texture->data[path].height;
+    size_t index = texture->data.size();
+    texture->indicies[path] = index;
+    texture->data.push_back(texture_get_data(path));
+    if (texture->data[index].width > texture->width)
+        texture->width = texture->data[index].width;
+    if (texture->data[index].height > texture->height)
+        texture->height = texture->data[index].height;
 
-    texture_load(texture, device, physicalDevice, commandPool, graphicsQueue);
-
-    return true;
+    if (load)
+        texture_load(texture, device, physicalDevice, commandPool, graphicsQueue);
 }
 
 
-size_t texture_get(texture_t *texture, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, std::string path)
+size_t texture_get(texture_t *texture, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, std::string path, bool load)
 {
-    if (texture->data.find(path) == texture->data.end())
-        texture_add(texture, device, physicalDevice, commandPool, graphicsQueue, path);
+    if (texture->indicies.find(path) == texture->indicies.end())
+        texture_add(texture, device, physicalDevice, commandPool, graphicsQueue, path, load);
 
-    return texture->data[path].index;
+    return texture->indicies[path];
 }
 
 
@@ -70,11 +71,12 @@ void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physical
 {
     if (texture->image.image)
         texture_cleanup(texture, device);
+    texture->needsUpdate = true;
         
     size_t size = 0;
-    for (std::map<std::string, texture_data_t>::iterator it = texture->data.begin(); it != texture->data.end(); ++it)
+    for (std::vector<texture_data_t>::iterator it = texture->data.begin(); it != texture->data.end(); ++it)
     {
-        size = it->second.width * it->second.height * 4;
+        size = it->width * it->height * 4;
         break;
     }
     size *= texture->data.size();
@@ -91,22 +93,22 @@ void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physical
     BYTE *data;
     std::vector<VkBufferImageCopy> bufferCopyRegions;
     vkMapMemory(device, stagingBufferMemory, 0, size, 0, (void**)&data);
-    for (std::map<std::string, texture_data_t>::iterator it = texture->data.begin(); it != texture->data.end(); ++it)
+    for (std::vector<texture_data_t>::iterator it = texture->data.begin(); it != texture->data.end(); ++it)
     {
         VkBufferImageCopy bufferCopyRegion = {};
         bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         bufferCopyRegion.imageSubresource.mipLevel = 0;
         bufferCopyRegion.imageSubresource.baseArrayLayer = layer;
         bufferCopyRegion.imageSubresource.layerCount = 1;
-        bufferCopyRegion.imageExtent.width = it->second.width;
-        bufferCopyRegion.imageExtent.height = it->second.height;
+        bufferCopyRegion.imageExtent.width = it->width;
+        bufferCopyRegion.imageExtent.height = it->height;
         bufferCopyRegion.imageExtent.depth = 1;
         bufferCopyRegion.bufferOffset = offset;
 
         bufferCopyRegions.push_back(bufferCopyRegion);
-        memcpy(data + offset, (void*)it->second.data.data(), it->second.data.size());
-        offset += it->second.data.size();
-        it->second.index = layer;
+        memcpy(data + offset, (void*)it->data.data(), it->data.size());
+        offset += it->data.size();
+        it->index = layer;
         ++layer;
     }
     vkUnmapMemory(device, stagingBufferMemory);
@@ -118,8 +120,6 @@ void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physical
     vkCmdCopyBufferToImage(commandBuffer, stagingBuffer, texture->image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, bufferCopyRegions.size(), bufferCopyRegions.data());
 
     end_single_time_commands(device, commandPool, graphicsQueue, commandBuffer);
-
-    //image_transition_layout(&texture->image, device, commandPool, graphicsQueue, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);

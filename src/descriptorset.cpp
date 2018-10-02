@@ -198,6 +198,26 @@ void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, u
     descriptorSet->textures.push_back(newTexture);
 }
 
+void descriptor_set_update_texture(descriptor_set_t *descriptorSet, texture_t *texture, uint32_t binding)
+{
+    VkDescriptorImageInfo imageInfo;
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = texture->image.view;
+    imageInfo.sampler = texture->sampler;
+
+    VkWriteDescriptorSet write;
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.dstSet = descriptorSet->descriptorSet;
+    write.dstBinding = binding;
+    write.dstArrayElement = 0;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    write.descriptorCount = 1;
+    write.pImageInfo = &imageInfo;
+    write.pNext = NULL;
+
+    vkUpdateDescriptorSets(descriptorSet->device, 1, &write, 0, nullptr);
+}
+
 void descriptor_set_create(descriptor_set_t *descriptorSet)
 {
     descriptor_set_create_pool(descriptorSet);

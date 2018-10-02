@@ -254,7 +254,7 @@ void application_get_usable_samples(application_t *app) {
     if (counts & VK_SAMPLE_COUNT_16_BIT) { app->sampleCount = VK_SAMPLE_COUNT_16_BIT; }
     if (counts & VK_SAMPLE_COUNT_32_BIT) { app->sampleCount = VK_SAMPLE_COUNT_32_BIT; }
     if (counts & VK_SAMPLE_COUNT_64_BIT) { app->sampleCount = VK_SAMPLE_COUNT_64_BIT; }
-    app->sampleCount = VK_SAMPLE_COUNT_2_BIT;
+    app->sampleCount = VK_SAMPLE_COUNT_8_BIT;
     std::cout << "sample count: " << app->sampleCount << std::endl;
 }
 
@@ -671,6 +671,12 @@ void application_update_uniforms(application_t *app)
 
 void application_copy_uniforms(application_t *app)
 {
+    if (app->scene.textures.needsUpdate)
+    {
+        app->scene.textures.needsUpdate = false;
+        descriptor_set_update_texture(&app->offscreenDescriptorSet, &app->scene.textures, 1);
+    }
+
     void *data;
     /*vkMapMemory(app->device, app->descriptorSet.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
     memcpy(data, &app->ubo, sizeof(app->ubo));
