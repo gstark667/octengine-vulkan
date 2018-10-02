@@ -29,6 +29,22 @@ static int libscene_add_gameobject(lua_State *L)
     return 1;
 }
 
+static int libscene_add_camera(lua_State *L)
+{
+    scene_t *scene = (scene_t*)lua_tointeger(L, 1);
+    camera_t *camera = scene_add_camera(scene);
+    lua_pushinteger(L, (lua_Integer)camera);
+    return 1;
+}
+
+static int libscene_add_light(lua_State *L)
+{
+    scene_t *scene = (scene_t*)lua_tointeger(L, 1);
+    light_t *light = scene_add_light(scene);
+    lua_pushinteger(L, (lua_Integer)light);
+    return 1;
+}
+
 static int libscene_add_script(lua_State *L)
 {
     scene_t *scene = (scene_t*)lua_tointeger(L, 1);
@@ -41,8 +57,8 @@ static int libscene_add_script(lua_State *L)
 static int libscene_set_camera(lua_State *L)
 {
     scene_t *scene = (scene_t*)lua_tointeger(L, 1);
-    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 2);
-    scene->camera.object = object;
+    camera_t *camera = (camera_t*)lua_tointeger(L, 2);
+    scene->camera = camera;
     return 0;
 }
 
@@ -86,6 +102,8 @@ static int libscene_set_pbr(lua_State *L)
 int EXPORT luaopen_scene(lua_State *L)
 {
     lua_register(L, "scene_add_gameobject", libscene_add_gameobject);
+    lua_register(L, "scene_add_camera", libscene_add_camera);
+    lua_register(L, "scene_add_light", libscene_add_light);
     lua_register(L, "scene_add_script", libscene_add_script);
     lua_register(L, "scene_set_camera", libscene_set_camera);
     lua_register(L, "scene_set_model", libscene_set_model);

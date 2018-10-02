@@ -9,6 +9,7 @@
 #include "script.h"
 #include "physics.h"
 #include "camera.h"
+#include "light.h"
 
 #include <vector>
 #include <map>
@@ -18,7 +19,7 @@
 
 struct scene_t
 {
-    camera_t camera;
+    camera_t *camera = NULL;
     script_t script;
 
     VkDevice device;
@@ -29,17 +30,22 @@ struct scene_t
     texture_t textures;
     std::map<std::string, model_t*> models;
     std::map<std::string, script_t*> scripts;
+    std::set<light_t*> lights;
+    std::set<camera_t*> cameras;
     std::set<gameobject_t*> gameobjects;
     std::set<gameobject_t*> tempGameobjects;
 
     physics_world_t world;
 
+    uint32_t width, height;
     bool isDirty = true;
 };
 
-void scene_create(scene_t *scene, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
+void scene_create(scene_t *scene, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, uint32_t width, uint32_t height);
 void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet);
 gameobject_t *scene_add_gameobject(scene_t *scene);
+camera_t *scene_add_camera(scene_t *scene);
+light_t *scene_add_light(scene_t *scene);
 void scene_set_model(scene_t *scene, gameobject_t *object, std::string modelPath);
 void scene_set_texture(scene_t *scene, gameobject_t *object, std::string texturePath);
 void scene_set_normal(scene_t *scene, gameobject_t *object, std::string texturePath);

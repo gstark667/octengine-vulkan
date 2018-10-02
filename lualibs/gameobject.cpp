@@ -154,6 +154,7 @@ static int gameobject_get_number(lua_State *L)
 
 int EXPORT luaopen_gameobject(lua_State *L)
 {
+    std::cout << "loading gameobject" << std::endl;
     lua_register(L, "gameobject_transform", gameobject_transform);
     lua_register(L, "gameobject_set_transform", gameobject_set_transform);
     lua_register(L, "gameobject_rotate", gameobject_rotate);

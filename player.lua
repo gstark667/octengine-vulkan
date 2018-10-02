@@ -1,13 +1,15 @@
 require("scene")
 require("gameobject")
+require("camera")
 require("physics")
 
 function setup(scene, object)
     physics_init_capsule(scene, object, 1,  0.5, 1)
     physics_set_angular_factor(object, 0.0)
 
-    camera = scene_add_gameobject(scene, "")
+    camera = scene_add_camera(scene)
     scene_set_camera(scene, camera)
+    camera = camera_get_gameobject(camera)
     gameobject_set_parent(camera, object)
     gameobject_set_transform(camera, 0, 0.5, 0)
     gameobject_set_integer(object, "camera", camera)

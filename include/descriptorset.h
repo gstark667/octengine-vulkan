@@ -16,7 +16,7 @@ struct uniform_buffer_object_t
     //glm::mat4 bones[64];
 };
 
-struct light_t
+struct light_instance_t
 {
     glm::vec4 position = glm::vec4(0.0f);
     glm::vec4 color = glm::vec4(0.0f);
@@ -25,7 +25,7 @@ struct light_t
 
 struct light_ubo_t
 {
-    light_t lights[16];
+    light_instance_t lights[16];
     glm::vec4 cameraPos = glm::vec4(0.0f);
     int lightCount = 0;
 };

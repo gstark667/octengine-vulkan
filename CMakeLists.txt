@@ -28,6 +28,7 @@ set(HEADERS
     include/descriptorset.h
     include/model.h
     include/camera.h
+    include/light.h
     include/script.h
     include/application.h
 )
@@ -46,6 +47,7 @@ set(SOURCES
     src/descriptorset.cpp
     src/model.cpp
     src/camera.cpp
+    src/light.cpp
     src/script.cpp
     src/application.cpp
 )
@@ -121,7 +123,7 @@ add_dependencies(mainoctengine shader_files)
 
 ADD_LIBRARY(gameobject SHARED lualibs/gameobject.cpp ${HEADERS})
 SET_TARGET_PROPERTIES(gameobject PROPERTIES PREFIX "")
-TARGET_LINK_LIBRARIES(gameobject lua)
+TARGET_LINK_LIBRARIES(gameobject lua liboctengine)
 
 ADD_LIBRARY(scene SHARED lualibs/scene.cpp ${HEADERS})
 SET_TARGET_PROPERTIES(scene PROPERTIES PREFIX "")
@@ -129,5 +131,12 @@ TARGET_LINK_LIBRARIES(scene lua liboctengine)
 
 ADD_LIBRARY(physics SHARED lualibs/physics.cpp ${HEADERS})
 SET_TARGET_PROPERTIES(physics PROPERTIES PREFIX "")
-TARGET_LINK_LIBRARIES(physics lua)
+TARGET_LINK_LIBRARIES(physics lua liboctengine)
 
+ADD_LIBRARY(camera SHARED lualibs/camera.cpp ${HEADERS})
+SET_TARGET_PROPERTIES(camera PROPERTIES PREFIX "")
+TARGET_LINK_LIBRARIES(camera lua liboctengine)
+
+ADD_LIBRARY(light SHARED lualibs/light.cpp ${HEADERS})
+SET_TARGET_PROPERTIES(light PROPERTIES PREFIX "")
+TARGET_LINK_LIBRARIES(light lua liboctengine)

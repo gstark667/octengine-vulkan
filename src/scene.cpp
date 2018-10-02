@@ -1,10 +1,12 @@
 #include "scene.h"
 
-void scene_create(scene_t *scene, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue) {
+void scene_create(scene_t *scene, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, uint32_t width, uint32_t height) {
     scene->device = device;
     scene->physicalDevice = physicalDevice;
     scene->commandPool = commandPool;
     scene->graphicsQueue = graphicsQueue;
+    scene->width = width;
+    scene->height = height;
 
     texture_add(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue, "default.png", false);
     texture_add(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue, "normal.png", false);
@@ -25,6 +27,25 @@ gameobject_t *scene_add_gameobject(scene_t *scene)
 {
     gameobject_t *temp = new gameobject_t();
     scene->tempGameobjects.insert(temp);
+    return temp;
+}
+
+camera_t *scene_add_camera(scene_t *scene)
+{
+    camera_t *temp = new camera_t();
+    temp->object = new gameobject_t();
+    scene->tempGameobjects.insert(temp->object);
+    temp->width = scene->width;
+    temp->height = scene->height;
+    camera_resize(temp);
+    return temp;
+}
+
+light_t *scene_add_light(scene_t *scene)
+{
+    light_t *temp = new light_t();
+    temp->camera.object = new gameobject_t();
+    scene->tempGameobjects.insert(temp->camera.object);
     return temp;
 }
 
@@ -75,7 +96,7 @@ void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayou
 {   
     scene->isDirty = false;
     for (std::map<std::string, model_t*>::iterator it = scene->models.begin(); it != scene->models.end(); ++it)
-    {   
+    {
         model_render(it->second, commandBuffer, pipelineLayout, graphicsPipeline, descriptorSet);
     }
 }

@@ -46,11 +46,6 @@ void application_init_window(application_t *app) {
         (app->fullscreen ? SDL_WINDOW_FULLSCREEN | SDL_WINDOW_VULKAN : SDL_WINDOW_VULKAN)
     );
 
-    camera_resize(&app->scene.camera, app->windowWidth, app->windowHeight, 90.0f);
-
-    app->shadowCam.object = new gameobject_t();
-    camera_resize(&app->shadowCam, app->shadowWidth, app->shadowHeight, 90.0f);
-
     SDL_SetWindowGrab(app->window, SDL_TRUE);
     SDL_SetRelativeMouseMode(SDL_TRUE);
 }
@@ -645,19 +640,11 @@ void application_update_uniforms(application_t *app)
     //pipeline_update(&app->pipeline, delta);
     scene_update(&app->scene, delta);
 
-    camera_update(&app->scene.camera);
-    app->ubo.cameraMVP = app->scene.camera.proj * app->scene.camera.view;
-
-    app->shadowCam.object->globalPos.x = 20.0f;
-    app->shadowCam.object->globalPos.y = 20.0f;
-    app->shadowCam.object->globalPos.z = 20.0f;
-    app->shadowCam.object->globalRot.x = glm::radians(-45.0f);
-    app->shadowCam.object->globalRot.y = glm::radians(-45.0f);
-    camera_update(&app->shadowCam);
-
-    if (app->scene.camera.object)
+    if (app->scene.camera)
     {
-        app->lightUBO.cameraPos = glm::vec4(app->scene.camera.object->globalPos * 0.5f, 1.0f);
+        camera_update(app->scene.camera);
+        app->ubo.cameraMVP = app->scene.camera->proj * app->scene.camera->view;
+        app->lightUBO.cameraPos = glm::vec4(app->scene.camera->object->globalPos * 0.5f, 1.0f);
     }
     app->lightUBO.lightCount = 2;
     app->lightUBO.lights[0].position = glm::vec4(0.0f, 10.0f, 10.0f, 1.0f);
@@ -667,9 +654,6 @@ void application_update_uniforms(application_t *app)
     app->lightUBO.lights[1].position = glm::vec4(-10.0f, 10.0f, 0.0f, 1.0f);
     app->lightUBO.lights[1].color = glm::vec4(0.3f, 0.3f, 1.0f, 1.0f);
     app->lightUBO.lights[1].mvp = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 60.0f) * glm::lookAt(glm::vec3(app->lightUBO.lights[1].position), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
-
-    //app->ubo.shadowSpace = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f) * glm::lookAt(glm::vec3(10.0f, -10.0f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, -1.0f));
-    //app->ubo.shadowSpace = app->shadowCam.proj * app->shadowCam.view;
 }
 
 void application_copy_uniforms(application_t *app)
@@ -834,7 +818,6 @@ void application_recreate_swap_chain(application_t *app) {
     SDL_GetWindowSize(app->window, &width, &height);
     if (width == 0 || height == 0)
         return;
-    camera_resize(&app->scene.camera, width, height, 90.0f);
 
     vkDeviceWaitIdle(app->device);
 
@@ -862,7 +845,7 @@ void application_init_vulkan(application_t *app) {
     app->depthFormat = application_find_depth_format(app);
     application_create_depth_resources(app);
 
-    scene_create(&app->scene, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
+    scene_create(&app->scene, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->windowWidth, app->windowHeight);
 
     descriptor_set_setup(&app->descriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_buffer(&app->descriptorSet, sizeof(light_ubo_t), 0, false);
