@@ -29,7 +29,7 @@ struct gameobject_t
     glm::vec3 pos = glm::vec3(0.0f);
     glm::vec3 rot = glm::vec3(0.0f);
     float scale = 1.0f;
-    uint32_t textureIdx = 0;
+    glm::ivec3 textureIdx = glm::ivec3(0, 1, 2);
 
     glm::vec3 globalPos = glm::vec3(0.0f);
     glm::vec3 globalRot = glm::vec3(0.0f);

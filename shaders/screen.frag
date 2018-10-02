@@ -4,8 +4,9 @@
 layout (binding = 1) uniform sampler2DMS samplerAlbedo;
 layout (binding = 2) uniform sampler2DMS samplerNormal;
 layout (binding = 3) uniform sampler2DMS samplerPosition;
-layout (binding = 4) uniform sampler2DMS samplerDepth;
-layout (binding = 5) uniform sampler2DArray shadowDepth;
+layout (binding = 4) uniform sampler2DMS samplerPBR;
+layout (binding = 5) uniform sampler2DMS samplerDepth;
+layout (binding = 6) uniform sampler2DArray shadowDepth;
 
 struct light {
     vec4 position;
@@ -152,6 +153,7 @@ void main()
     vec3 albedo = resolve(samplerAlbedo, UV).rgb;
     vec3 normal = resolve(samplerNormal, UV).rgb;
     vec3 position = resolve(samplerPosition, UV).rgb;
+    vec3 pbr = resolve(samplerPBR, UV).rgb;
 
     vec3 N = normalize(normal);
     vec3 V = normalize(lightUBO.cameraPos.xyz - position);
@@ -165,7 +167,7 @@ void main()
         shade = max(shade * shadow, AMBIENT);
         vec3 shadeColor = lightUBO.lights[i].color.xyz * shade;
         shadedColor += shadeColor;
-        shadedColor += BRDF(L, V, N, shadeColor, 0.4, 0.5);
+        shadedColor += BRDF(L, V, N, shadeColor, pbr.r, pbr.g);
     }
     outFragColor = vec4(albedo * shadedColor, 1.0);
 }

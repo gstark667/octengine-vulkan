@@ -512,11 +512,14 @@ void application_create_depth_resources(application_t *app) {
 
     pipeline_attachment_create(&app->position, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
+    pipeline_attachment_create(&app->pbr, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
+
     pipeline_attachment_create(&app->offscreenDepthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
     app->offscreenAttachments.push_back(app->albedo);
     app->offscreenAttachments.push_back(app->normal);
     app->offscreenAttachments.push_back(app->position);
+    app->offscreenAttachments.push_back(app->pbr);
     app->offscreenAttachments.push_back(app->offscreenDepthAttachment);
 
     image_create(&app->shadowImageArray, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, 2, 1, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
@@ -658,7 +661,7 @@ void application_update_uniforms(application_t *app)
     }
     app->lightUBO.lightCount = 2;
     app->lightUBO.lights[0].position = glm::vec4(0.0f, 10.0f, 10.0f, 1.0f);
-    app->lightUBO.lights[0].color = glm::vec4(1.0f, 0.3f, 0.3f, 1.0f);
+    app->lightUBO.lights[0].color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     app->lightUBO.lights[0].mvp = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 60.0f) * glm::lookAt(glm::vec3(app->lightUBO.lights[0].position), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
 
     app->lightUBO.lights[1].position = glm::vec4(-10.0f, 10.0f, 0.0f, 1.0f);
@@ -861,8 +864,9 @@ void application_init_vulkan(application_t *app) {
     descriptor_set_add_image(&app->descriptorSet, &app->albedo.image, 1, false, false, false);
     descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 2, false, false, false);
     descriptor_set_add_image(&app->descriptorSet, &app->position.image, 3, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 4, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->shadowImageArray, 5, false, false, true);
+    descriptor_set_add_image(&app->descriptorSet, &app->pbr.image, 4, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 5, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->shadowImageArray, 6, false, false, true);
     descriptor_set_create(&app->descriptorSet);
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->attachments, false, false);
 

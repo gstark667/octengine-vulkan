@@ -15,13 +15,13 @@ layout(location = 4) in ivec4 inBones;
 layout(location = 5) in vec3 instancePos;
 layout(location = 6) in vec3 instanceRot;
 layout(location = 7) in float instanceScale;
-layout(location = 8) in int instanceTex;
+layout(location = 8) in ivec3 instanceTex;
 
 layout (location = 0) out vec3 outNormal;
 layout (location = 1) out vec2 outUV;
 layout (location = 2) out vec3 outColor;
 layout (location = 3) out vec3 outWorldPos;
-layout (location = 4) out int outTexIdx;
+layout (location = 4) out ivec3 outTexIdx;
 
 out gl_PerVertex {
     vec4 gl_Position;

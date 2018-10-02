@@ -102,7 +102,7 @@ struct application_t
     VkCommandBuffer shadowCommandBuffer1, shadowCommandBuffer2;
 
     image_t shadowImageArray;
-    pipeline_attachment_t albedo, normal, position, offscreenDepthAttachment, shadowPosition, shadowDepth1, shadowDepth2;
+    pipeline_attachment_t albedo, normal, position, pbr, offscreenDepthAttachment, shadowPosition, shadowDepth1, shadowDepth2;
     std::vector<pipeline_attachment_t> attachments;
     std::vector<pipeline_attachment_t> offscreenAttachments;
     std::vector<pipeline_attachment_t> shadowAttachments1;

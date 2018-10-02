@@ -73,7 +73,7 @@ std::array<VkVertexInputAttributeDescription, 9> vertex_get_attribute_descriptio
 
     attributeDescriptions[8].binding = 1;
     attributeDescriptions[8].location = 8;
-    attributeDescriptions[8].format = VK_FORMAT_R32_SINT;
+    attributeDescriptions[8].format = VK_FORMAT_R32G32B32_SINT;
     attributeDescriptions[8].offset = offsetof(model_instance_t, textureIdx);
 
     return attributeDescriptions;

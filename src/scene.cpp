@@ -8,6 +8,7 @@ void scene_create(scene_t *scene, VkDevice device, VkPhysicalDevice physicalDevi
 
     texture_add(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue, "default.png", false);
     texture_add(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue, "normal.png", false);
+    texture_add(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue, "pbr.png", false);
     texture_load(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue);
 
     physics_world_init(&scene->world);
@@ -39,8 +40,19 @@ void scene_set_model(scene_t *scene, gameobject_t *object, std::string modelPath
 
 void scene_set_texture(scene_t *scene, gameobject_t *object, std::string texturePath)
 {
-    object->textureIdx = texture_get(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue, texturePath, true);
+    object->textureIdx.x = texture_get(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue, texturePath, true);
 }
+
+void scene_set_normal(scene_t *scene, gameobject_t *object, std::string texturePath)
+{
+    object->textureIdx.y = texture_get(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue, texturePath, true);
+}
+
+void scene_set_pbr(scene_t *scene, gameobject_t *object, std::string texturePath)
+{
+    object->textureIdx.z = texture_get(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue, texturePath, true);
+}
+
 
 void scene_add_script(scene_t *scene, gameobject_t *object, std::string scriptPath)
 {

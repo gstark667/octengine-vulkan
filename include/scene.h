@@ -42,6 +42,8 @@ void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayou
 gameobject_t *scene_add_gameobject(scene_t *scene);
 void scene_set_model(scene_t *scene, gameobject_t *object, std::string modelPath);
 void scene_set_texture(scene_t *scene, gameobject_t *object, std::string texturePath);
+void scene_set_normal(scene_t *scene, gameobject_t *object, std::string texturePath);
+void scene_set_pbr(scene_t *scene, gameobject_t *object, std::string texturePath);
 void scene_add_script(scene_t *scene, gameobject_t *object, std::string scriptPath);
 void scene_update(scene_t *scene, float delta);
 void scene_load(scene_t *scene, std::string path);
