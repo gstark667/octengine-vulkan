@@ -647,6 +647,7 @@ void application_update_uniforms(application_t *app)
         app->lightUBO.cameraPos = glm::vec4(app->scene.camera->object->globalPos * 0.5f, 1.0f);
     }
     app->lightUBO.lightCount = 2;
+    //app->lightUBO.lightCount = 0;
     app->lightUBO.lights[0].position = glm::vec4(0.0f, 10.0f, 10.0f, 1.0f);
     app->lightUBO.lights[0].color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     app->lightUBO.lights[0].mvp = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 60.0f) * glm::lookAt(glm::vec3(app->lightUBO.lights[0].position), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
@@ -664,33 +665,15 @@ void application_copy_uniforms(application_t *app)
         descriptor_set_update_texture(&app->offscreenDescriptorSet, &app->scene.textures, 1);
     }
 
-    void *data;
-    /*vkMapMemory(app->device, app->descriptorSet.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
-    memcpy(data, &app->ubo, sizeof(app->ubo));
-    vkUnmapMemory(app->device, app->descriptorSet.buffers.at(0).uniformBufferMemory);*/
+    descriptor_set_update_buffer(&app->descriptorSet, &app->lightUBO, 0);
 
-    vkMapMemory(app->device, app->descriptorSet.buffers.at(0).uniformBufferMemory, 0, sizeof(app->lightUBO), 0, &data);
-    memcpy(data, &app->lightUBO, sizeof(app->lightUBO));
-    vkUnmapMemory(app->device, app->descriptorSet.buffers.at(0).uniformBufferMemory);
-
-    app->renderUBO.sampleCount = app->sampleCount;
-    vkMapMemory(app->device, app->descriptorSet.buffers.at(1).uniformBufferMemory, 0, sizeof(app->renderUBO), 0, &data);
-    memcpy(data, &app->renderUBO, sizeof(app->renderUBO));
-    vkUnmapMemory(app->device, app->descriptorSet.buffers.at(1).uniformBufferMemory);
-
-    vkMapMemory(app->device, app->offscreenDescriptorSet.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
-    memcpy(data, &app->ubo, sizeof(app->ubo));
-    vkUnmapMemory(app->device, app->offscreenDescriptorSet.buffers.at(0).uniformBufferMemory);
+    descriptor_set_update_buffer(&app->offscreenDescriptorSet, &app->ubo, 0);
 
     app->ubo.cameraMVP = app->lightUBO.lights[0].mvp;
-    vkMapMemory(app->device, app->shadowDescriptorSet1.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
-    memcpy(data, &app->ubo, sizeof(app->ubo));
-    vkUnmapMemory(app->device, app->shadowDescriptorSet1.buffers.at(0).uniformBufferMemory);
+    descriptor_set_update_buffer(&app->shadowDescriptorSet1, &app->ubo, 0);
 
     app->ubo.cameraMVP = app->lightUBO.lights[1].mvp;
-    vkMapMemory(app->device, app->shadowDescriptorSet2.buffers.at(0).uniformBufferMemory, 0, sizeof(app->ubo), 0, &data);
-    memcpy(data, &app->ubo, sizeof(app->ubo));
-    vkUnmapMemory(app->device, app->shadowDescriptorSet2.buffers.at(0).uniformBufferMemory);
+    descriptor_set_update_buffer(&app->shadowDescriptorSet2, &app->ubo, 0);
 }
 
 // draw frame
@@ -858,6 +841,9 @@ void application_init_vulkan(application_t *app) {
     descriptor_set_add_image(&app->descriptorSet, &app->shadowImageArray, 7, false, false, true);
     descriptor_set_create(&app->descriptorSet);
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->attachments, false, false);
+    app->renderUBO.sampleCount = app->sampleCount;
+    descriptor_set_update_buffer(&app->descriptorSet, &app->renderUBO, 1);
+
 
     descriptor_set_setup(&app->offscreenDescriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_buffer(&app->offscreenDescriptorSet, sizeof(uniform_buffer_object_t), 0, true);

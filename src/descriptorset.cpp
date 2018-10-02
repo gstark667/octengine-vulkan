@@ -198,6 +198,20 @@ void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, u
     descriptorSet->textures.push_back(newTexture);
 }
 
+void descriptor_set_update_buffer(descriptor_set_t *descriptorSet, void *data, uint32_t binding)
+{
+    for (auto it = descriptorSet->buffers.begin(); it != descriptorSet->buffers.end(); ++it)
+    {
+        if (it->binding == binding)
+        {
+            void *target;
+            vkMapMemory(descriptorSet->device, it->uniformBufferMemory, 0, it->size, 0, &target);
+            memcpy(target, data, it->size);
+            vkUnmapMemory(descriptorSet->device, it->uniformBufferMemory);
+        }
+    }
+}
+
 void descriptor_set_update_texture(descriptor_set_t *descriptorSet, texture_t *texture, uint32_t binding)
 {
     VkDescriptorImageInfo imageInfo;

@@ -69,6 +69,7 @@ void descriptor_set_setup(descriptor_set_t *descriptorSet, VkDevice device, VkPh
 void descriptor_set_add_buffer(descriptor_set_t *descriptorSet, size_t size, uint32_t binding, bool vertex);
 void descriptor_set_add_texture(descriptor_set_t *descriptorSet, texture_t *texture, uint32_t binding, bool vertex);
 void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, uint32_t binding, bool vertex, bool repeat, bool shadow);
+void descriptor_set_update_buffer(descriptor_set_t *descriptorSet, void *data, uint32_t binding);
 void descriptor_set_update_texture(descriptor_set_t *descriptorSet, texture_t *image, uint32_t binding);
 void descriptor_set_create(descriptor_set_t *descriptorSet);
 void descriptor_set_cleanup(descriptor_set_t *descriptor_set);
