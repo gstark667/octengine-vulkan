@@ -49,6 +49,7 @@ light_t *scene_add_light(scene_t *scene)
     temp->camera.object = new gameobject_t();
     scene->tempGameobjects.insert(temp->camera.object);
     scene->lights.insert(temp);
+    std::cout << "adding light: " << temp << ":" << scene->isDirty << std::endl;
     return temp;
 }
 
@@ -97,7 +98,6 @@ void scene_add_script(scene_t *scene, gameobject_t *object, std::string scriptPa
 
 void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet)
 {   
-    scene->isDirty = false;
     for (std::map<std::string, model_t*>::iterator it = scene->models.begin(); it != scene->models.end(); ++it)
     {
         model_render(it->second, commandBuffer, pipelineLayout, graphicsPipeline, descriptorSet);

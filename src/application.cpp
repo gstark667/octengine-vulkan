@@ -590,29 +590,20 @@ void application_create_command_buffers(application_t *app) {
     scene_render(&app->scene, app->offscreenCommandBuffer, app->offscreenPipeline.layout, app->offscreenPipeline.pipeline, app->offscreenDescriptorSet.descriptorSet);
     pipeline_end_render(&app->offscreenPipeline, app->offscreenCommandBuffer);
 
-/*
-    // create the shadow command buffer 1
-    allocInfo.commandBufferCount = 1;
+    // create the shadow command buffers
+    for (size_t idx = 0; idx < app->shadowPipelines.size(); ++idx)
+    {
+        std::cout << "creating shadow command buffer" << std::endl;
+        allocInfo.commandBufferCount = 1;
 
-    if (vkAllocateCommandBuffers(app->device, &allocInfo, &app->shadowCommandBuffer1) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate command buffers!");
+        if (vkAllocateCommandBuffers(app->device, &allocInfo, app->shadowCommandBuffers[idx]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to allocate shadow command buffers!");
+        }
+
+        pipeline_begin_render(app->shadowPipelines[idx], *app->shadowCommandBuffers[idx]);
+        scene_render(&app->scene, *app->shadowCommandBuffers[idx], app->shadowPipelines[idx]->layout, app->shadowPipelines[idx]->pipeline, app->shadowDescriptorSets[idx]->descriptorSet);
+        pipeline_end_render(app->shadowPipelines[idx], *app->shadowCommandBuffers[idx]);
     }
-
-    pipeline_begin_render(&app->shadowPipeline1, app->shadowCommandBuffer1);
-    scene_render(&app->scene, app->shadowCommandBuffer1, app->shadowPipeline1.layout, app->shadowPipeline1.pipeline, app->shadowDescriptorSet1.descriptorSet);
-    pipeline_end_render(&app->shadowPipeline1, app->shadowCommandBuffer1);
-
-    // create the shadow command buffer 2
-    allocInfo.commandBufferCount = 1;
-
-    if (vkAllocateCommandBuffers(app->device, &allocInfo, &app->shadowCommandBuffer2) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate command buffers!");
-    }
-
-    pipeline_begin_render(&app->shadowPipeline2, app->shadowCommandBuffer2);
-    scene_render(&app->scene, app->shadowCommandBuffer2, app->shadowPipeline2.layout, app->shadowPipeline2.pipeline, app->shadowDescriptorSet2.descriptorSet);
-    pipeline_end_render(&app->shadowPipeline2, app->shadowCommandBuffer2);
-*/
 }
 
 // create semaphores
@@ -679,19 +670,6 @@ void application_add_shadow_pipelines(application_t *app)
         descriptor_set_create(app->shadowDescriptorSets[idx]);
         app->shadowPipelines[idx]->cullBack = true;
         pipeline_create(app->shadowPipelines[idx], app->shadowDescriptorSets[idx], app->shadowWidth, app->shadowHeight, "shaders/shadow_vert.spv", "shaders/shadow_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->shadowAttachments[idx], true, true);
-
-        VkCommandBufferAllocateInfo allocInfo = {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = app->commandPool;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = 1;
-        if (vkAllocateCommandBuffers(app->device, &allocInfo, app->shadowCommandBuffers[idx]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate shadow command buffers!");
-        }
-
-        pipeline_begin_render(app->shadowPipelines[idx], *app->shadowCommandBuffers[idx]);
-        scene_render(&app->scene, *app->shadowCommandBuffers[idx], app->shadowPipelines[idx]->layout, app->shadowPipelines[idx]->pipeline, app->shadowDescriptorSets[idx]->descriptorSet);
-        pipeline_end_render(app->shadowPipelines[idx], *app->shadowCommandBuffers[idx]);
     }
 }
 
@@ -709,7 +687,7 @@ void application_update_uniforms(application_t *app)
         application_add_shadow_pipelines(app);
     }
 
-    //app->lightUBO.lightCount = app->scene.lights.size();
+    app->lightUBO.lightCount = app->scene.lights.size();
     size_t i = 0;
     for (auto it = app->scene.lights.begin(); it != app->scene.lights.end(); ++it)
     {
@@ -825,6 +803,7 @@ void application_draw_frame(application_t *app) {
 
 // cleanup swapchain
 void application_cleanup_swap_chain(application_t *app) {
+    std::cout << "cleanup swap chain" << std::endl;
     image_cleanup(&app->depthImage, app->device);
 
     for (std::vector<pipeline_attachment_t>::iterator it = app->offscreenAttachments.begin(); it != app->offscreenAttachments.end(); ++it)
@@ -865,6 +844,7 @@ void application_cleanup_swap_chain(application_t *app) {
 
 // recreate swapchain
 void application_recreate_swap_chain(application_t *app) {
+    std::cout << "recreate swap chain" << std::endl;
     int width, height; 
     SDL_GetWindowSize(app->window, &width, &height);
     if (width == 0 || height == 0)
@@ -968,28 +948,23 @@ void application_main_loop(application_t *app) {
 
         if (x != 0 || y != 0)
             scene_on_cursor_pos(&app->scene, (double)x, (double)y);
-            //pipeline_on_cursor_pos(&app->pipeline, (double)x, (double)y);
-
         for (auto it = downs.begin(); it != downs.end(); ++it)
             scene_on_button_down(&app->scene, *it);
-            //pipeline_on_button_down(&app->pipeline, *it);
         for (auto it = ups.begin(); it != ups.end(); ++it)
             scene_on_button_up(&app->scene, *it);
-            //pipeline_on_button_up(&app->pipeline, *it);
 
         application_update_uniforms(app);
         application_copy_uniforms(app);
 
         if (app->scene.isDirty)
         {
+            app->scene.isDirty = false;
             std::cout << "making render" << std::endl;
             application_create_command_buffers(app);
         }
 
         application_draw_frame(app);
     }
-    //script_destroy(&script);
-
     vkDeviceWaitIdle(app->device);
 }
 
