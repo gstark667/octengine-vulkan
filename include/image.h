@@ -7,6 +7,7 @@ struct image_t
     uint32_t width, height;
     uint32_t layers = 1;
     uint32_t mipLevels = 0;
+    bool forceArray = false;
     VkImage image = NULL;
     VkDeviceMemory memory = NULL;
     VkImageView view = NULL;

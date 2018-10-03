@@ -7,7 +7,7 @@
 struct light_t
 {
     camera_t camera;
-    glm::vec3 color;
+    glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f);
 };
 
 #endif

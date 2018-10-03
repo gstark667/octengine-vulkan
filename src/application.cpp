@@ -517,13 +517,15 @@ void application_create_depth_resources(application_t *app) {
     app->offscreenAttachments.push_back(app->pbr);
     app->offscreenAttachments.push_back(app->offscreenDepthAttachment);
 
-    image_create(&app->shadowImageArray, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, 2, 1, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
-    image_create_view(&app->shadowImageArray, app->device, app->depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 0, true);
-    pipeline_attachment_from_image(&app->shadowDepth1, app->device, VK_IMAGE_ASPECT_DEPTH_BIT, app->shadowImageArray, 0, true);
+    /*app->shadowImageArray = new image_t();
+    app->shadowImageArray->forceArray = true;
+    image_create(app->shadowImageArray, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, 2, 1, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
+    image_create_view(app->shadowImageArray, app->device, app->depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 0, true);
+    pipeline_attachment_from_image(&app->shadowDepth1, app->device, VK_IMAGE_ASPECT_DEPTH_BIT, *app->shadowImageArray, 0, true);
     app->shadowAttachments1.push_back(app->shadowDepth1);
 
-    pipeline_attachment_from_image(&app->shadowDepth2, app->device, VK_IMAGE_ASPECT_DEPTH_BIT, app->shadowImageArray, 1, true);
-    app->shadowAttachments2.push_back(app->shadowDepth2);
+    pipeline_attachment_from_image(&app->shadowDepth2, app->device, VK_IMAGE_ASPECT_DEPTH_BIT, *app->shadowImageArray, 1, true);
+    app->shadowAttachments2.push_back(app->shadowDepth2);*/
 }
 
 // create frame buffers
@@ -630,6 +632,30 @@ auto startTime = std::chrono::high_resolution_clock::now();
 auto initialTime = std::chrono::high_resolution_clock::now();
 float total = 0.0f;
 
+void application_add_shadow_pipelines(application_t *app)
+{
+    if (!app->shadowImageArray)
+    {
+        app->shadowImageArray = new image_t();
+        app->shadowImageArray->forceArray = true;
+        app->shadowImageArray->layers = 0;
+    }
+
+    image_cleanup(app->shadowImage);
+    image_create(app->shadowImageArray, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, app->shadowImage.layers + 1, 1, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
+    image_create_view(app->shadowImageArray, app->device, app->depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 0, true);
+
+    pipeline_attachment_from_image(&app->shadowDepth1, app->device, VK_IMAGE_ASPECT_DEPTH_BIT, *app->shadowImageArray, 0, true);
+    app->shadowAttachments1.push_back(app->shadowDepth1);
+
+    descriptor_set_setup(&app->shadowDescriptorSet1, app->device, app->physicalDevice);
+    descriptor_set_add_buffer(&app->shadowDescriptorSet1, sizeof(uniform_buffer_object_t), 0, true);
+    descriptor_set_add_texture(&app->shadowDescriptorSet1, &app->scene.textures, 1, false);
+    descriptor_set_create(&app->shadowDescriptorSet1);
+    app->shadowPipeline1.cullBack = true;
+    pipeline_create(&app->shadowPipeline1, &app->shadowDescriptorSet1, app->shadowWidth, app->shadowHeight, "shaders/shadow_vert.spv", "shaders/shadow_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->shadowAttachments1, true, true);
+}
+
 void application_update_uniforms(application_t *app)
 {
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -637,8 +663,25 @@ void application_update_uniforms(application_t *app)
     lastTime = std::chrono::high_resolution_clock::now();
     total += delta;
 
-    //pipeline_update(&app->pipeline, delta);
     scene_update(&app->scene, delta);
+
+    while (app->shadowPipelines.size() > app->scene.lights.size())
+    {
+        application_add_shadow_pipeline(app);
+    }
+
+    app->lightUBO.lightCount = app->scene.lights.size();
+    size_t i = 0;
+    for (auto it = app->scene.lights.begin(); it != app->scene.lights.end(); ++it)
+    {
+        app->lightUBO.lights[i].position = glm::vec4((*it)->camera.object->globalPos, 1.0f);
+        app->lightUBO.lights[i].color = glm::vec4((*it)->color, 1.0f);
+        app->lightUBO.lights[i].mvp = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 60.0f) * glm::lookAt(glm::vec3(app->lightUBO.lights[i].position), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
+
+        app->ubo.cameraMVP = app->lightUBO.lights[i].mvp;
+        descriptor_set_update_buffer(&app->shadowDescriptorSets[i], &app->ubo, 0);
+        ++i;
+    }
 
     if (app->scene.camera)
     {
@@ -646,15 +689,6 @@ void application_update_uniforms(application_t *app)
         app->ubo.cameraMVP = app->scene.camera->proj * app->scene.camera->view;
         app->lightUBO.cameraPos = glm::vec4(app->scene.camera->object->globalPos * 0.5f, 1.0f);
     }
-    app->lightUBO.lightCount = 2;
-    //app->lightUBO.lightCount = 0;
-    app->lightUBO.lights[0].position = glm::vec4(0.0f, 10.0f, 10.0f, 1.0f);
-    app->lightUBO.lights[0].color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    app->lightUBO.lights[0].mvp = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 60.0f) * glm::lookAt(glm::vec3(app->lightUBO.lights[0].position), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
-
-    app->lightUBO.lights[1].position = glm::vec4(-10.0f, 10.0f, 0.0f, 1.0f);
-    app->lightUBO.lights[1].color = glm::vec4(0.3f, 0.3f, 1.0f, 1.0f);
-    app->lightUBO.lights[1].mvp = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 60.0f) * glm::lookAt(glm::vec3(app->lightUBO.lights[1].position), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
 }
 
 void application_copy_uniforms(application_t *app)
@@ -669,11 +703,8 @@ void application_copy_uniforms(application_t *app)
 
     descriptor_set_update_buffer(&app->offscreenDescriptorSet, &app->ubo, 0);
 
-    app->ubo.cameraMVP = app->lightUBO.lights[0].mvp;
-    descriptor_set_update_buffer(&app->shadowDescriptorSet1, &app->ubo, 0);
-
-    app->ubo.cameraMVP = app->lightUBO.lights[1].mvp;
-    descriptor_set_update_buffer(&app->shadowDescriptorSet2, &app->ubo, 0);
+    //app->ubo.cameraMVP = app->lightUBO.lights[1].mvp;
+    //descriptor_set_update_buffer(&app->shadowDescriptorSet2, &app->ubo, 0);
 }
 
 // draw frame
@@ -838,7 +869,7 @@ void application_init_vulkan(application_t *app) {
     descriptor_set_add_image(&app->descriptorSet, &app->position.image, 4, false, false, false);
     descriptor_set_add_image(&app->descriptorSet, &app->pbr.image, 5, false, false, false);
     descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 6, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->shadowImageArray, 7, false, false, true);
+    descriptor_set_add_image(&app->descriptorSet, app->shadowImageArray, 7, false, false, true);
     descriptor_set_create(&app->descriptorSet);
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->attachments, false, false);
     app->renderUBO.sampleCount = app->sampleCount;
@@ -951,7 +982,7 @@ void application_cleanup(application_t *app) {
     descriptor_set_cleanup(&app->shadowDescriptorSet1);
     descriptor_set_cleanup(&app->shadowDescriptorSet2);
     model_cleanup(&app->quad, app->device);
-    image_cleanup(&app->shadowImageArray, app->device);
+    image_cleanup(app->shadowImageArray, app->device);
 
     vkDestroySemaphore(app->device, app->renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->offscreenSemaphore, nullptr);

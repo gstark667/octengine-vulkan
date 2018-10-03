@@ -102,23 +102,24 @@ struct application_t
     VkCommandBuffer offscreenCommandBuffer;
     VkCommandBuffer shadowCommandBuffer1, shadowCommandBuffer2;
 
-    image_t shadowImageArray;
     pipeline_attachment_t albedo, normal, position, pbr, offscreenDepthAttachment, shadowPosition, shadowDepth1, shadowDepth2;
     std::vector<pipeline_attachment_t> attachments;
     std::vector<pipeline_attachment_t> offscreenAttachments;
     std::vector<pipeline_attachment_t> shadowAttachments1;
     std::vector<pipeline_attachment_t> shadowAttachments2;
 
+    image_t *shadowImageArray = NULL;
+    std::vector<pipeline_t*> shadowPipelines;
+    std::vector<std::vector<pipeline_attachment_t*>> shadowAttachments;
+
     descriptor_set_t descriptorSet;
     descriptor_set_t offscreenDescriptorSet;
-    descriptor_set_t shadowDescriptorSet1;
-    descriptor_set_t shadowDescriptorSet2;
+    std::vector<descriptor_set_t*> shadowDescriptorSets;
 
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore offscreenSemaphore;
-    VkSemaphore shadowSemaphore1;
-    VkSemaphore shadowSemaphore2;
     VkSemaphore renderFinishedSemaphore;
+    std::vector<VkSemaphore> shadowSemaphores;
 
     camera_t shadowCam;
 
