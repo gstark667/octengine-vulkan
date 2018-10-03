@@ -691,9 +691,10 @@ void application_update_uniforms(application_t *app)
     size_t i = 0;
     for (auto it = app->scene.lights.begin(); it != app->scene.lights.end(); ++it)
     {
+        camera_update(&(*it)->camera);
         app->lightUBO.lights[i].position = glm::vec4((*it)->camera.object->globalPos, 1.0f);
         app->lightUBO.lights[i].color = glm::vec4((*it)->color, 1.0f);
-        app->lightUBO.lights[i].mvp = glm::ortho(-10.0f, 10.0f, 10.0f, -10.0f, 0.0f, 60.0f) * glm::lookAt(glm::vec3(app->lightUBO.lights[i].position), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
+        app->lightUBO.lights[i].mvp = (*it)->camera.proj * (*it)->camera.view;
 
         app->ubo.cameraMVP = app->lightUBO.lights[i].mvp;
         descriptor_set_update_buffer(app->shadowDescriptorSets[i], &app->ubo, 0);
