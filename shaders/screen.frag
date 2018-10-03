@@ -21,6 +21,7 @@ layout (binding = 0) uniform light_uniform_buffer_object {
 } lightUBO;
 
 layout (binding = 1) uniform render_uniform_buffer_object {
+    vec4 ambient;
     int sampleCount;
 } renderUBO;
 
@@ -28,7 +29,6 @@ layout (location = 0) in vec2 inUV;
 
 layout (location = 0) out vec4 outFragColor;
 
-#define AMBIENT 0.2
 #define SHADOW_FACTOR 0.25
 #define PI 3.14159
 
@@ -168,11 +168,12 @@ void main()
         vec3 L = normalize(lightUBO.lights[0].position.xyz - position);
         float shade = max(dot(normal, normalize(lightUBO.lights[i].position.xyz)), 0.0);
         float shadow = filterPCF(lightUBO.lights[i].mvp * vec4(position, 1.0), i);
-        shade = max(shade * shadow, AMBIENT);
+        shade = max(shade * shadow, renderUBO.ambient.x);
         vec3 shadeColor = lightUBO.lights[i].color.xyz * shade;
         shadedColor += shadeColor;
         shadedColor += BRDF(L, V, N, shadeColor, pbr.r, pbr.g);
     }
     outFragColor = vec4(albedo * shadedColor, 1.0);
+    outFragColor += vec4(albedo * renderUBO.ambient.xyz, 1.0);
 }
 

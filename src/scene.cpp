@@ -37,12 +37,14 @@ camera_t *scene_add_camera(scene_t *scene)
     scene->tempGameobjects.insert(temp->object);
     temp->width = scene->width;
     temp->height = scene->height;
+    std::cout << "adding camera: " << temp << std::endl;
     camera_resize(temp);
     return temp;
 }
 
 light_t *scene_add_light(scene_t *scene)
 {
+    scene->isDirty = true;
     light_t *temp = new light_t();
     temp->camera.object = new gameobject_t();
     scene->tempGameobjects.insert(temp->camera.object);

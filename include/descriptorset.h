@@ -32,6 +32,7 @@ struct light_ubo_t
 
 struct render_ubo_t
 {
+    glm::vec4 ambient = glm::vec4(0.2f);
     int sampleCount = 2;
 };
 
