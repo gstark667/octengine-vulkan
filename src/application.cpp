@@ -559,6 +559,7 @@ void application_draw_quad(application_t *app, VkCommandBuffer commandBuffer, Vk
 
 // create command buffers
 void application_create_command_buffers(application_t *app) {
+    std::cout << "creating command buffers" << std::endl;
     app->commandBuffers.resize(app->swapChainFramebuffers.size());
 
     VkCommandBufferAllocateInfo allocInfo = {};
@@ -643,26 +644,33 @@ void application_add_shadow_pipelines(application_t *app)
 
     while (app->shadowSemaphores.size() < app->scene.lights.size())
     {
+        std::cout << "adding semaphore" << std::endl;
         VkSemaphoreCreateInfo semaphoreInfo = {};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        if (vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->offscreenSemaphore) != VK_SUCCESS)
+        app->shadowSemaphores.push_back(new VkSemaphore());
+        if (vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, app->shadowSemaphores.back()) != VK_SUCCESS)
             throw std::runtime_error("unable to create shadow semaphore!");
     }
 
-    image_cleanup(app->shadowImageArray, app->device);
-    image_create(app->shadowImageArray, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, app->scene.lights.size(), 1, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
-    image_create_view(app->shadowImageArray, app->device, app->depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 0, true);
+    if (app->shadowImageArray->layers < app->scene.lights.size())
+    {
+        image_cleanup(app->shadowImageArray, app->device);
+        image_create(app->shadowImageArray, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, app->scene.lights.size(), 1, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
+        image_create_view(app->shadowImageArray, app->device, app->depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 0, true);
+        descriptor_set_update_image(&app->descriptorSet, app->shadowImageArray, 7);
+    }
 
     while (app->shadowPipelines.size() < app->scene.lights.size())
     {
+        std::cout << "adding pipeline" << std::endl;
         size_t idx = app->shadowPipelines.size();
         app->shadowPipelines.push_back(new pipeline_t());
         app->shadowDescriptorSets.push_back(new descriptor_set_t());
-        app->shadowDescriptorSets.push_back({});
         app->shadowCommandBuffers.push_back(new VkCommandBuffer());
+        app->shadowAttachments.push_back({});
 
         pipeline_attachment_t attachment;
-        pipeline_attachment_from_image(&attachment, app->device, VK_IMAGE_ASPECT_DEPTH_BIT, *app->shadowImageArray, 0, true);
+        pipeline_attachment_from_image(&attachment, app->device, VK_IMAGE_ASPECT_DEPTH_BIT, *app->shadowImageArray, idx, true);
         app->shadowAttachments[idx].push_back(attachment);
 
         descriptor_set_setup(app->shadowDescriptorSets[idx], app->device, app->physicalDevice);
@@ -698,11 +706,10 @@ void application_update_uniforms(application_t *app)
 
     if (app->shadowPipelines.size() < app->scene.lights.size())
     {
-        std::cout << "adding pipeline" << std::endl;
         application_add_shadow_pipelines(app);
     }
 
-    app->lightUBO.lightCount = app->scene.lights.size();
+    //app->lightUBO.lightCount = app->scene.lights.size();
     size_t i = 0;
     for (auto it = app->scene.lights.begin(); it != app->scene.lights.end(); ++it)
     {
@@ -763,17 +770,18 @@ void application_draw_frame(application_t *app) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 
-    VkSemaphore lastSemaphore = app->offscreenSemaphore;
+    // shadows
+    VkSemaphore *lastSemaphore = &app->offscreenSemaphore;
     for (size_t i = 0; i < app->scene.lights.size(); ++i)
     {
         submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = &lastSemaphore;
+        submitInfo.pWaitSemaphores = lastSemaphore;
         submitInfo.pWaitDstStageMask = waitStages;
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = app->shadowCommandBuffers[i];
 
         lastSemaphore = app->shadowSemaphores[i];
-        signalSemaphores[0] = app->shadowSemaphores[i];
+        signalSemaphores[0] = *app->shadowSemaphores[i];
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -784,7 +792,7 @@ void application_draw_frame(application_t *app) {
 
     // onscreen
     submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = &lastSemaphore;
+    submitInfo.pWaitSemaphores = lastSemaphore;
     submitInfo.pWaitDstStageMask = waitStages;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &app->commandBuffers[imageIndex];
@@ -821,17 +829,25 @@ void application_cleanup_swap_chain(application_t *app) {
 
     for (std::vector<pipeline_attachment_t>::iterator it = app->offscreenAttachments.begin(); it != app->offscreenAttachments.end(); ++it)
     {
-        pipeline_attachment_destroy(&(*it), app->device);
+        pipeline_attachment_cleanup(&(*it), app->device);
     }
 
     for (std::vector<pipeline_attachment_t>::iterator it = app->shadowAttachments1.begin(); it != app->shadowAttachments1.end(); ++it)
     {
-        pipeline_attachment_destroy(&(*it), app->device);
+        pipeline_attachment_cleanup(&(*it), app->device);
     }
 
     for (std::vector<pipeline_attachment_t>::iterator it = app->shadowAttachments2.begin(); it != app->shadowAttachments2.end(); ++it)
     {
-        pipeline_attachment_destroy(&(*it), app->device);
+        pipeline_attachment_cleanup(&(*it), app->device);
+    }
+
+    for (auto it = app->shadowAttachments.begin(); it != app->shadowAttachments.end(); ++it)
+    {
+        for (auto it2 = it->begin(); it2 != it->end(); ++it2)
+        {
+             pipeline_attachment_cleanup(&(*it2), app->device);
+        }
     }
 
     for (auto framebuffer: app->swapChainFramebuffers) {
@@ -982,15 +998,29 @@ void application_cleanup(application_t *app) {
 
     pipeline_cleanup(&app->pipeline);
     pipeline_cleanup(&app->offscreenPipeline);
+    for (auto it = app->shadowPipelines.begin(); it != app->shadowPipelines.end(); ++it)
+    {
+        pipeline_cleanup((*it));
+        delete *it;
+    }
+
     scene_cleanup(&app->scene);
     descriptor_set_cleanup(&app->descriptorSet);
     descriptor_set_cleanup(&app->offscreenDescriptorSet);
+    for (auto it = app->shadowDescriptorSets.begin(); it != app->shadowDescriptorSets.end(); ++it)
+    {
+        descriptor_set_cleanup((*it));
+        delete *it;
+    }
     model_cleanup(&app->quad, app->device);
-    image_cleanup(app->shadowImageArray, app->device);
+    if (app->shadowImageArray)
+        image_cleanup(app->shadowImageArray, app->device);
 
     vkDestroySemaphore(app->device, app->renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->offscreenSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->imageAvailableSemaphore, nullptr);
+    for (auto it = app->shadowSemaphores.begin(); it != app->shadowSemaphores.end(); ++it)
+        vkDestroySemaphore(app->device, *(*it), nullptr);
 
     vkDestroyCommandPool(app->device, app->commandPool, nullptr);
 

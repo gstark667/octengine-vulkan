@@ -189,14 +189,16 @@ void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, u
         samplerInfo.maxLod = 0.0f;
 
         if (vkCreateSampler(descriptorSet->device, &samplerInfo, nullptr, &texture->sampler) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create texture sampler!");
-        }    
+            throw std::runtime_error("failed to create texture sampler!");
+        }
     }
 
     descriptor_texture_t newTexture;
     newTexture.texture = texture;
     newTexture.binding = binding;
     newTexture.vertex = vertex;
+    newTexture.shadow = repeat;
+    newTexture.shadow = shadow;
     newTexture.fromImage = true;
     descriptorSet->textures.push_back(newTexture);
 }
@@ -234,6 +236,64 @@ void descriptor_set_update_texture(descriptor_set_t *descriptorSet, texture_t *t
 
     vkUpdateDescriptorSets(descriptorSet->device, 1, &write, 0, nullptr);
 }
+
+void descriptor_set_update_image(descriptor_set_t *descriptorSet, image_t *image, uint32_t binding)
+{
+    std::cout << "trying to update image" << std::endl;
+    for (auto it = descriptorSet->textures.begin(); it != descriptorSet->textures.end(); ++it)
+    {
+        if (it->binding == binding)
+        {
+            std::cout << "updating image" << std::endl;
+            vkDestroySampler(descriptorSet->device, it->texture->sampler, nullptr);
+
+            it->texture->image = *image;
+            it->texture->width = image->width;
+            it->texture->height = image->height;
+
+            VkSamplerCreateInfo samplerInfo = {};
+            samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+            samplerInfo.magFilter = VK_FILTER_LINEAR;
+            samplerInfo.minFilter = VK_FILTER_LINEAR;
+            
+            samplerInfo.addressModeU = it->repeat ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            samplerInfo.addressModeV = samplerInfo.addressModeU;
+            samplerInfo.addressModeW = samplerInfo.addressModeU;
+            samplerInfo.anisotropyEnable = it->shadow ? VK_FALSE : VK_TRUE;
+            samplerInfo.maxAnisotropy = it->shadow ? 1 : 16;
+            samplerInfo.borderColor = it->shadow ? VK_BORDER_COLOR_INT_OPAQUE_WHITE : VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+            samplerInfo.unnormalizedCoordinates = VK_FALSE;
+            samplerInfo.compareEnable = it->shadow ? VK_TRUE : VK_FALSE;
+            samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+            samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            samplerInfo.mipLodBias = 0.0f;
+            samplerInfo.minLod = 0.0f;
+            samplerInfo.maxLod = 0.0f;
+
+            if (vkCreateSampler(descriptorSet->device, &samplerInfo, nullptr, &it->texture->sampler) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create texture sampler!");
+            }
+
+            VkDescriptorImageInfo imageInfo;
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = it->texture->image.view;
+            imageInfo.sampler = it->texture->sampler;
+
+            VkWriteDescriptorSet write;
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet->descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = 0;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            write.descriptorCount = 1;
+            write.pImageInfo = &imageInfo;
+            write.pNext = NULL;
+
+            vkUpdateDescriptorSets(descriptorSet->device, 1, &write, 0, nullptr);
+        }
+    }
+}
+
 
 void descriptor_set_create(descriptor_set_t *descriptorSet)
 {

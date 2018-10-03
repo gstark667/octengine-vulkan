@@ -48,6 +48,7 @@ light_t *scene_add_light(scene_t *scene)
     light_t *temp = new light_t();
     temp->camera.object = new gameobject_t();
     scene->tempGameobjects.insert(temp->camera.object);
+    scene->lights.insert(temp);
     return temp;
 }
 

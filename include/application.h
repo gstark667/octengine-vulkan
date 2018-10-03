@@ -117,7 +117,7 @@ struct application_t
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore offscreenSemaphore;
     VkSemaphore renderFinishedSemaphore;
-    std::vector<VkSemaphore> shadowSemaphores;
+    std::vector<VkSemaphore*> shadowSemaphores;
 
     camera_t shadowCam;
 

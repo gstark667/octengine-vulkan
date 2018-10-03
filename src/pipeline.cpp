@@ -16,14 +16,12 @@ void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice devi
     VkImageAspectFlags aspectFlags;
     if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
     {
-        std::cout << "depth" << std::endl;
         attachment->layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         attachment->finalLayout = shadow ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
         aspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
     }
     else
     {
-        std::cout << "color" << std::endl;
         //attachment->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         attachment->layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         attachment->finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -62,7 +60,7 @@ std::vector<VkImageView> pipeline_attachment_views(std::vector<pipeline_attachme
     return output;
 }
 
-void pipeline_attachment_destroy(pipeline_attachment_t *attachment, VkDevice device)
+void pipeline_attachment_cleanup(pipeline_attachment_t *attachment, VkDevice device)
 {
     if (attachment->destroy)
         image_cleanup(&attachment->image, device);
@@ -72,7 +70,6 @@ void pipeline_attachment_destroy(pipeline_attachment_t *attachment, VkDevice dev
 
 void pipeline_create_render_pass(pipeline_t *pipeline)
 {
-    std::cout << "making render pass: " << pipeline->attachments.size() << std::endl;
     std::vector<VkAttachmentDescription> descriptions;
     std::vector<VkAttachmentReference> colorRefs;
     VkAttachmentReference depthRef;
@@ -80,7 +77,6 @@ void pipeline_create_render_pass(pipeline_t *pipeline)
     bool resolve = false;
     for (std::vector<pipeline_attachment_t>::iterator it = pipeline->attachments.begin(); it != pipeline->attachments.end(); ++it)
     {
-        std::cout << "adding attachment with " << it->image.samples << " samples" << std::endl;
         VkAttachmentDescription attachment = {};
         attachment.format = it->format;
         attachment.samples = it->image.samples;
@@ -96,7 +92,6 @@ void pipeline_create_render_pass(pipeline_t *pipeline)
         attachmentRef.layout = it->layout;
         if (it->usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
         {
-            std::cout << "depth" << std::endl;
             depthRef = attachmentRef;
         }
         else
@@ -108,7 +103,6 @@ void pipeline_create_render_pass(pipeline_t *pipeline)
             }
             else
             {
-                std::cout << "color" << std::endl;
                 colorRefs.push_back(attachmentRef);
             }
         }
@@ -272,7 +266,6 @@ void pipeline_create_graphics(pipeline_t *pipeline, uint32_t width, uint32_t hei
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
-    std::cout << "making pipeline with " << pipeline->samples << " samples" << std::endl;
     VkPipelineMultisampleStateCreateInfo multisampling = {};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     if (pipeline->samples != VK_SAMPLE_COUNT_1_BIT)

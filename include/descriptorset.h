@@ -41,6 +41,8 @@ struct descriptor_texture_t
     texture_t *texture;
     uint32_t binding;
     bool vertex;
+    bool repeat;
+    bool shadow;
     bool fromImage = false;
 };
 
@@ -72,6 +74,7 @@ void descriptor_set_add_texture(descriptor_set_t *descriptorSet, texture_t *text
 void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, uint32_t binding, bool vertex, bool repeat, bool shadow);
 void descriptor_set_update_buffer(descriptor_set_t *descriptorSet, void *data, uint32_t binding);
 void descriptor_set_update_texture(descriptor_set_t *descriptorSet, texture_t *image, uint32_t binding);
+void descriptor_set_update_image(descriptor_set_t *descriptorSet, image_t *image, uint32_t binding);
 void descriptor_set_create(descriptor_set_t *descriptorSet);
 void descriptor_set_cleanup(descriptor_set_t *descriptor_set);
 
