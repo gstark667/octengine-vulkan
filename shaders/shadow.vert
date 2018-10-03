@@ -1,5 +1,8 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
+#extension GL_GOOGLE_include_directive : enable
+
+#include "rotate.vert"
 
 layout(binding = 0) uniform uniform_buffer_object {
     mat4 cameraMVP;
@@ -41,31 +44,7 @@ void main()
         boneTransform += bones.mats[inBones[3]] * inWeights[3];
     }
 
-    mat3 mx, my, mz;
-	
-    // rotate around z
-    float s = sin(instanceRot.z);
-    float c = cos(instanceRot.z);
-    mz[0] = vec3(c, s, 0.0);
-    mz[1] = vec3(-s, c, 0.0);
-    mz[2] = vec3(0.0, 0.0, 1.0);
-
-    // rotate around y
-    s = sin(-instanceRot.y);
-    c = cos(-instanceRot.y);
-    my[0] = vec3(c, 0.0, s);
-    my[1] = vec3(0.0, 1.0, 0.0);
-    my[2] = vec3(-s, 0.0, c);
-
-    // rot around x
-    s = sin(instanceRot.x);
-    c = cos(instanceRot.x);	
-
-    mx[0] = vec3(1.0, 0.0, 0.0);
-    mx[1] = vec3(0.0, c, s);
-    mx[2] = vec3(0.0, -s, c);
-
-    mat3 rotMat = mz * my * mx;
+    mat3 rotMat = rotate_euler(instanceRot);
 
     vec4 worldPos = mat4(rotMat) * boneTransform * vec4(inPosition * instanceScale, 1.0) + vec4(instancePos, 1.0);
     gl_Position = ubo.cameraMVP * worldPos;

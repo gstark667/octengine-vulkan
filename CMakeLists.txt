@@ -77,7 +77,7 @@ ADD_CUSTOM_COMMAND(
 
 ADD_CUSTOM_COMMAND(
     OUTPUT shaders/offscreen_vert.spv
-    DEPENDS ${CMAKE_SOURCE_DIR}/shaders/offscreen.vert
+    DEPENDS ${CMAKE_SOURCE_DIR}/shaders/offscreen.vert ${CMAKE_SOURCE_DIR}/shaders/rotate.vert
     COMMAND glslangValidator -V ${CMAKE_SOURCE_DIR}/shaders/offscreen.vert -o shaders/offscreen_vert.spv
 )
 
@@ -101,7 +101,7 @@ ADD_CUSTOM_COMMAND(
 
 ADD_CUSTOM_COMMAND(
     OUTPUT shaders/shadow_vert.spv
-    DEPENDS ${CMAKE_SOURCE_DIR}/shaders/shadow.vert
+    DEPENDS ${CMAKE_SOURCE_DIR}/shaders/shadow.vert ${CMAKE_SOURCE_DIR}/shaders/rotate.vert
     COMMAND glslangValidator -V ${CMAKE_SOURCE_DIR}/shaders/shadow.vert -o shaders/shadow_vert.spv
 )
 
