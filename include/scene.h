@@ -10,6 +10,7 @@
 #include "physics.h"
 #include "camera.h"
 #include "light.h"
+#include "descriptorset.h"
 
 #include <vector>
 #include <map>
@@ -21,6 +22,8 @@ struct scene_t
 {
     camera_t *camera = NULL;
     script_t script;
+
+    bone_ubo_t bones;
 
     VkDevice device;
     VkPhysicalDevice physicalDevice;
@@ -42,7 +45,7 @@ struct scene_t
 };
 
 void scene_create(scene_t *scene, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, uint32_t width, uint32_t height);
-void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet);
+void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, descriptor_set_t *descriptorSet);
 gameobject_t *scene_add_gameobject(scene_t *scene);
 camera_t *scene_add_camera(scene_t *scene);
 light_t *scene_add_light(scene_t *scene);

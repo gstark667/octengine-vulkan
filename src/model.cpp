@@ -251,7 +251,7 @@ void model_load(model_t *model, std::string path)
             else
                 newVertex.texCoord = {0, 0};
             newVertex.weights = {0.0f, 0.0f, 0.0f, 0.0f};
-            newVertex.bones = {0, 0, 0, 0};
+            newVertex.bones = {-1, -1, -1, -1};
             model->vertices.push_back(newVertex);
         }
 
@@ -373,6 +373,7 @@ void model_copy_instance_buffer(model_t *model, std::vector<gameobject_t*> insta
 
 void model_create_buffers(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
+    std::cout << "bones: " << model->bones.size() << std::endl;
     model_create_vertex_buffer(model, device, physicalDevice, commandPool, graphicsQueue);
     model_create_index_buffer(model, device, physicalDevice, commandPool, graphicsQueue);
     model_create_instance_buffer(model, device, physicalDevice, commandPool, graphicsQueue);
@@ -391,16 +392,29 @@ void model_update_bone(model_t *model, bone_t *bone, float time, aiMatrix4x4 par
     bone->matrix = model->globalInverseTransform * bone->matrix * bone->offset;
 }
 
-void model_update(model_t *model, float delta)
+void model_update(model_t *model, float delta, bone_ubo_t *boneUBO)
 {
     model->time += delta;
     // TODO allign this with actual animation length
     while (model->time > 2.5f)
         model->time -= 2.5f;
     // TODO make this pick the actual root bone (instead of assuming 0)
-    //std::cout << model->bones.size() << std::endl;
-    //if (model->bones.size() > 0)
-    //    model_update_bone(model, &model->bones[0], model->time, aiMatrix4x4());
+    if (model->bones.size() > 0)
+    {
+        model_update_bone(model, &model->bones[0], model->time, aiMatrix4x4());
+        size_t idx = 0;
+        for (auto it = model->bones.begin(); it != model->bones.end(); ++it)
+        {
+            for (short y = 0; y < 4; ++y)
+            {
+                for (short x = 0; x < 4; ++x)
+                {
+                    boneUBO->bones[idx][y][x] = it->matrix[x][y];
+                }
+            }
+            ++idx;
+        }
+    }
 }
 
 void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet)

@@ -96,11 +96,11 @@ void scene_add_script(scene_t *scene, gameobject_t *object, std::string scriptPa
     object->scripts.insert(script);
 }
 
-void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet)
+void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, descriptor_set_t *descriptorSet)
 {   
     for (std::map<std::string, model_t*>::iterator it = scene->models.begin(); it != scene->models.end(); ++it)
     {
-        model_render(it->second, commandBuffer, pipelineLayout, graphicsPipeline, descriptorSet);
+        model_render(it->second, commandBuffer, pipelineLayout, graphicsPipeline, descriptorSet->descriptorSet);
     }
 }
 
@@ -129,7 +129,7 @@ void scene_update(scene_t *scene, float delta)
     
     for (std::map<model_t*, std::vector<gameobject_t*>>::iterator it = modelUpdates.begin(); it != modelUpdates.end(); ++it)
     {   
-        model_update(it->first, delta);
+        model_update(it->first, delta, &scene->bones);
         model_copy_instance_buffer(it->first, it->second, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue);
     }
 }

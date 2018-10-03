@@ -20,6 +20,7 @@ struct model_t;
 
 #include "gameobject.h"
 #include "buffer.h"
+#include "descriptorset.h"
 
 struct vertex_t
 {
@@ -113,7 +114,7 @@ void model_load(model_t *model, std::string path);
 void model_copy_index_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 void model_copy_instance_buffer(model_t *model, std::vector<gameobject_t*> instances, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 void model_create_buffers(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
-void model_update(model_t *model, float delta);
+void model_update(model_t *model, float delta, bone_ubo_t *boneBuffer);
 void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet);
 void model_cleanup(model_t *model, VkDevice device);
 

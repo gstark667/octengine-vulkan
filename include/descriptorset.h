@@ -16,6 +16,11 @@ struct uniform_buffer_object_t
     //glm::mat4 bones[64];
 };
 
+struct bone_ubo_t
+{
+    glm::mat4 bones[64];
+};
+
 struct light_instance_t
 {
     glm::vec4 position = glm::vec4(0.0f);

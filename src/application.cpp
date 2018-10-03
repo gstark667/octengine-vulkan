@@ -587,7 +587,7 @@ void application_create_command_buffers(application_t *app) {
     }
 
     pipeline_begin_render(&app->offscreenPipeline, app->offscreenCommandBuffer);
-    scene_render(&app->scene, app->offscreenCommandBuffer, app->offscreenPipeline.layout, app->offscreenPipeline.pipeline, app->offscreenDescriptorSet.descriptorSet);
+    scene_render(&app->scene, app->offscreenCommandBuffer, app->offscreenPipeline.layout, app->offscreenPipeline.pipeline, &app->offscreenDescriptorSet);
     pipeline_end_render(&app->offscreenPipeline, app->offscreenCommandBuffer);
 
     // create the shadow command buffers
@@ -601,7 +601,7 @@ void application_create_command_buffers(application_t *app) {
         }
 
         pipeline_begin_render(app->shadowPipelines[idx], *app->shadowCommandBuffers[idx]);
-        scene_render(&app->scene, *app->shadowCommandBuffers[idx], app->shadowPipelines[idx]->layout, app->shadowPipelines[idx]->pipeline, app->shadowDescriptorSets[idx]->descriptorSet);
+        scene_render(&app->scene, *app->shadowCommandBuffers[idx], app->shadowPipelines[idx]->layout, app->shadowPipelines[idx]->pipeline, app->shadowDescriptorSets[idx]);
         pipeline_end_render(app->shadowPipelines[idx], *app->shadowCommandBuffers[idx]);
     }
 }
@@ -666,7 +666,8 @@ void application_add_shadow_pipelines(application_t *app)
 
         descriptor_set_setup(app->shadowDescriptorSets[idx], app->device, app->physicalDevice);
         descriptor_set_add_buffer(app->shadowDescriptorSets[idx], sizeof(uniform_buffer_object_t), 0, true);
-        descriptor_set_add_texture(app->shadowDescriptorSets[idx], &app->scene.textures, 1, false);
+        descriptor_set_add_buffer(app->shadowDescriptorSets[idx], sizeof(bone_ubo_t), 1, true);
+        descriptor_set_add_texture(app->shadowDescriptorSets[idx], &app->scene.textures, 2, false);
         descriptor_set_create(app->shadowDescriptorSets[idx]);
         app->shadowPipelines[idx]->cullBack = true;
         pipeline_create(app->shadowPipelines[idx], app->shadowDescriptorSets[idx], app->shadowWidth, app->shadowHeight, "shaders/shadow_vert.spv", "shaders/shadow_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->shadowAttachments[idx], true, true);
@@ -698,6 +699,7 @@ void application_update_uniforms(application_t *app)
 
         app->ubo.cameraMVP = app->lightUBO.lights[i].mvp;
         descriptor_set_update_buffer(app->shadowDescriptorSets[i], &app->ubo, 0);
+        descriptor_set_update_buffer(app->shadowDescriptorSets[i], &app->scene.bones, 1);
         ++i;
     }
 
@@ -714,12 +716,13 @@ void application_copy_uniforms(application_t *app)
     if (app->scene.textures.needsUpdate)
     {
         app->scene.textures.needsUpdate = false;
-        descriptor_set_update_texture(&app->offscreenDescriptorSet, &app->scene.textures, 1);
+        descriptor_set_update_texture(&app->offscreenDescriptorSet, &app->scene.textures, 2);
     }
 
     descriptor_set_update_buffer(&app->descriptorSet, &app->lightUBO, 0);
 
     descriptor_set_update_buffer(&app->offscreenDescriptorSet, &app->ubo, 0);
+    descriptor_set_update_buffer(&app->offscreenDescriptorSet, &app->scene.bones, 1);
 
     //app->ubo.cameraMVP = app->lightUBO.lights[1].mvp;
     //descriptor_set_update_buffer(&app->shadowDescriptorSet2, &app->ubo, 0);
@@ -894,10 +897,10 @@ void application_init_vulkan(application_t *app) {
     app->renderUBO.ambient = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
     descriptor_set_update_buffer(&app->descriptorSet, &app->renderUBO, 1);
 
-
     descriptor_set_setup(&app->offscreenDescriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_buffer(&app->offscreenDescriptorSet, sizeof(uniform_buffer_object_t), 0, true);
-    descriptor_set_add_texture(&app->offscreenDescriptorSet, &app->scene.textures, 1, false);
+    descriptor_set_add_buffer(&app->offscreenDescriptorSet, sizeof(bone_ubo_t), 1, true);
+    descriptor_set_add_texture(&app->offscreenDescriptorSet, &app->scene.textures, 2, false);
     descriptor_set_create(&app->offscreenDescriptorSet);
     pipeline_create(&app->offscreenPipeline, &app->offscreenDescriptorSet, app->windowWidth, app->windowHeight, "shaders/offscreen_vert.spv", "shaders/offscreen_frag.spv", app->device, app->physicalDevice, app->sampleCount, app->commandPool, app->graphicsQueue, app->offscreenAttachments, true, false);
 
