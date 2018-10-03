@@ -9,9 +9,7 @@ int main()
     app.enableValidationLayers = true;
     app.windowWidth = 1280;
     app.windowHeight = 720;
-    app.windowWidth = 1920;
-    app.windowHeight = 1080;
-    app.fullscreen = true;
+    app.fullscreen = false;
 
     try {
         application_run(&app);

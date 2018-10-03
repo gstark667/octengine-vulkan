@@ -10,7 +10,8 @@ struct camera_t
     glm::mat4 view = glm::mat4(1.0f);
     glm::mat4 proj = glm::mat4(1.0f);
     float fov = 90.0f;
-    int width, height;
+    int width = 1;
+    int height = 1;
     float sizeX = 10.0f;
     float sizeY = 10.0f;
 };
