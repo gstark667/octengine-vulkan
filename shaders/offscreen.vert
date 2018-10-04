@@ -39,13 +39,18 @@ const mat4 biasMat = mat4(
 	0.5, 0.0, 0.0, 0.0,
 	0.0, 0.5, 0.0, 0.0,
 	0.0, 0.0, 1.0, 0.0,
-0.5, 0.5, 0.0, 1.0 );
+        0.5, 0.5, 0.0, 1.0 );
 
 void main() {
+    mat4 scale = mat4(instanceScale, 0.0, 0.0, 0.0,
+                      0.0, instanceScale, 0.0, 0.0,
+                      0.0, 0.0, instanceScale, 0.0,
+                      0.0, 0.0, 0.0, 1.0);
+
     mat4 boneTransform = rotate_bone(inBones, inWeights, bones.mats);
     mat3 rotMat = rotate_euler(instanceRot);
 
-    vec4 worldPos = mat4(rotMat) * boneTransform * vec4(inPosition * instanceScale, 1.0) + vec4(instancePos, 1.0);
+    vec4 worldPos = mat4(rotMat) * scale * boneTransform * vec4(inPosition, 1.0) + vec4(instancePos, 1.0);
     gl_Position = ubo.cameraMVP * worldPos;
     outNormal = rotMat * mat3(boneTransform) * inNormal;
     outUV = inTexCoord;

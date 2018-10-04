@@ -30,22 +30,13 @@ out gl_PerVertex
 
 void main() 
 {
-    mat4 boneTransform;
-    if (inBones[0] == -1)
-    {
-        boneTransform = mat4(1.0);
-    }
-    else
-    {
-        boneTransform = mat4(0.0);
-        boneTransform += bones.mats[inBones[0]] * inWeights[0];
-        boneTransform += bones.mats[inBones[1]] * inWeights[1];
-        boneTransform += bones.mats[inBones[2]] * inWeights[2];
-        boneTransform += bones.mats[inBones[3]] * inWeights[3];
-    }
-
+    mat4 scale = mat4(instanceScale, 0.0, 0.0, 0.0,
+                      0.0, instanceScale, 0.0, 0.0,
+                      0.0, 0.0, instanceScale, 0.0,
+                      0.0, 0.0, 0.0, 1.0);
+    mat4 boneTransform = rotate_bone(inBones, inWeights, bones.mats);
     mat3 rotMat = rotate_euler(instanceRot);
 
-    vec4 worldPos = mat4(rotMat) * boneTransform * vec4(inPosition * instanceScale, 1.0) + vec4(instancePos, 1.0);
+    vec4 worldPos = mat4(rotMat) * scale * boneTransform * vec4(inPosition, 1.0) + vec4(instancePos, 1.0);
     gl_Position = ubo.cameraMVP * worldPos;
 }
