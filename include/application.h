@@ -125,6 +125,7 @@ struct application_t
     model_t quad;
 
     settings_t settings;
+    SDL_Joystick *gameController;
 };
 
 void application_recreate_swap_chain(application_t *app);

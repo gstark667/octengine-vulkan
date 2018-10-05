@@ -27,6 +27,9 @@ function setup(scene, object)
 
     gameobject_set_number(object, "x_rot", 0)
     gameobject_set_number(object, "y_rot", 0)
+
+    gameobject_set_number(object, "x_look", 0)
+    gameobject_set_number(object, "y_look", 0)
 end
 
 function dot(x, y)
@@ -37,40 +40,21 @@ function dot(x, y)
     return sum
 end
 
-function accelerate(x, z, last_x, last_z, accleration, max_velocity, delta)
-    proj_vel = dot(x, z, last_x, last_z)
-    accel_vel = acceleration * delta
-
-    if proj_vel + accel_vel > max_velocity then
-        accel_vel = max_velocity - proj_vel
-    end
-
-    accel_dir = math.atan2(x, z)
-    new_x = x + math.cos(accel_dir) * accel_vel
-    new_z = z + math.sin(accel_dir) * accel_vel
-    return new_x, new_z
-end
-
-function move_ground(x_input, z_input)
-
-end
-
-function limit(x, max)
-    if x > max then
-        return max
-    elseif x < -max then
-        return -max
-    end
-    return x
-end
-
 function update(scene, object, delta)
     camera = gameobject_get_integer(object, "camera")
 
-    x_rot = gameobject_get_number(object, "x_rot")
-    y_rot = gameobject_get_number(object, "y_rot")
+    x_rot = gameobject_get_number(object, "x_rot") + gameobject_get_number(object, "x_look")
+    y_rot = gameobject_get_number(object, "y_rot") + gameobject_get_number(object, "y_look")
+    if y_rot > 1.57079632679 then
+        y_rot = 1.57079632679
+    elseif y_rot < -1.57079632679 then
+        y_rot = -1.57079632679
+    end
+    gameobject_set_number(object, "x_rot", x_rot)
+    gameobject_set_number(object, "y_rot", y_rot)
+
     physics_set_rotation(object, 0, -x_rot, 0)
-    gameobject_set_rotation(camera, y_rot, 0, 0)
+    gameobject_set_rotation(camera, -y_rot, 0, 0)
 
     friction = gameobject_get_number(object, "friction")
     max_velocity = gameobject_get_number(object, "max_velocity")
@@ -86,9 +70,12 @@ function update(scene, object, delta)
     end
 
     x_axis = gameobject_get_number(object, "x_axis")
+    z_axis = gameobject_get_number(object, "z_axis")
     y_axis = gameobject_get_number(object, "y_axis")
     gameobject_set_number(object, "y_axis", 0)
-    z_axis = gameobject_get_number(object, "z_axis")
+    if grounded == 0 then
+        y_axis = 0
+    end
 
     cur_x, cur_y, cur_z = physics_get_velocity(object)
     cur_y = cur_y + gravity * delta + y_axis * jump_speed
@@ -128,19 +115,15 @@ end
 
 function on_cursor_pos(scene, object, x, y)
     new_x = x/250 + gameobject_get_number(object, "x_rot")
-    new_y = -y/250 + gameobject_get_number(object, "y_rot")
-    if new_y > 1.57079632679 then
-        new_y = 1.57079632679
-    elseif new_y < -1.57079632679 then
-        new_y = -1.57079632679
-    end
+    new_y = y/250 + gameobject_get_number(object, "y_rot")
     gameobject_set_number(object, "x_rot", new_x)
     gameobject_set_number(object, "y_rot", new_y)
 end
 
 function on_event(scene, object, name, value)
-    print(name, value)
     if name == "x_axis" or name == "z_axis" or name =="y_axis" then
+        gameobject_set_number(object, name, value)
+    elseif name == "x_look" or name == "y_look" then
         gameobject_set_number(object, name, value)
     end
 end

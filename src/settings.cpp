@@ -19,10 +19,10 @@ void settings_create(settings_t *settings)
             lua_pushnil(script.lua);
             while (lua_next(script.lua, -2) != 0)
             {
-                //if(lua_isstring(script.lua, -1))
-                //    std::cout << lua_tostring(script.lua, -2) << ":" << lua_tostring(script.lua, -1) << std::endl;
-                //else if(lua_isnumber(script.lua, -1))
-                settings->keybinds[key].push_back({std::string(lua_tostring(script.lua, -2)), lua_tonumber(script.lua, -1)});
+                std::string name(lua_tostring(script.lua, -2));
+                lua_Number value = lua_tonumber(script.lua, -1);
+                settings->keybinds[key].push_back({name, value});
+                settings->events[name] = 0;
                 lua_pop(script.lua, 1);
             }
         }
@@ -34,14 +34,24 @@ void settings_create(settings_t *settings)
 
 void settings_on_button(settings_t *settings, std::string code, bool down)
 {
+    std::cout << "button: " << code << std::endl;
     if (settings->keybinds.find(code) == settings->keybinds.end())
         return;
     for (auto it = settings->keybinds[code].begin(); it != settings->keybinds[code].end(); ++it)
     {
         settings->triggeredEvents.insert(it->name);
-        if (settings->events.find(it->name) == settings->events.end())
-            settings->events[it->name] = 0;
         settings->events[it->name] += down ? it->value : -it->value;
+    }
+}
+
+void settings_on_axis(settings_t *settings, std::string code, float value)
+{
+    if (settings->keybinds.find(code) == settings->keybinds.end())
+        return;
+    for (auto it = settings->keybinds[code].begin(); it != settings->keybinds[code].end(); ++it)
+    {
+        settings->triggeredEvents.insert(it->name);
+        settings->events[it->name] = it->value * value;
     }
 }
 

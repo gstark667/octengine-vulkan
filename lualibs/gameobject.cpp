@@ -61,6 +61,16 @@ static int gameobject_set_rotation(lua_State *L)
     return 0;
 }
 
+static int gameobject_get_rotation(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    lua_pushnumber(L, (lua_Number)object->rot.x);
+    lua_pushnumber(L, (lua_Number)object->rot.y);
+    lua_pushnumber(L, (lua_Number)object->rot.z);
+    return 3;
+}
+
+
 static int gameobject_scale(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
@@ -159,6 +169,7 @@ int EXPORT luaopen_gameobject(lua_State *L)
     lua_register(L, "gameobject_set_transform", gameobject_set_transform);
     lua_register(L, "gameobject_rotate", gameobject_rotate);
     lua_register(L, "gameobject_set_rotation", gameobject_set_rotation);
+    lua_register(L, "gameobject_get_rotation", gameobject_get_rotation);
     lua_register(L, "gameobject_scale", gameobject_scale);
     lua_register(L, "gameobject_set_scale", gameobject_set_scale);
     lua_register(L, "gameobject_set_parent", gameobject_set_parent);

@@ -23,5 +23,6 @@ struct settings_t
 
 void settings_create(settings_t *settings);
 void settings_on_button(settings_t *settings, std::string code, bool down);
+void settings_on_axis(settings_t *settings, std::string code, float value);
 
 #endif

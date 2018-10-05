@@ -36,7 +36,7 @@ swapchain_support_t application_query_swap_chain_support(application_t *app, VkP
 
 
 void application_init_window(application_t *app) {
-    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
     app->window = SDL_CreateWindow(
         "octengine",
         SDL_WINDOWPOS_UNDEFINED,
@@ -46,8 +46,19 @@ void application_init_window(application_t *app) {
         (app->fullscreen ? SDL_WINDOW_FULLSCREEN | SDL_WINDOW_VULKAN : SDL_WINDOW_VULKAN)
     );
 
+    // setup mouse
     SDL_SetWindowGrab(app->window, SDL_TRUE);
     SDL_SetRelativeMouseMode(SDL_TRUE);
+
+    // setup joystick
+    if (SDL_NumJoysticks() != 0)
+    {
+        app->gameController = SDL_JoystickOpen(0);
+        if(app->gameController == NULL)
+        {
+             std::cout << "Unable to open joystick: " << SDL_GetError();
+        }
+    }
 }
 
 // create instance
@@ -921,8 +932,6 @@ void application_main_loop(application_t *app) {
     while (running) {
         int x = 0;
         int y = 0;
-        std::set<std::string> downs;
-        std::set<std::string> ups;
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
@@ -938,6 +947,13 @@ void application_main_loop(application_t *app) {
                     continue;
                 settings_on_button(&app->settings, SDL_GetScancodeName(event.key.keysym.scancode), event.type == SDL_KEYDOWN);
                 break;
+            case SDL_JOYAXISMOTION:
+                settings_on_axis(&app->settings, "JA_" + std::to_string(event.jaxis.axis), ((float)event.jaxis.value) / 32767.0);
+                break;
+            case SDL_JOYBUTTONDOWN:
+            case SDL_JOYBUTTONUP:
+                settings_on_button(&app->settings, "JB_" + std::to_string(event.jbutton.button), event.jbutton.state == SDL_PRESSED);
+                break;
             case SDL_QUIT:
                 running = false;
                 break;
@@ -948,10 +964,6 @@ void application_main_loop(application_t *app) {
 
         if (x != 0 || y != 0)
             scene_on_cursor_pos(&app->scene, (double)x, (double)y);
-        /*for (auto it = downs.begin(); it != downs.end(); ++it)
-            scene_on_button_down(&app->scene, *it);
-        for (auto it = ups.begin(); it != ups.end(); ++it)
-            scene_on_button_up(&app->scene, *it);*/
         for (auto it = app->settings.triggeredEvents.begin(); it != app->settings.triggeredEvents.end(); ++it)
         {
             scene_on_event(&app->scene, {*it, app->settings.events[*it]});
