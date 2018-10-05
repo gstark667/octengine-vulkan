@@ -112,6 +112,24 @@ void physics_object_init_capsule(physics_object_t *object, void *user, float mas
     physics_object_init(object, user, mass);
 }
 
+void physics_object_init_convex_hull(physics_object_t *object, void *user, float mass)
+{
+    gameobject_t *gameobject = (gameobject_t*)user;
+    if (!gameobject->model)
+        return;
+    btConvexHullShape *shape = new btConvexHullShape();
+    size_t count = gameobject->model->vertices.size();
+    size_t i = 0;
+    for (auto it = gameobject->model->vertices.begin(); it != gameobject->model->vertices.end(); ++it)
+    {
+        bool recalc = i == count - 1;
+        shape->addPoint(btVector3(it->pos.x, it->pos.y, it->pos.z), recalc);
+        ++i;
+    }
+    object->collisionShape = shape;
+    physics_object_init(object, user, mass);
+}
+
 void physics_object_init(physics_object_t *object, void *user, float mass)
 {
     object->motionState = new btDefaultMotionState(btTransform(
