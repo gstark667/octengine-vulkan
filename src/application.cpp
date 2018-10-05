@@ -933,14 +933,10 @@ void application_main_loop(application_t *app) {
                 y = event.motion.yrel;
                 break;
             case SDL_KEYDOWN:
-                if (event.key.repeat)
-                    continue;
-                downs.insert(SDL_GetScancodeName(event.key.keysym.scancode));
-                break;
             case SDL_KEYUP:
                 if (event.key.repeat)
                     continue;
-                ups.insert(SDL_GetScancodeName(event.key.keysym.scancode));
+                settings_on_button(&app->settings, SDL_GetScancodeName(event.key.keysym.scancode), event.type == SDL_KEYDOWN);
                 break;
             case SDL_QUIT:
                 running = false;
@@ -952,10 +948,15 @@ void application_main_loop(application_t *app) {
 
         if (x != 0 || y != 0)
             scene_on_cursor_pos(&app->scene, (double)x, (double)y);
-        for (auto it = downs.begin(); it != downs.end(); ++it)
+        /*for (auto it = downs.begin(); it != downs.end(); ++it)
             scene_on_button_down(&app->scene, *it);
         for (auto it = ups.begin(); it != ups.end(); ++it)
-            scene_on_button_up(&app->scene, *it);
+            scene_on_button_up(&app->scene, *it);*/
+        for (auto it = app->settings.triggeredEvents.begin(); it != app->settings.triggeredEvents.end(); ++it)
+        {
+            scene_on_event(&app->scene, {*it, app->settings.events[*it]});
+        }
+        app->settings.triggeredEvents.clear();
 
         application_update_uniforms(app);
         application_copy_uniforms(app);
@@ -1014,6 +1015,7 @@ void application_cleanup(application_t *app) {
 
 void application_run(application_t *app) {
     application_init_window(app);
+    settings_create(&app->settings);
     application_init_vulkan(app);
     application_main_loop(app);
     application_cleanup(app);

@@ -62,6 +62,14 @@ void gameobject_on_button_up(gameobject_t *gameobject, void *scene, std::string 
     }
 }
 
+void gameobject_on_event(gameobject_t *gameobject, void *scene, event_t event)
+{
+    for (std::set<script_t*>::iterator it = gameobject->scripts.begin(); it != gameobject->scripts.end(); ++it)
+    {
+        script_on_event(*it, scene, gameobject, event);
+    }
+}
+
 void gameobject_on_collision_enter(gameobject_t *gameobject, gameobject_t *other, void *scene)
 {
     for (std::set<script_t*>::iterator it = gameobject->scripts.begin(); it != gameobject->scripts.end(); ++it)

@@ -176,3 +176,11 @@ void scene_on_button_up(scene_t *scene, std::string buttonCode)
     }
 }
 
+void scene_on_event(scene_t *scene, event_t event)
+{
+    for (std::set<gameobject_t*>::iterator it = scene->gameobjects.begin(); it != scene->gameobjects.end(); ++it)
+    {
+        gameobject_on_event(*it, (void*)scene, event);
+    }
+}
+

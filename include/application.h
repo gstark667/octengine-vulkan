@@ -22,6 +22,7 @@
 #include "texture.h"
 #include "scene.h"
 #include "script.h"
+#include "settings.h"
 #include "descriptorset.h"
 
 
@@ -122,6 +123,8 @@ struct application_t
     camera_t shadowCam;
 
     model_t quad;
+
+    settings_t settings;
 };
 
 void application_recreate_swap_chain(application_t *app);

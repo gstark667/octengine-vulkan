@@ -30,6 +30,7 @@ set(HEADERS
     include/camera.h
     include/light.h
     include/script.h
+    include/settings.h
     include/application.h
 )
 
@@ -49,6 +50,7 @@ set(SOURCES
     src/camera.cpp
     src/light.cpp
     src/script.cpp
+    src/settings.cpp
     src/application.cpp
 )
 

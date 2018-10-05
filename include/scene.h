@@ -10,6 +10,7 @@
 #include "physics.h"
 #include "camera.h"
 #include "light.h"
+#include "settings.h"
 #include "descriptorset.h"
 
 #include <vector>
@@ -60,5 +61,6 @@ void scene_cleanup(scene_t *scene);
 void scene_on_cursor_pos(scene_t *scene, double x, double y);
 void scene_on_button_down(scene_t *scene, std::string buttonCode);
 void scene_on_button_up(scene_t *scene, std::string buttonCode);
+void scene_on_event(scene_t *scene, event_t event);
 
 #endif

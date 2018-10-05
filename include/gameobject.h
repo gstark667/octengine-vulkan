@@ -18,6 +18,7 @@ extern "C"
 
 #include "script.h"
 #include "physics.h"
+#include "settings.h"
 
 struct gameobject_t;
 
@@ -50,6 +51,7 @@ void gameobject_update(gameobject_t *gameobject, void *scene, float delta);
 void gameobject_on_cursor_pos(gameobject_t *gameobject, void *scene, double x, double y);
 void gameobject_on_button_down(gameobject_t *gameobject, void *scene, std::string buttonCode);
 void gameobject_on_button_up(gameobject_t *gameobject, void *scene, std::string buttonCode);
+void gameobject_on_event(gameobject_t *gameobject, void *scene, event_t event);
 void gameobject_on_collision_enter(gameobject_t *gameobject, gameobject_t *other, void *scene);
 void gameobject_on_collision_exit(gameobject_t *gameobject, gameobject_t *other, void *scene);
 

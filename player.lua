@@ -138,39 +138,10 @@ function on_cursor_pos(scene, object, x, y)
     gameobject_set_number(object, "y_rot", new_y)
 end
 
-function on_button_down(scene, object, button_code)
-    if button_code == "W" then
-        z_axis = gameobject_get_number(object, "z_axis")
-        gameobject_set_number(object, "z_axis", z_axis - 1)
-    elseif button_code == "S" then
-        z_axis = gameobject_get_number(object, "z_axis")
-        gameobject_set_number(object, "z_axis", z_axis + 1)
-    elseif button_code == "A" then
-        x_axis = gameobject_get_number(object, "x_axis")
-        gameobject_set_number(object, "x_axis", x_axis - 1)
-    elseif button_code == "D" then
-        x_axis = gameobject_get_number(object, "x_axis")
-        gameobject_set_number(object, "x_axis", x_axis + 1)
-    elseif button_code == "Space" then
-        if gameobject_get_integer(object, "grounded") > 0 then
-            gameobject_set_number(object, "y_axis", 1)
-        end
-    end
-end
-
-function on_button_up(scene, object, button_code)
-    if button_code == "W" then
-        z_axis = gameobject_get_number(object, "z_axis")
-        gameobject_set_number(object, "z_axis", z_axis + 1)
-    elseif button_code == "S" then
-        z_axis = gameobject_get_number(object, "z_axis")
-        gameobject_set_number(object, "z_axis", z_axis - 1)
-    elseif button_code == "A" then
-        x_axis = gameobject_get_number(object, "x_axis")
-        gameobject_set_number(object, "x_axis", x_axis + 1)
-    elseif button_code == "D" then
-        x_axis = gameobject_get_number(object, "x_axis")
-        gameobject_set_number(object, "x_axis", x_axis - 1)
+function on_event(scene, object, name, value)
+    print(name, value)
+    if name == "x_axis" or name == "z_axis" or name =="y_axis" then
+        gameobject_set_number(object, name, value)
     end
 end
 
