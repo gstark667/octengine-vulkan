@@ -34,7 +34,6 @@ void settings_create(settings_t *settings)
 
 void settings_on_button(settings_t *settings, std::string code, bool down)
 {
-    std::cout << "button: " << code << std::endl;
     if (settings->keybinds.find(code) == settings->keybinds.end())
         return;
     for (auto it = settings->keybinds[code].begin(); it != settings->keybinds[code].end(); ++it)

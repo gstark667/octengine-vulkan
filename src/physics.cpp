@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "physics.h"
 #include "gameobject.h"
 
@@ -56,6 +58,31 @@ void physics_world_update(physics_world_t *world, void *scene, float delta)
 void physics_world_add(physics_world_t *world, physics_object_t *object)
 {
     world->dynamicsWorld->addRigidBody(object->rigidBody);
+}
+
+ray_hit_t physics_world_ray_test(physics_world_t *world, glm::vec3 inFrom, glm::vec3 inTo)
+{
+    btVector3 from(inFrom.x, inFrom.y, inFrom.z);
+    btVector3 to(inTo.x, inTo.y, inTo.z);
+    btCollisionWorld::ClosestRayResultCallback result(from, to);
+
+    world->dynamicsWorld->rayTest(from, to, result);
+    ray_hit_t output;
+    if (result.hasHit())
+    {
+        output.hit = true;
+        output.point.x = result.m_hitPointWorld.getX();
+        output.point.y = result.m_hitPointWorld.getY();
+        output.point.z = result.m_hitPointWorld.getZ();
+        output.normal.x = result.m_hitNormalWorld.getX();
+        output.normal.y = result.m_hitNormalWorld.getY();
+        output.normal.z = result.m_hitNormalWorld.getZ();
+        float xDist = inFrom.x - output.point.x;
+        float yDist = inFrom.y - output.point.y;
+        float zDist = inFrom.z - output.point.z;
+        output.dist = sqrt(xDist * xDist + yDist * yDist + zDist * zDist);
+    }
+    return output;
 }
 
 void physics_world_destroy(physics_world_t *world)

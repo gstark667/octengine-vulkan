@@ -15,6 +15,13 @@
 #include <glm/glm.hpp>
 #include <set>
 
+struct ray_hit_t
+{
+    bool hit = false;
+    float dist = 0.0f;
+    glm::vec3 point = glm::vec3(0.0);
+    glm::vec3 normal = glm::vec3(0.0);
+};
 
 struct physics_world_t
 {
@@ -39,6 +46,7 @@ struct physics_object_t
 void physics_world_init(physics_world_t *world);
 void physics_world_update(physics_world_t *world, void *scene, float delta);
 void physics_world_add(physics_world_t *world, physics_object_t *object);
+ray_hit_t physics_world_ray_test(physics_world_t *world, glm::vec3 from, glm::vec3 to);
 void physics_world_destroy(physics_world_t *world);
 
 

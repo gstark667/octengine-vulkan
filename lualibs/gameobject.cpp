@@ -41,6 +41,24 @@ static int gameobject_set_transform(lua_State *L)
     return 0;
 }
 
+static int gameobject_get_transform(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    lua_pushnumber(L, object->pos.x);
+    lua_pushnumber(L, object->pos.y);
+    lua_pushnumber(L, object->pos.z);
+    return 3;
+}
+
+static int gameobject_get_global_transform(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    lua_pushnumber(L, object->globalPos.x);
+    lua_pushnumber(L, object->globalPos.y);
+    lua_pushnumber(L, object->globalPos.z);
+    return 3;
+}
+
 static int gameobject_rotate(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
@@ -67,6 +85,15 @@ static int gameobject_get_rotation(lua_State *L)
     lua_pushnumber(L, (lua_Number)object->rot.x);
     lua_pushnumber(L, (lua_Number)object->rot.y);
     lua_pushnumber(L, (lua_Number)object->rot.z);
+    return 3;
+}
+
+static int gameobject_get_global_rotation(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    lua_pushnumber(L, object->globalRot.x);
+    lua_pushnumber(L, object->globalRot.y);
+    lua_pushnumber(L, object->globalRot.z);
     return 3;
 }
 
@@ -167,9 +194,12 @@ int EXPORT luaopen_gameobject(lua_State *L)
     std::cout << "loading gameobject" << std::endl;
     lua_register(L, "gameobject_transform", gameobject_transform);
     lua_register(L, "gameobject_set_transform", gameobject_set_transform);
+    lua_register(L, "gameobject_get_transform", gameobject_get_transform);
+    lua_register(L, "gameobject_get_global_transform", gameobject_get_global_transform);
     lua_register(L, "gameobject_rotate", gameobject_rotate);
     lua_register(L, "gameobject_set_rotation", gameobject_set_rotation);
     lua_register(L, "gameobject_get_rotation", gameobject_get_rotation);
+    lua_register(L, "gameobject_get_global_rotation", gameobject_get_global_rotation);
     lua_register(L, "gameobject_scale", gameobject_scale);
     lua_register(L, "gameobject_set_scale", gameobject_set_scale);
     lua_register(L, "gameobject_set_parent", gameobject_set_parent);

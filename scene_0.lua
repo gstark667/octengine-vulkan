@@ -1,12 +1,11 @@
 require("scene")
 require("gameobject")
-require("physics")
 require("light")
 require("camera")
+require("physics")
 
 function setup(scene, object)
     player = scene_add_gameobject(scene)
-    scene_set_model(scene, player, "capsule.dae")
     scene_add_script(scene, player, "player.lua")
     physics_set_position(player, 0, 10, 5)
 
@@ -15,12 +14,18 @@ function setup(scene, object)
     --      for i = 1, 2 do
     --        cube = scene_add_gameobject(scene)
     --        scene_set_model(scene, cube, "scifi_cube.dae")
+    --        scene_set_texture(scene, cube, "default.png")
+    --        scene_set_normal(scene, cube, "normal.png")
     --        gameobject_scale(cube, 1)
     --        gameobject_transform(cube, x*1, i, y*1)
     --        physics_init_box(scene, cube, 10, 0.5, 0.5, 0.5)
     --      end
     --    end
     --end
+
+    sphere = scene_add_gameobject(scene)
+    scene_add_script(scene, sphere, "test.lua")
+    gameobject_transform(sphere, -5, 1, 0)
 
     plane = scene_add_gameobject(scene)
     scene_set_model(scene, plane, "plane.dae")
@@ -31,12 +36,14 @@ function setup(scene, object)
     example = scene_add_gameobject(scene)
     scene_set_model(scene, example, "example.dae")
     gameobject_rotate(example, math.pi, 0, 0)
+    gameobject_transform(example, 0, 0.5, 0)
     gameobject_scale(example, 0.5)
 
     sun = scene_add_light(scene)
+    light_set_color(sun, 1.0, 1.0, 1.0)
     sun_cam = light_get_camera(sun)
-    camera_set_fov(sun, -1.0)
+    camera_set_fov(sun_cam, -1.0)
     sun_obj = camera_get_gameobject(sun_cam)
-    gameobject_rotate(sun_obj, -math.pi/4.0, math.pi/4.0, 0.0)
-    gameobject_transform(sun_obj, 20, 20, 20)
+    gameobject_transform(sun_obj, 10, 10, 10)
+    gameobject_rotate(sun_obj, -0.7853982, 0.7853982, 0)
 end
