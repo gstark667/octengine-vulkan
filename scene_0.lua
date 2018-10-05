@@ -9,23 +9,9 @@ function setup(scene, object)
     scene_add_script(scene, player, "player.lua")
     physics_set_position(player, 0, 10, 5)
 
-    --for x = 0, 10 do
-    --    for y = 0, 10 do
-    --      for i = 1, 2 do
-    --        cube = scene_add_gameobject(scene)
-    --        scene_set_model(scene, cube, "scifi_cube.dae")
-    --        scene_set_texture(scene, cube, "default.png")
-    --        scene_set_normal(scene, cube, "normal.png")
-    --        gameobject_scale(cube, 1)
-    --        gameobject_transform(cube, x*1, i, y*1)
-    --        physics_init_box(scene, cube, 10, 0.5, 0.5, 0.5)
-    --      end
-    --    end
-    --end
-
-    sphere = scene_add_gameobject(scene)
-    scene_add_script(scene, sphere, "test.lua")
-    gameobject_transform(sphere, -5, 1, 0)
+    ship = scene_add_gameobject(scene)
+    gameobject_transform(ship, -5, 1, 0)
+    scene_add_script(scene, ship, "ship.lua")
 
     plane = scene_add_gameobject(scene)
     scene_set_model(scene, plane, "plane.dae")
