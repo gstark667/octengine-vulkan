@@ -50,8 +50,8 @@ struct application_t
     uint32_t windowWidth;
     uint32_t windowHeight;
 
-    uint32_t shadowHeight = 1024;
-    uint32_t shadowWidth = 1024;
+    uint32_t shadowHeight = 4096;
+    uint32_t shadowWidth = 4096;
 
     SDL_Window *window;
 

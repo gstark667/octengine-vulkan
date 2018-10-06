@@ -16,7 +16,7 @@ void camera_update(camera_t *camera)
         return;
     camera->view = glm::rotate(glm::mat4(1.0f), -camera->object->globalRot.x, glm::vec3(1.0f, 0.0f, 0.0f));
     camera->view *= glm::rotate(glm::mat4(1.0f), -camera->object->globalRot.y, glm::vec3(0.0f, 1.0f, 0.0f));
-    camera->view *= glm::rotate(glm::mat4(1.0f), camera->object->globalRot.z, glm::vec3(0.0f, 0.0f, 1.0f));
+    camera->view *= glm::rotate(glm::mat4(1.0f), -camera->object->globalRot.z, glm::vec3(0.0f, 0.0f, 1.0f));
     glm::vec3 trans = glm::vec3(camera->object->globalPos.x * 0.5f, camera->object->globalPos.y * 0.5f, camera->object->globalPos.z * 0.5f);
     camera->view *= glm::inverse(glm::translate(glm::mat4(1.0f), trans));
 }

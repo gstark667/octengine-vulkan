@@ -77,6 +77,18 @@ static int physics_init_convex_hull(lua_State *L)
     return 0;
 }
 
+static int physics_init_mesh(lua_State *L)
+{
+    scene_t *scene = (scene_t*)lua_tointeger(L, 1);
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 2);
+    float mass = lua_tonumber(L, 3);
+    object->physics = (physics_object_t*)malloc(sizeof(physics_object_t));
+    physics_object_init_mesh(object->physics, object, mass);
+    physics_object_set_position(object->physics, object->pos.x, object->pos.y, object->pos.z);
+    physics_world_add(&scene->world, object->physics);
+    return 0;
+}
+
 static int physics_set_position(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
@@ -95,6 +107,16 @@ static int physics_set_rotation(lua_State *L)
     float z = lua_tonumber(L, 4);
     physics_object_set_rotation(object->physics, x, y, z);
     return 0;
+}
+
+static int physics_get_rotation(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    glm::vec3 rot = physics_object_get_rotation(object->physics);
+    lua_pushnumber(L, rot.x);
+    lua_pushnumber(L, rot.y);
+    lua_pushnumber(L, rot.z);
+    return 3;
 }
 
 static int physics_set_mass(lua_State *L)
@@ -122,6 +144,26 @@ static int physics_set_velocity(lua_State *L)
     float y = lua_tonumber(L, 3);
     float z = lua_tonumber(L, 4);
     physics_object_set_velocity(object->physics, x, y, z);
+    return 0;
+}
+
+static int physics_get_angular_velocity(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    glm::vec3 velocity = physics_object_get_angular_velocity(object->physics);
+    lua_pushnumber(L, velocity.x);
+    lua_pushnumber(L, velocity.y);
+    lua_pushnumber(L, velocity.z);
+    return 3;
+}
+
+static int physics_set_angular_velocity(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    float x = lua_tonumber(L, 2);
+    float y = lua_tonumber(L, 3);
+    float z = lua_tonumber(L, 4);
+    physics_object_set_angular_velocity(object->physics, x, y, z);
     return 0;
 }
 
@@ -175,11 +217,15 @@ int EXPORT luaopen_physics(lua_State *L)
     lua_register(L, "physics_init_sphere", physics_init_sphere);
     lua_register(L, "physics_init_capsule", physics_init_capsule);
     lua_register(L, "physics_init_convex_hull", physics_init_convex_hull);
+    lua_register(L, "physics_init_mesh", physics_init_mesh);
     lua_register(L, "physics_set_position", physics_set_position);
     lua_register(L, "physics_set_rotation", physics_set_rotation);
+    lua_register(L, "physics_get_rotation", physics_get_rotation);
     lua_register(L, "physics_set_mass", physics_set_mass);
     lua_register(L, "physics_get_velocity", physics_get_velocity);
     lua_register(L, "physics_set_velocity", physics_set_velocity);
+    lua_register(L, "physics_get_angular_velocity", physics_get_angular_velocity);
+    lua_register(L, "physics_set_angular_velocity", physics_set_angular_velocity);
     lua_register(L, "physics_apply_force", physics_apply_force);
     lua_register(L, "physics_set_angular_factor", physics_set_angular_factor);
     lua_register(L, "physics_ray_test", physics_ray_test);

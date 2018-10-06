@@ -9,9 +9,16 @@
 #include <BulletCollision/CollisionShapes/btBoxShape.h>
 #include <BulletCollision/CollisionShapes/btSphereShape.h>
 #include <BulletCollision/CollisionShapes/btCapsuleShape.h>
+#include <BulletCollision/CollisionShapes/btCompoundShape.h>
 #include <BulletCollision/CollisionShapes/btConvexHullShape.h>
+#include <BulletCollision/CollisionShapes/btTriangleMesh.h>
+#include <BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h>
+#include <BulletCollision/CollisionShapes/btConvexShape.h>
+#include <BulletCollision/CollisionShapes/btShapeHull.h>
+#include <BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h>
 #include <LinearMath/btMotionState.h>
 #include <LinearMath/btDefaultMotionState.h>
+#include <LinearMath/btIDebugDraw.h>
 
 #include <glm/glm.hpp>
 #include <set>
@@ -39,6 +46,7 @@ struct physics_world_t
 struct physics_object_t
 {
     btCollisionShape *collisionShape;
+    btTriangleMesh *mesh = NULL;
     btDefaultMotionState *motionState;
     btRigidBody *rigidBody;
 };
@@ -55,6 +63,7 @@ void physics_object_init_box(physics_object_t *object, void *user, float mass, f
 void physics_object_init_sphere(physics_object_t *object, void *user, float mass, float radius);
 void physics_object_init_capsule(physics_object_t *object, void *user, float mass, float radius, float height);
 void physics_object_init_convex_hull(physics_object_t *object, void *user, float mass);
+void physics_object_init_mesh(physics_object_t *object, void *user, float mass);
 void physics_object_init(physics_object_t *object, void *user, float mass);
 
 glm::vec3 physics_object_get_position(physics_object_t *object);
@@ -65,6 +74,9 @@ void physics_object_set_rotation(physics_object_t *object, float x, float y, flo
 
 glm::vec3 physics_object_get_velocity(physics_object_t *object);
 void physics_object_set_velocity(physics_object_t *object, float x, float y, float z);
+
+glm::vec3 physics_object_get_angular_velocity(physics_object_t *object);
+void physics_object_set_angular_velocity(physics_object_t *object, float x, float y, float z);
 
 void physics_object_apply_force(physics_object_t *object, float fx, float fy, float fz, float px, float py, float pz);
 void physics_object_set_mass(physics_object_t *object, float mass);

@@ -30,6 +30,6 @@ function setup(scene, object)
     sun_cam = light_get_camera(sun)
     camera_set_fov(sun_cam, -1.0)
     sun_obj = camera_get_gameobject(sun_cam)
-    gameobject_transform(sun_obj, 10, 10, 10)
-    gameobject_rotate(sun_obj, -0.7853982, 0.7853982, 0)
+    gameobject_transform(sun_obj, 0, 20, 0)
+    gameobject_rotate(sun_obj, -math.pi, 0, 0)
 end

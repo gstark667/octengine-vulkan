@@ -1,4 +1,5 @@
 #include "gameobject.h"
+#include <iostream>
 
 
 void gameobject_update_global(gameobject_t *gameobject)

@@ -117,16 +117,40 @@ void physics_object_init_convex_hull(physics_object_t *object, void *user, float
     gameobject_t *gameobject = (gameobject_t*)user;
     if (!gameobject->model)
         return;
-    btConvexHullShape *shape = new btConvexHullShape();
-    size_t count = gameobject->model->vertices.size();
-    size_t i = 0;
+    std::vector<btVector3> points;
     for (auto it = gameobject->model->vertices.begin(); it != gameobject->model->vertices.end(); ++it)
     {
-        bool recalc = i == count - 1;
-        shape->addPoint(btVector3(it->pos.x, it->pos.y, it->pos.z), recalc);
-        ++i;
+        points.push_back(btVector3(it->pos.x, it->pos.y, it->pos.z));
     }
+    btConvexHullShape *shape = new btConvexHullShape((btScalar*)points.data(), points.size(), sizeof(btVector3));
+    shape->optimizeConvexHull();
+    shape->initializePolyhedralFeatures();
     object->collisionShape = shape;
+    physics_object_init(object, user, mass);
+}
+
+void physics_object_init_mesh(physics_object_t *object, void *user, float mass)
+{
+    gameobject_t *gameobject = (gameobject_t*)user;
+    if (!gameobject->model)
+        return;
+    btTriangleMesh *mesh = new btTriangleMesh();
+    btVector3 verts[3];
+    size_t idx = 0;
+    for (auto it = gameobject->model->indices.begin(); it != gameobject->model->indices.end(); ++it)
+    {
+        glm::vec3 vert = gameobject->model->vertices[(*it)].pos;
+        verts[idx].setX(vert.x);
+        verts[idx].setY(vert.y);
+        verts[idx].setZ(vert.z);
+        ++idx;
+        if (idx == 3)
+        {
+            idx = 0;
+            mesh->addTriangle(verts[0], verts[1], verts[2]);
+        }
+    }
+    object->collisionShape = new btBvhTriangleMeshShape(mesh, true);
     physics_object_init(object, user, mass);
 }
 
@@ -196,6 +220,17 @@ void physics_object_set_velocity(physics_object_t *object, float x, float y, flo
     object->rigidBody->setLinearVelocity(btVector3(x, y, z));
 }
 
+glm::vec3 physics_object_get_angular_velocity(physics_object_t *object)
+{
+    btVector3 velocity = object->rigidBody->getAngularVelocity();
+    return glm::vec3(velocity.getX(), velocity.getY(), velocity.getZ());
+}
+
+void physics_object_set_angular_velocity(physics_object_t *object, float x, float y, float z)
+{
+    object->rigidBody->setAngularVelocity(btVector3(x, y, z));
+}
+
 void physics_object_apply_force(physics_object_t *object, float fx, float fy, float fz, float px, float py, float pz)
 {
     object->rigidBody->applyImpulse(btVector3(fx, fy, fz), btVector3(px, py, pz));
@@ -216,5 +251,7 @@ void physics_object_destroy(physics_object_t *object)
     delete object->motionState;
     delete object->rigidBody;
     delete object->collisionShape;
+    if (object->mesh)
+        delete object->mesh;
 }
 
