@@ -54,5 +54,7 @@ void gameobject_on_button_up(gameobject_t *gameobject, void *scene, std::string 
 void gameobject_on_event(gameobject_t *gameobject, void *scene, event_t event);
 void gameobject_on_collision_enter(gameobject_t *gameobject, gameobject_t *other, void *scene);
 void gameobject_on_collision_exit(gameobject_t *gameobject, gameobject_t *other, void *scene);
+glm::vec3 gameobject_rotate_vector(gameobject_t *gameobject, glm::vec3 vector);
+glm::vec3 gameobject_unrotate_vector(gameobject_t *gameobject, glm::vec3 vector);
 
 #endif

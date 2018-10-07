@@ -10,6 +10,7 @@ layout (binding = 7) uniform sampler2DArray shadowDepth;
 
 struct light {
     vec4 position;
+    vec4 direction;
     vec4 color;
     mat4 mvp;
 };
@@ -165,8 +166,8 @@ void main()
     vec3 shadedColor = vec3(0.0, 0.0, 0.0);
     for (int i = 0; i < lightUBO.lightCount; ++i)
     {
-        vec3 L = normalize(lightUBO.lights[0].position.xyz - position);
-        float shade = max(dot(normal, normalize(lightUBO.lights[i].position.xyz)), 0.0);
+        vec3 L = normalize(lightUBO.lights[0].direction.xyz - position);
+        float shade = max(dot(normal, normalize(lightUBO.lights[i].direction.xyz)), 0.0);
         float shadow = filterPCF(lightUBO.lights[i].mvp * vec4(position, 1.0), i);
         shade = max(shade * shadow, renderUBO.ambient.x);
         vec3 shadeColor = lightUBO.lights[i].color.xyz * shade;

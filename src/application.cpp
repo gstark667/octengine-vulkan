@@ -516,7 +516,7 @@ void application_create_depth_resources(application_t *app) {
 
     pipeline_attachment_create(&app->normal, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
-    pipeline_attachment_create(&app->position, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
+    pipeline_attachment_create(&app->position, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
     pipeline_attachment_create(&app->pbr, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
@@ -705,6 +705,7 @@ void application_update_uniforms(application_t *app)
     {
         camera_update(&(*it)->camera);
         app->lightUBO.lights[i].position = glm::vec4((*it)->camera.object->globalPos, 1.0f);
+        app->lightUBO.lights[i].direction = glm::vec4(gameobject_rotate_vector((*it)->camera.object, glm::vec3(0, 0, 1)), 1.0f);
         app->lightUBO.lights[i].color = glm::vec4((*it)->color, 1.0f);
         app->lightUBO.lights[i].mvp = (*it)->camera.proj * (*it)->camera.view;
 

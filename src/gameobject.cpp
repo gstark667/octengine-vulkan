@@ -87,3 +87,22 @@ void gameobject_on_collision_exit(gameobject_t *gameobject, gameobject_t *other,
     }
 }
 
+glm::vec3 gameobject_rotate_vector(gameobject_t *gameobject, glm::vec3 vector)
+{
+    glm::mat4 matrix = glm::rotate(glm::mat4(1.0f), -gameobject->globalRot.x, glm::vec3(1.0f, 0.0f, 0.0f));
+    matrix *= glm::rotate(glm::mat4(1.0f), -gameobject->globalRot.y, glm::vec3(0.0f, 1.0f, 0.0f));
+    matrix *= glm::rotate(glm::mat4(1.0f), -gameobject->globalRot.z, glm::vec3(0.0f, 0.0f, 1.0f));
+    glm::vec4 output = glm::vec4(vector, 1.0f) * matrix;
+
+    return glm::vec3(output.x, output.y, output.z);
+}
+
+glm::vec3 gameobject_unrotate_vector(gameobject_t *gameobject, glm::vec3 vector)
+{
+    glm::mat4 matrix = glm::rotate(glm::mat4(1.0f), gameobject->globalRot.z, glm::vec3(0.0f, 0.0f, 1.0f));
+    matrix *= glm::rotate(glm::mat4(1.0f), gameobject->globalRot.y, glm::vec3(0.0f, 1.0f, 0.0f));
+    matrix *= glm::rotate(glm::mat4(1.0f), gameobject->globalRot.x, glm::vec3(1.0f, 0.0f, 0.0f));
+    glm::vec4 output = glm::vec4(vector, 1.0f) * matrix;
+
+    return glm::vec3(output.x, output.y, output.z);
+}

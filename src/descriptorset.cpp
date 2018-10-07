@@ -174,7 +174,7 @@ void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, u
         samplerInfo.magFilter = VK_FILTER_LINEAR;
         samplerInfo.minFilter = VK_FILTER_LINEAR;
         
-        samplerInfo.addressModeU = repeat ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeU = repeat ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
         samplerInfo.addressModeV = samplerInfo.addressModeU;
         samplerInfo.addressModeW = samplerInfo.addressModeU;
         samplerInfo.anisotropyEnable = shadow ? VK_FALSE : VK_TRUE;

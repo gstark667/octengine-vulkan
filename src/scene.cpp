@@ -18,7 +18,6 @@ void scene_create(scene_t *scene, VkDevice device, VkPhysicalDevice physicalDevi
 
 void scene_add_model(scene_t *scene, std::string modelPath)
 {   
-    std::cout << "adding model: " << modelPath << std::endl;
     scene->models[modelPath] = new model_t();
     model_load(scene->models[modelPath], modelPath);
     model_create_buffers(scene->models[modelPath], scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue);
@@ -39,7 +38,6 @@ camera_t *scene_add_camera(scene_t *scene)
     scene->tempGameobjects.insert(temp->object);
     temp->width = scene->width;
     temp->height = scene->height;
-    std::cout << "adding camera: " << temp << std::endl;
     camera_resize(temp);
     return temp;
 }
@@ -51,7 +49,6 @@ light_t *scene_add_light(scene_t *scene)
     temp->camera.object = new gameobject_t();
     scene->tempGameobjects.insert(temp->camera.object);
     scene->lights.insert(temp);
-    std::cout << "adding light: " << temp << ":" << scene->isDirty << std::endl;
     return temp;
 }
 
@@ -102,7 +99,6 @@ void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayou
 {   
     for (std::vector<std::string>::iterator it = scene->modelOrder.begin(); it != scene->modelOrder.end(); ++it)
     {
-        std::cout << "rendering: " << *it << std::endl;
         model_render(scene->models[*it], commandBuffer, pipelineLayout, graphicsPipeline, descriptorSet->descriptorSet);
     }
 }

@@ -202,10 +202,7 @@ static int gameobject_rotate_vector(lua_State *L)
     float y = lua_tonumber(L, 3);
     float z = lua_tonumber(L, 4);
 
-    glm::mat4 matrix = glm::rotate(glm::mat4(1.0f), -object->globalRot.x, glm::vec3(1.0f, 0.0f, 0.0f));
-    matrix *= glm::rotate(glm::mat4(1.0f), -object->globalRot.y, glm::vec3(0.0f, 1.0f, 0.0f));
-    matrix *= glm::rotate(glm::mat4(1.0f), -object->globalRot.z, glm::vec3(0.0f, 0.0f, 1.0f));
-    glm::vec4 output = glm::vec4(x, y, z, 1.0f) * matrix;
+    glm::vec3 output = gameobject_rotate_vector(object, glm::vec3(x, y, z));
 
     lua_pushnumber(L, output.x);
     lua_pushnumber(L, output.y);
@@ -220,10 +217,7 @@ static int gameobject_unrotate_vector(lua_State *L)
     float y = lua_tonumber(L, 3);
     float z = lua_tonumber(L, 4);
 
-    glm::mat4 matrix = glm::rotate(glm::mat4(1.0f), object->globalRot.z, glm::vec3(0.0f, 0.0f, 1.0f));
-    matrix *= glm::rotate(glm::mat4(1.0f), object->globalRot.y, glm::vec3(0.0f, 1.0f, 0.0f));
-    matrix *= glm::rotate(glm::mat4(1.0f), object->globalRot.x, glm::vec3(1.0f, 0.0f, 0.0f));
-    glm::vec4 output = glm::vec4(x, y, z, 1.0f) * matrix;
+    glm::vec3 output = gameobject_unrotate_vector(object, glm::vec3(x, y, z));
 
     lua_pushnumber(L, output.x);
     lua_pushnumber(L, output.y);
