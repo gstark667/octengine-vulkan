@@ -24,5 +24,5 @@ void main() {
     outNormal = vec4(TBN * normal, 1.0);
     outPosition = vec4(inWorldPos, 1.0);
     outAlbedo = texture(texSampler, vec3(inUV, inTexIdx.r));
-    outPBR = texture(texSampler, vec3(inUV, inTexIdx.b));
+    outPBR = vec4(texture(texSampler, vec3(inUV, inTexIdx.b)).rgb, outAlbedo.a);
 }

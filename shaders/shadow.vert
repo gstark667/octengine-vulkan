@@ -20,7 +20,7 @@ layout(location = 4) in ivec4 inBones;
 
 layout(location = 5) in vec3 instancePos;
 layout(location = 6) in vec3 instanceRot;
-layout(location = 7) in float instanceScale;
+layout(location = 7) in vec3 instanceScale;
 layout(location = 8) in int instanceTex;
 
 out gl_PerVertex
@@ -30,9 +30,9 @@ out gl_PerVertex
 
 void main() 
 {
-    mat4 scale = mat4(instanceScale, 0.0, 0.0, 0.0,
-                      0.0, instanceScale, 0.0, 0.0,
-                      0.0, 0.0, instanceScale, 0.0,
+    mat4 scale = mat4(instanceScale.x, 0.0, 0.0, 0.0,
+                      0.0, instanceScale.y, 0.0, 0.0,
+                      0.0, 0.0, instanceScale.z, 0.0,
                       0.0, 0.0, 0.0, 1.0);
     mat4 boneTransform = rotate_bone(inBones, inWeights, bones.mats);
     mat3 rotMat = rotate_euler(instanceRot);

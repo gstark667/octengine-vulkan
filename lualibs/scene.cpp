@@ -99,6 +99,17 @@ static int libscene_set_pbr(lua_State *L)
     return 0;
 }
 
+static int libscene_send_event(lua_State *L)
+{
+    scene_t *scene = (scene_t*)lua_tointeger(L, 1);
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 2);
+    const char *event = lua_tostring(L, 3);
+    float value = lua_tonumber(L, 4);
+
+    gameobject_on_event(object, scene, {std::string(event), value});
+    return 0;
+}
+
 
 int EXPORT luaopen_scene(lua_State *L)
 {
@@ -111,6 +122,7 @@ int EXPORT luaopen_scene(lua_State *L)
     lua_register(L, "scene_set_texture", libscene_set_texture);
     lua_register(L, "scene_set_normal", libscene_set_normal);
     lua_register(L, "scene_set_pbr", libscene_set_pbr);
+    lua_register(L, "scene_send_event", libscene_send_event);
     return 0;
 }
 

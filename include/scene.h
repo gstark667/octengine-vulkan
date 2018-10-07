@@ -32,6 +32,7 @@ struct scene_t
     VkQueue graphicsQueue;
 
     texture_t textures;
+    std::vector<std::string> modelOrder;
     std::map<std::string, model_t*> models;
     std::map<std::string, script_t*> scripts;
     std::set<light_t*> lights;

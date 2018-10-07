@@ -18,9 +18,11 @@ void scene_create(scene_t *scene, VkDevice device, VkPhysicalDevice physicalDevi
 
 void scene_add_model(scene_t *scene, std::string modelPath)
 {   
+    std::cout << "adding model: " << modelPath << std::endl;
     scene->models[modelPath] = new model_t();
     model_load(scene->models[modelPath], modelPath);
     model_create_buffers(scene->models[modelPath], scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue);
+    scene->modelOrder.push_back(modelPath);
 }
 
 gameobject_t *scene_add_gameobject(scene_t *scene)
@@ -98,9 +100,10 @@ void scene_add_script(scene_t *scene, gameobject_t *object, std::string scriptPa
 
 void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, descriptor_set_t *descriptorSet)
 {   
-    for (std::map<std::string, model_t*>::iterator it = scene->models.begin(); it != scene->models.end(); ++it)
+    for (std::vector<std::string>::iterator it = scene->modelOrder.begin(); it != scene->modelOrder.end(); ++it)
     {
-        model_render(it->second, commandBuffer, pipelineLayout, graphicsPipeline, descriptorSet->descriptorSet);
+        std::cout << "rendering: " << *it << std::endl;
+        model_render(scene->models[*it], commandBuffer, pipelineLayout, graphicsPipeline, descriptorSet->descriptorSet);
     }
 }
 

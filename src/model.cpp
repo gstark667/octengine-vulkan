@@ -68,7 +68,7 @@ std::array<VkVertexInputAttributeDescription, 9> vertex_get_attribute_descriptio
 
     attributeDescriptions[7].binding = 1;
     attributeDescriptions[7].location = 7;
-    attributeDescriptions[7].format = VK_FORMAT_R32_SFLOAT;
+    attributeDescriptions[7].format = VK_FORMAT_R32G32B32_SFLOAT;
     attributeDescriptions[7].offset = offsetof(model_instance_t, scale);
 
     attributeDescriptions[8].binding = 1;
@@ -232,7 +232,6 @@ void model_load(model_t *model, std::string path)
     const aiScene *scene = importer.ReadFile(path,
         aiProcess_CalcTangentSpace |
         aiProcess_Triangulate |
-        aiProcess_JoinIdenticalVertices |
         aiProcess_SortByPType
     );
 

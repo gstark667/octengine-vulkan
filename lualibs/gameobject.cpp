@@ -101,16 +101,22 @@ static int gameobject_get_global_rotation(lua_State *L)
 static int gameobject_scale(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
-    float scale = lua_tonumber(L, 2);
-    object->scale *= scale;
+    float x = lua_tonumber(L, 2);
+    float y = lua_tonumber(L, 3);
+    float z = lua_tonumber(L, 4);
+    object->scale.x *= x;
+    object->scale.y *= y;
+    object->scale.z *= z;
     return 0;
 }
 
 static int gameobject_set_scale(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
-    float scale = lua_tonumber(L, 2);
-    object->scale = scale;
+    float x = lua_tonumber(L, 2);
+    float y = lua_tonumber(L, 3);
+    float z = lua_tonumber(L, 4);
+    object->scale = glm::vec3(x, y, z);
     return 0;
 }
 
@@ -226,6 +232,25 @@ static int gameobject_unrotate_vector(lua_State *L)
 }
 
 
+static int gameobject_look_at(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    float xt = lua_tonumber(L, 2);
+    float yt = lua_tonumber(L, 3);
+    float zt = lua_tonumber(L, 4);
+
+    glm::vec3 target(xt, yt, zt);
+    float dx = target.x - object->pos.x;
+    float dy = target.y - object->pos.y;
+    float dz = target.z - object->pos.z;
+    float dist = sqrt(dx * dx + dy * dy + dz * dz);
+
+    object->rot.y = asin(dx/dist);
+    object->rot.x = asin(dy/dist);
+    return 0;
+}
+
+
 int EXPORT luaopen_gameobject(lua_State *L)
 {
     std::cout << "loading gameobject" << std::endl;
@@ -249,6 +274,7 @@ int EXPORT luaopen_gameobject(lua_State *L)
     lua_register(L, "gameobject_get_number", gameobject_get_number);
     lua_register(L, "gameobject_rotate_vector", gameobject_rotate_vector);
     lua_register(L, "gameobject_unrotate_vector", gameobject_unrotate_vector);
+    lua_register(L, "gameobject_look_at", gameobject_look_at);
     return 0;
 }
 

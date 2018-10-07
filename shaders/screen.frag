@@ -175,5 +175,6 @@ void main()
     }
     outFragColor = vec4(albedo * shadedColor, 1.0);
     outFragColor += vec4(albedo * renderUBO.ambient.xyz, 1.0);
+    outFragColor += vec4(albedo * pbr.b, 1.0);
 }
 
