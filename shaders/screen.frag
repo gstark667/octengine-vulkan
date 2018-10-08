@@ -166,13 +166,23 @@ void main()
     vec3 shadedColor = vec3(0.0, 0.0, 0.0);
     for (int i = 0; i < lightUBO.lightCount; ++i)
     {
-        vec3 L = normalize(lightUBO.lights[0].direction.xyz - position);
-        float shade = max(dot(normal, normalize(lightUBO.lights[i].direction.xyz)), 0.0);
-        float shadow = filterPCF(lightUBO.lights[i].mvp * vec4(position, 1.0), i);
-        shade = max(shade * shadow, renderUBO.ambient.x);
-        vec3 shadeColor = lightUBO.lights[i].color.xyz * shade;
-        shadedColor += shadeColor;
-        shadedColor += BRDF(L, V, N, shadeColor, pbr.r, pbr.g);
+        if (lightUBO.lights[i].direction.w < 0.0)
+        {
+            vec3 L = lightUBO.lights[i].position.xyz - (position * 2.0);
+            float attenuation = 1.0 / (pow(length(L), 2.0) + 1.0);
+            float shade = max(0.0, dot(normalize(L), N) * attenuation);
+            shadedColor += lightUBO.lights[i].color.xyz * shade;
+        }
+        else
+        {
+            vec3 L = normalize(lightUBO.lights[i].direction.xyz - position);
+            float shade = max(dot(normal, normalize(lightUBO.lights[i].direction.xyz)), 0.0);
+            float shadow = filterPCF(lightUBO.lights[i].mvp * vec4(position, 1.0), i);
+            shade = max(shade * shadow, renderUBO.ambient.x);
+            vec3 shadeColor = lightUBO.lights[i].color.xyz * shade;
+            shadedColor += shadeColor;
+            shadedColor += BRDF(L, V, N, shadeColor, pbr.r, pbr.g);
+        }
     }
     outFragColor = vec4(albedo * shadedColor, 1.0);
     outFragColor += vec4(albedo * renderUBO.ambient.xyz, 1.0);

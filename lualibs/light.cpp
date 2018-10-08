@@ -38,11 +38,27 @@ static int light_set_color(lua_State *L)
     return 0;
 }
 
+static int light_set_point(lua_State *L)
+{
+    light_t *light = (light_t*)lua_tointeger(L, 1);
+    light->point = (bool)lua_toboolean(L, 2);
+    return 0;
+}
+
+static int light_set_brightness(lua_State *L)
+{
+    light_t *light = (light_t*)lua_tointeger(L, 1);
+    light->brightness = (float)lua_tonumber(L, 2);
+    return 0;
+}
+
 
 int EXPORT luaopen_light(lua_State *L)
 {
     lua_register(L, "light_get_camera", light_get_camera);
     lua_register(L, "light_set_color", light_set_color);
+    lua_register(L, "light_set_point", light_set_point);
+    lua_register(L, "light_set_brightness", light_set_brightness);
     return 0;
 }
 

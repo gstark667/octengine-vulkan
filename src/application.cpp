@@ -705,8 +705,11 @@ void application_update_uniforms(application_t *app)
     {
         camera_update(&(*it)->camera);
         app->lightUBO.lights[i].position = glm::vec4((*it)->camera.object->globalPos, 1.0f);
-        app->lightUBO.lights[i].direction = glm::vec4(gameobject_rotate_vector((*it)->camera.object, glm::vec3(0, 0, 1)), 1.0f);
-        app->lightUBO.lights[i].color = glm::vec4((*it)->color, 1.0f);
+        if ((*it)->point)
+            app->lightUBO.lights[i].direction = glm::vec4(0.0f, 0.0f, 0.0f, -1.0f);
+        else
+            app->lightUBO.lights[i].direction = glm::vec4(gameobject_rotate_vector((*it)->camera.object, glm::vec3(0, 0, 1)), 1.0f);
+        app->lightUBO.lights[i].color = glm::vec4((*it)->color, 1.0f) * (*it)->brightness;
         app->lightUBO.lights[i].mvp = (*it)->camera.proj * (*it)->camera.view;
 
         app->ubo.cameraMVP = app->lightUBO.lights[i].mvp;
@@ -735,9 +738,6 @@ void application_copy_uniforms(application_t *app)
 
     descriptor_set_update_buffer(&app->offscreenDescriptorSet, &app->ubo, 0);
     descriptor_set_update_buffer(&app->offscreenDescriptorSet, &app->scene.bones, 1);
-
-    //app->ubo.cameraMVP = app->lightUBO.lights[1].mvp;
-    //descriptor_set_update_buffer(&app->shadowDescriptorSet2, &app->ubo, 0);
 }
 
 // draw frame
