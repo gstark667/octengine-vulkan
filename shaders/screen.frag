@@ -12,6 +12,7 @@ struct light {
     vec4 position;
     vec4 direction;
     vec4 color;
+    ivec4 shadowIdx;
     mat4 mvp;
 };
 
@@ -166,23 +167,27 @@ void main()
     vec3 shadedColor = vec3(0.0, 0.0, 0.0);
     for (int i = 0; i < lightUBO.lightCount; ++i)
     {
+        vec3 L;
+        float shade = 0.0;
         if (lightUBO.lights[i].direction.w < 0.0)
         {
-            vec3 L = lightUBO.lights[i].position.xyz - (position * 2.0);
-            float attenuation = 1.0 / (pow(length(L), 2.0) + 1.0);
-            float shade = max(0.0, dot(normalize(L), N) * attenuation);
+            L = lightUBO.lights[i].position.xyz - (position * 2.0);
+            float attenuation = 0.25 / (pow(length(L), 2.0) + 1.0);
+            L = normalize(L);
+            shade = max(0.0, dot(normalize(L), N) * attenuation);
             shadedColor += lightUBO.lights[i].color.xyz * shade;
         }
         else
         {
-            vec3 L = normalize(lightUBO.lights[i].direction.xyz - position);
-            float shade = max(dot(normal, normalize(lightUBO.lights[i].direction.xyz)), 0.0);
-            float shadow = filterPCF(lightUBO.lights[i].mvp * vec4(position, 1.0), i);
-            shade = max(shade * shadow, renderUBO.ambient.x);
-            vec3 shadeColor = lightUBO.lights[i].color.xyz * shade;
-            shadedColor += shadeColor;
-            shadedColor += BRDF(L, V, N, shadeColor, pbr.r, pbr.g);
+            L = normalize(lightUBO.lights[i].position.xyz - (position * 2.0));
+            shade = max(dot(normal, normalize(lightUBO.lights[i].direction.xyz)), 0.0);
+            if (lightUBO.lights[i].shadowIdx.x > -1)
+                shade *= filterPCF(lightUBO.lights[i].mvp * vec4(position, 1.0), i);
+            shade = max(shade, 0.0);
         }
+        vec3 shadeColor = lightUBO.lights[i].color.xyz * shade;
+        shadedColor += shadeColor;
+        shadedColor += BRDF(L, V, N, shadeColor, pbr.r, pbr.g);
     }
     outFragColor = vec4(albedo * shadedColor, 1.0);
     outFragColor += vec4(albedo * renderUBO.ambient.xyz, 1.0);

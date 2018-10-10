@@ -10,6 +10,7 @@ struct light_t
     glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f);
     float brightness = 1.0f;
     bool point = false;
+    int shadowIdx = -1;
 };
 
 #endif

@@ -644,7 +644,8 @@ void application_add_shadow_pipelines(application_t *app)
         app->shadowImageArray->layers = 0;
     }
 
-    while (app->shadowSemaphores.size() < app->scene.lights.size())
+    int count = scene_count_shadows(&app->scene);
+    while (app->shadowSemaphores.size() < count)
     {
         std::cout << "adding semaphore" << std::endl;
         VkSemaphoreCreateInfo semaphoreInfo = {};
@@ -654,7 +655,7 @@ void application_add_shadow_pipelines(application_t *app)
             throw std::runtime_error("unable to create shadow semaphore!");
     }
 
-    if (app->shadowImageArray->layers < app->scene.lights.size())
+    if (app->shadowImageArray->layers < count)
     {
         image_cleanup(app->shadowImageArray, app->device);
         image_create(app->shadowImageArray, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, app->scene.lights.size(), 1, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
@@ -662,7 +663,7 @@ void application_add_shadow_pipelines(application_t *app)
         descriptor_set_update_image(&app->descriptorSet, app->shadowImageArray, 7);
     }
 
-    while (app->shadowPipelines.size() < app->scene.lights.size())
+    while (app->shadowPipelines.size() < count)
     {
         std::cout << "adding pipeline" << std::endl;
         size_t idx = app->shadowPipelines.size();
@@ -694,7 +695,7 @@ void application_update_uniforms(application_t *app)
 
     scene_update(&app->scene, delta);
 
-    if (app->shadowPipelines.size() < app->scene.lights.size())
+    if (app->shadowPipelines.size() < scene_count_shadows(&app->scene))
     {
         application_add_shadow_pipelines(app);
     }
@@ -706,15 +707,23 @@ void application_update_uniforms(application_t *app)
         camera_update(&(*it)->camera);
         app->lightUBO.lights[i].position = glm::vec4((*it)->camera.object->globalPos, 1.0f);
         if ((*it)->point)
+        {
             app->lightUBO.lights[i].direction = glm::vec4(0.0f, 0.0f, 0.0f, -1.0f);
+        }
         else
+        {
             app->lightUBO.lights[i].direction = glm::vec4(gameobject_rotate_vector((*it)->camera.object, glm::vec3(0, 0, 1)), 1.0f);
+        }
         app->lightUBO.lights[i].color = glm::vec4((*it)->color, 1.0f) * (*it)->brightness;
+        app->lightUBO.lights[i].shadowIdx.x = (*it)->shadowIdx;
         app->lightUBO.lights[i].mvp = (*it)->camera.proj * (*it)->camera.view;
 
-        app->ubo.cameraMVP = app->lightUBO.lights[i].mvp;
-        descriptor_set_update_buffer(app->shadowDescriptorSets[i], &app->ubo, 0);
-        descriptor_set_update_buffer(app->shadowDescriptorSets[i], &app->scene.bones, 1);
+        if ((*it)->shadowIdx >= 0)
+        {
+            app->ubo.cameraMVP = app->lightUBO.lights[i].mvp;
+            descriptor_set_update_buffer(app->shadowDescriptorSets[(*it)->shadowIdx], &app->ubo, 0);
+            descriptor_set_update_buffer(app->shadowDescriptorSets[(*it)->shadowIdx], &app->scene.bones, 1);
+        }
         ++i;
     }
 
@@ -766,7 +775,7 @@ void application_draw_frame(application_t *app) {
 
     // shadows
     VkSemaphore *lastSemaphore = &app->offscreenSemaphore;
-    for (size_t i = 0; i < app->scene.lights.size(); ++i)
+    for (size_t i = 0; i < scene_count_shadows(&app->scene); ++i)
     {
         submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = lastSemaphore;

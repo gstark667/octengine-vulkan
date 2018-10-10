@@ -294,14 +294,6 @@ void pipeline_create_graphics(pipeline_t *pipeline, uint32_t width, uint32_t hei
         colorBlendAttachment.dstAlphaBlendFactor=VK_BLEND_FACTOR_ZERO;
         colorBlendAttachment.alphaBlendOp=VK_BLEND_OP_ADD;
         colorBlendAttachments.push_back(colorBlendAttachment);
-/*
-srcColorBlendFactor=VK_BLEND_FACTOR_SRC_ALPHA,
-dstColorBlendFactor=VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-colorBlendOp=VK_BLEND_OP_ADD,
-srcAlphaBlendFactor=VK_BLEND_FACTOR_ONE,
-dstAlphaBlendFactor=VK_BLEND_FACTOR_ZERO,
-alphaBlendOp=VK_BLEND_OP_ADD
-*/
     }
 
     VkPipelineColorBlendStateCreateInfo colorBlending = {};

@@ -44,12 +44,29 @@ camera_t *scene_add_camera(scene_t *scene)
 
 light_t *scene_add_light(scene_t *scene)
 {
-    scene->isDirty = true;
     light_t *temp = new light_t();
     temp->camera.object = new gameobject_t();
     scene->tempGameobjects.insert(temp->camera.object);
-    scene->lights.insert(temp);
+    scene->lights.push_back(temp);
     return temp;
+}
+
+int scene_count_shadows(scene_t *scene)
+{
+    int max = -1;
+    for (auto it = scene->lights.begin(); it != scene->lights.end(); ++it)
+    {
+        if ((*it)->shadowIdx > max)
+            max = (*it)->shadowIdx;
+    }
+    return max + 1;
+}
+
+void scene_enable_shadow(scene_t *scene, light_t *light)
+{
+    scene->isDirty = true;
+    int max = scene_count_shadows(scene);
+    light->shadowIdx = max;
 }
 
 void scene_set_model(scene_t *scene, gameobject_t *object, std::string modelPath)

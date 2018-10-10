@@ -45,6 +45,14 @@ static int libscene_add_light(lua_State *L)
     return 1;
 }
 
+static int libscene_enable_shadow(lua_State *L)
+{
+    scene_t *scene = (scene_t*)lua_tointeger(L, 1);
+    light_t *light = (light_t*)lua_tointeger(L, 2);
+    scene_enable_shadow(scene, light);
+    return 0;
+}
+
 static int libscene_add_script(lua_State *L)
 {
     scene_t *scene = (scene_t*)lua_tointeger(L, 1);
@@ -116,6 +124,7 @@ int EXPORT luaopen_scene(lua_State *L)
     lua_register(L, "scene_add_gameobject", libscene_add_gameobject);
     lua_register(L, "scene_add_camera", libscene_add_camera);
     lua_register(L, "scene_add_light", libscene_add_light);
+    lua_register(L, "scene_enable_shadow", libscene_enable_shadow);
     lua_register(L, "scene_add_script", libscene_add_script);
     lua_register(L, "scene_set_camera", libscene_set_camera);
     lua_register(L, "scene_set_model", libscene_set_model);

@@ -35,7 +35,7 @@ struct scene_t
     std::vector<std::string> modelOrder;
     std::map<std::string, model_t*> models;
     std::map<std::string, script_t*> scripts;
-    std::set<light_t*> lights;
+    std::vector<light_t*> lights;
     std::set<camera_t*> cameras;
     std::set<gameobject_t*> gameobjects;
     std::set<gameobject_t*> tempGameobjects;
@@ -51,6 +51,8 @@ void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayou
 gameobject_t *scene_add_gameobject(scene_t *scene);
 camera_t *scene_add_camera(scene_t *scene);
 light_t *scene_add_light(scene_t *scene);
+int scene_count_shadows(scene_t *scene);
+void scene_enable_shadow(scene_t *scene, light_t *light);
 void scene_set_model(scene_t *scene, gameobject_t *object, std::string modelPath);
 void scene_set_texture(scene_t *scene, gameobject_t *object, std::string texturePath);
 void scene_set_normal(scene_t *scene, gameobject_t *object, std::string texturePath);

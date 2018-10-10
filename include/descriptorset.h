@@ -26,6 +26,7 @@ struct light_instance_t
     glm::vec4 position = glm::vec4(0.0f);
     glm::vec4 direction = glm::vec4(0.0f);
     glm::vec4 color = glm::vec4(0.0f);
+    glm::vec4 shadowIdx = glm::vec4(-1);
     glm::mat4 mvp = glm::mat4(1.0f);
 };
 
