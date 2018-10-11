@@ -232,6 +232,7 @@ void model_load(model_t *model, std::string path)
     const aiScene *scene = importer.ReadFile(path,
         aiProcess_CalcTangentSpace |
         aiProcess_Triangulate |
+        aiProcess_JoinIdenticalVertices |
         aiProcess_SortByPType
     );
 
@@ -427,6 +428,8 @@ void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayou
     vkCmdBindIndexBuffer(commandBuffer, model->indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
 
     vkCmdDrawIndexed(commandBuffer, model->indices.size(), model->instances.size(), 0, 0, 0);
+
+    std::cout << model->vertices.size() << std::endl;
 }
 
 void model_cleanup(model_t *model, VkDevice device)

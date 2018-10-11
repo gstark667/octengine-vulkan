@@ -113,13 +113,13 @@ float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
 // Fresnel
 vec3 F_Schlick(float cosTheta, float metallic, vec3 albedo)
 {
-    vec3 F0 = mix(vec3(0.04), albedo, metallic); // * material.specular
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
     vec3 F = F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0); 
     return F;
 }
 
 // Specular BRDF
-vec3 BRDF(vec3 L, vec3 V, vec3 N, vec3 albedo, float metallic, float roughness)
+vec3 BRDF(vec3 L, vec3 V, vec3 N, vec3 albedo, vec3 lightColor, float metallic, float roughness)
 {
     // Precalculate vectors and dot products    
     vec3 H = normalize (V + L);
@@ -129,8 +129,6 @@ vec3 BRDF(vec3 L, vec3 V, vec3 N, vec3 albedo, float metallic, float roughness)
     float dotNH = clamp(dot(N, H), 0.0, 1.0);
 
     // Light color fixed
-    vec3 lightColor = vec3(1.0);
-
     vec3 color = vec3(0.0);
 
     if (dotNL > 0.0)
@@ -169,13 +167,13 @@ void main()
     {
         vec3 L;
         float shade = 0.0;
+        float attenuation = 1.0;
         if (lightUBO.lights[i].direction.w < 0.0)
         {
             L = lightUBO.lights[i].position.xyz - (position * 2.0);
-            float attenuation = 0.25 / (pow(length(L), 2.0) + 1.0);
+            attenuation = 2.0 / (pow(length(L), 2.0) + 1.0);
             L = normalize(L);
             shade = max(0.0, dot(normalize(L), N) * attenuation);
-            shadedColor += lightUBO.lights[i].color.xyz * shade;
         }
         else
         {
@@ -185,11 +183,13 @@ void main()
                 shade *= filterPCF(lightUBO.lights[i].mvp * vec4(position, 1.0), i);
             shade = max(shade, 0.0);
         }
-        vec3 shadeColor = lightUBO.lights[i].color.xyz * shade;
-        shadedColor += shadeColor;
-        shadedColor += BRDF(L, V, N, shadeColor, pbr.r, pbr.g);
+        //vec3 shadeColor = albedo * lightUBO.lights[i].color.xyz * shade;
+        //shadedColor += shadeColor;
+        //shadedColor += BRDF(L, V, N, shadeColor, pbr.r, pbr.g);
+        shadedColor += BRDF(L, V, N, albedo, lightUBO.lights[i].color.xyz * attenuation, pbr.r, pbr.g);
     }
-    outFragColor = vec4(albedo * shadedColor, 1.0);
+    //outFragColor = vec4(albedo * shadedColor, 1.0);
+    outFragColor = vec4(shadedColor, 1.0);
     outFragColor += vec4(albedo * renderUBO.ambient.xyz, 1.0);
     outFragColor += vec4(albedo * pbr.b, 1.0);
 }
