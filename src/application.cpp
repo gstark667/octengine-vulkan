@@ -520,7 +520,7 @@ void application_create_depth_resources(application_t *app) {
 
     pipeline_attachment_create(&app->pbr, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
 
-    pipeline_attachment_create(&app->offscreenDepthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
+    pipeline_attachment_create(&app->offscreenDepthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, true);
 
     app->offscreenAttachments.push_back(app->albedo);
     app->offscreenAttachments.push_back(app->normal);
@@ -532,11 +532,6 @@ void application_create_depth_resources(application_t *app) {
     app->shadowImageArray->forceArray = true;
     image_create(app->shadowImageArray, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, 1, 1, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
     image_create_view(app->shadowImageArray, app->device, app->depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 0, true);
-    /*pipeline_attachment_from_image(&app->shadowDepth1, app->device, VK_IMAGE_ASPECT_DEPTH_BIT, *app->shadowImageArray, 0, true);
-    app->shadowAttachments1.push_back(app->shadowDepth1);
-
-    pipeline_attachment_from_image(&app->shadowDepth2, app->device, VK_IMAGE_ASPECT_DEPTH_BIT, *app->shadowImageArray, 1, true);
-    app->shadowAttachments2.push_back(app->shadowDepth2);*/
 }
 
 // create frame buffers
@@ -692,6 +687,8 @@ void application_update_uniforms(application_t *app)
     float delta = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
     lastTime = std::chrono::high_resolution_clock::now();
     total += delta;
+
+    //std::cout << "fps: " << 1.0f/delta << std::endl;
 
     scene_update(&app->scene, delta);
 
@@ -910,7 +907,7 @@ void application_init_vulkan(application_t *app) {
     descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 3, false, false, false);
     descriptor_set_add_image(&app->descriptorSet, &app->position.image, 4, false, false, false);
     descriptor_set_add_image(&app->descriptorSet, &app->pbr.image, 5, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 6, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 6, false, false, true);
     descriptor_set_add_image(&app->descriptorSet, app->shadowImageArray, 7, false, false, true);
     descriptor_set_create(&app->descriptorSet);
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->attachments, false, false);

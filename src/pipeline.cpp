@@ -17,12 +17,11 @@ void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice devi
     if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
     {
         attachment->layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        attachment->finalLayout = shadow ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        attachment->finalLayout = shadow ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         aspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
     }
     else
     {
-        //attachment->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         attachment->layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         attachment->finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -40,7 +39,7 @@ void pipeline_attachment_from_image(pipeline_attachment_t *attachment, VkDevice 
     if (image.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
     {
         attachment->layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        attachment->finalLayout = shadow ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        attachment->finalLayout = shadow ?  VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     }
     else
     {

@@ -31,7 +31,7 @@ layout (location = 0) in vec2 inUV;
 
 layout (location = 0) out vec4 outFragColor;
 
-#define SHADOW_FACTOR 0.25
+#define SHADOW_FACTOR 0.0
 #define PI 3.14159
 
 const mat4 biasMat = mat4(
@@ -90,6 +90,17 @@ vec4 resolve(sampler2DMS tex, ivec2 uv)
     return result / float(renderUBO.sampleCount);
 }
 
+// Tone Mapping
+vec3 Tonemap(vec3 x)
+{
+    float A = 0.15;
+    float B = 0.50;
+    float C = 0.10;
+    float D = 0.20;
+    float E = 0.02;
+    float F = 0.30;
+    return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+}
 
 // Normal Distribution
 float D_GGX(float dotNH, float roughness)
@@ -128,7 +139,6 @@ vec3 BRDF(vec3 L, vec3 V, vec3 N, vec3 albedo, vec3 lightColor, float metallic, 
     float dotLH = clamp(dot(L, H), 0.0, 1.0);
     float dotNH = clamp(dot(N, H), 0.0, 1.0);
 
-    // Light color fixed
     vec3 color = vec3(0.0);
 
     if (dotNL > 0.0)
@@ -166,31 +176,35 @@ void main()
     for (int i = 0; i < lightUBO.lightCount; ++i)
     {
         vec3 L;
-        float shade = 0.0;
+        float shade = 1.0;
         float attenuation = 1.0;
         if (lightUBO.lights[i].direction.w < 0.0)
         {
             L = lightUBO.lights[i].position.xyz - (position * 2.0);
             attenuation = 2.0 / (pow(length(L), 2.0) + 1.0);
             L = normalize(L);
-            shade = max(0.0, dot(normalize(L), N) * attenuation);
+            //shade = max(0.0, dot(normalize(L), N) * attenuation);
         }
         else
         {
             L = normalize(lightUBO.lights[i].position.xyz - (position * 2.0));
-            shade = max(dot(normal, normalize(lightUBO.lights[i].direction.xyz)), 0.0);
+            //shade = max(dot(normal, normalize(lightUBO.lights[i].direction.xyz)), 0.0);
             if (lightUBO.lights[i].shadowIdx.x > -1)
-                shade *= filterPCF(lightUBO.lights[i].mvp * vec4(position, 1.0), i);
-            shade = max(shade, 0.0);
+                shade = filterPCF(lightUBO.lights[i].mvp * vec4(position, 1.0), i);
+            //shade = max(shade, 0.0);
         }
         //vec3 shadeColor = albedo * lightUBO.lights[i].color.xyz * shade;
         //shadedColor += shadeColor;
         //shadedColor += BRDF(L, V, N, shadeColor, pbr.r, pbr.g);
-        shadedColor += BRDF(L, V, N, albedo, lightUBO.lights[i].color.xyz * attenuation, pbr.r, pbr.g);
+        shadedColor += BRDF(L, V, N, albedo, lightUBO.lights[i].color.xyz * attenuation, pbr.r, pbr.g) * shade;
     }
-    //outFragColor = vec4(albedo * shadedColor, 1.0);
-    outFragColor = vec4(shadedColor, 1.0);
-    outFragColor += vec4(albedo * renderUBO.ambient.xyz, 1.0);
-    outFragColor += vec4(albedo * pbr.b, 1.0);
+    vec3 color = shadedColor;
+    color += albedo * renderUBO.ambient.xyz;
+    color += albedo * pbr.b;
+
+    //color = Tonemap(color * 4.5);
+    //color = color * (1.0f / Tonemap(vec3(11.2f)));
+    //color = pow(color, vec3(1.0f / 2.2f));
+    outFragColor = vec4(color, 1.0f);
 }
 

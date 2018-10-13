@@ -110,7 +110,7 @@ void descriptor_set_create_descriptor_set(descriptor_set_t *descriptorSet)
     for (auto it = descriptorSet->textures.begin(); it != descriptorSet->textures.end(); ++it)
     {
         VkDescriptorImageInfo *imageInfo = new VkDescriptorImageInfo();
-        imageInfo->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo->imageLayout = it->shadow ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         imageInfo->imageView = it->texture->image.view;
         imageInfo->sampler = it->texture->sampler;
         imageInfos.push_back(imageInfo);
