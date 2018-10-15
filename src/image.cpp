@@ -35,6 +35,8 @@ void image_create(image_t *image, VkDevice device, VkPhysicalDevice physicalDevi
     imageInfo.usage = usage;
     imageInfo.samples = samples;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    if (image->cube)
+        imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
     if (vkCreateImage(device, &imageInfo, nullptr, &image->image) != VK_SUCCESS) {
         throw std::runtime_error("failed to create image!");
@@ -59,7 +61,9 @@ void image_create_view(image_t *image, VkDevice device, VkFormat format, VkImage
     VkImageViewCreateInfo viewInfo = {};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = image->image;
-    if (image->layers == 1 && !image->forceArray)
+    if (image->cube)
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+    else if (image->layers == 1 && !image->forceArray)
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
     else
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;

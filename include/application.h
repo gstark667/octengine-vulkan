@@ -50,8 +50,8 @@ struct application_t
     uint32_t windowWidth;
     uint32_t windowHeight;
 
-    uint32_t shadowHeight = 4096;
-    uint32_t shadowWidth = 4096;
+    uint32_t shadowHeight = 1024;
+    uint32_t shadowWidth = 1024;
 
     SDL_Window *window;
 
@@ -88,24 +88,27 @@ struct application_t
 
     pipeline_t pipeline;
     pipeline_t offscreenPipeline;
+    pipeline_t skyPipeline;
 
     model_t model;
     texture_t texture;
+    texture_t skybox;
     scene_t scene;
-    uniform_buffer_object_t ubo;
+    camera_t skyCam;
+    uniform_buffer_object_t ubo, skyUbo;
     light_ubo_t lightUBO;
     render_ubo_t renderUBO;
 
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;
     VkCommandBuffer offscreenCommandBuffer;
+    VkCommandBuffer skyCommandBuffer;
     std::vector<VkCommandBuffer*> shadowCommandBuffers;
 
-    pipeline_attachment_t albedo, normal, position, pbr, offscreenDepthAttachment, shadowPosition, shadowDepth1, shadowDepth2;
+    pipeline_attachment_t albedo, normal, position, pbr, offscreenDepthAttachment, shadowPosition, sky, skyDepth;
     std::vector<pipeline_attachment_t> attachments;
     std::vector<pipeline_attachment_t> offscreenAttachments;
-    std::vector<pipeline_attachment_t> shadowAttachments1;
-    std::vector<pipeline_attachment_t> shadowAttachments2;
+    std::vector<pipeline_attachment_t> skyAttachments;
 
     image_t *shadowImageArray = NULL;
     std::vector<pipeline_t*> shadowPipelines;
@@ -113,16 +116,18 @@ struct application_t
 
     descriptor_set_t descriptorSet;
     descriptor_set_t offscreenDescriptorSet;
+    descriptor_set_t skyDescriptorSet;
     std::vector<descriptor_set_t*> shadowDescriptorSets;
 
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore offscreenSemaphore;
+    VkSemaphore skySemaphore;
     VkSemaphore renderFinishedSemaphore;
     std::vector<VkSemaphore*> shadowSemaphores;
 
     camera_t shadowCam;
 
-    model_t quad;
+    model_t quad, cube;
 
     settings_t settings;
     SDL_Joystick *gameController;

@@ -13,12 +13,15 @@ texture_data_t texture_get_data(std::string path)
 {
     texture_data_t output;
 
+
     FIBITMAP *img = FreeImage_Load(FreeImage_GetFileType(path.c_str(), 0), path.c_str());
     FIBITMAP *bitmap = FreeImage_ConvertTo32Bits(img);
     output.width = FreeImage_GetWidth(bitmap);
     output.height = FreeImage_GetHeight(bitmap);
     output.size = output.width * output.height * 4;
     BYTE *bitmapData = FreeImage_GetBits(bitmap);
+
+    std::cout << "adding texture: " << path << ":" << output.width << ":" << output.height << std::endl;
 
     #if FREEIMAGE_COLORORDER == FREEIMAGE_COLORORDER_BGR
     for (size_t i = 0; i < output.size; i += 4)
@@ -113,6 +116,7 @@ void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physical
     }
     vkUnmapMemory(device, stagingBufferMemory);
 
+    texture->image.cube = texture->cube;
     image_create(&texture->image, device, physicalDevice, texture->width, texture->height, texture->data.size(), texture->mipLevels, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
 
     image_transition_layout(&texture->image, device, commandPool, graphicsQueue, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);

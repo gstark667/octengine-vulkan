@@ -23,7 +23,6 @@ void camera_update(camera_t *camera)
 
 void camera_resize(camera_t *camera)
 {
-    std::cout << "camera fov: " << camera->fov << std::endl;
     if (camera->fov > 0.0f)
     {
         camera->proj = glm::perspective(glm::radians(camera->fov), (float)camera->width / (float)camera->height, 0.1f, 1000.0f);

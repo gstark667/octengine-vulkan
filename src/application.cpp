@@ -260,7 +260,7 @@ void application_get_usable_samples(application_t *app) {
     if (counts & VK_SAMPLE_COUNT_16_BIT) { app->sampleCount = VK_SAMPLE_COUNT_16_BIT; }
     if (counts & VK_SAMPLE_COUNT_32_BIT) { app->sampleCount = VK_SAMPLE_COUNT_32_BIT; }
     if (counts & VK_SAMPLE_COUNT_64_BIT) { app->sampleCount = VK_SAMPLE_COUNT_64_BIT; }
-    app->sampleCount = VK_SAMPLE_COUNT_4_BIT;
+    app->sampleCount = VK_SAMPLE_COUNT_2_BIT;
     std::cout << "sample count: " << app->sampleCount << std::endl;
 }
 
@@ -495,6 +495,7 @@ void application_create_command_pool(application_t *app) {
 
 // create depth resources
 void application_create_depth_resources(application_t *app) {
+    // composite
     pipeline_attachment_t colorAttachment;
     colorAttachment.image.image = app->swapChainImages[0];
     colorAttachment.image.view = app->swapChainImageViews[0];
@@ -511,15 +512,11 @@ void application_create_depth_resources(application_t *app) {
     app->attachments.push_back(colorAttachment);
     app->attachments.push_back(depthAttachment);
 
-
+    // offscreen
     pipeline_attachment_create(&app->albedo, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
-
     pipeline_attachment_create(&app->normal, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
-
     pipeline_attachment_create(&app->position, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
-
     pipeline_attachment_create(&app->pbr, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
-
     pipeline_attachment_create(&app->offscreenDepthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, true);
 
     app->offscreenAttachments.push_back(app->albedo);
@@ -528,6 +525,13 @@ void application_create_depth_resources(application_t *app) {
     app->offscreenAttachments.push_back(app->pbr);
     app->offscreenAttachments.push_back(app->offscreenDepthAttachment);
 
+    // sky
+    pipeline_attachment_create(&app->sky, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
+    pipeline_attachment_create(&app->skyDepth, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
+    app->skyAttachments.push_back(app->sky);
+    app->skyAttachments.push_back(app->skyDepth);
+
+    // shadow
     app->shadowImageArray = new image_t();
     app->shadowImageArray->forceArray = true;
     image_create(app->shadowImageArray, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, 1, 1, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
@@ -596,6 +600,18 @@ void application_create_command_buffers(application_t *app) {
     scene_render(&app->scene, app->offscreenCommandBuffer, app->offscreenPipeline.layout, app->offscreenPipeline.pipeline, &app->offscreenDescriptorSet);
     pipeline_end_render(&app->offscreenPipeline, app->offscreenCommandBuffer);
 
+    // create the sky command buffer
+    allocInfo.commandBufferCount = 1;
+
+    if (vkAllocateCommandBuffers(app->device, &allocInfo, &app->skyCommandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate command buffers!");
+    }
+
+    pipeline_begin_render(&app->skyPipeline, app->skyCommandBuffer);
+    model_render(&app->cube, app->skyCommandBuffer, app->skyPipeline.layout, app->skyPipeline.pipeline, app->skyDescriptorSet.descriptorSet);
+    pipeline_end_render(&app->skyPipeline, app->skyCommandBuffer);
+
+
     // create the shadow command buffers
     for (size_t idx = 0; idx < app->shadowPipelines.size(); ++idx)
     {
@@ -619,6 +635,7 @@ void application_create_semaphores(application_t *app) {
 
     if (vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->imageAvailableSemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->offscreenSemaphore) != VK_SUCCESS ||
+        vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->skySemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->renderFinishedSemaphore) != VK_SUCCESS) {
 
         throw std::runtime_error("failed to create semaphores!");
@@ -726,8 +743,15 @@ void application_update_uniforms(application_t *app)
 
     if (app->scene.camera != NULL)
     {
+        app->skyCam.object->globalRot = app->scene.camera->object->globalRot;
+        app->skyCam.fov = 120.0f;
+        app->skyCam.sizeX = -0.75f;
+        app->skyCam.sizeY = 0.75f;
         camera_update(app->scene.camera);
+        camera_update(&app->skyCam);
+        camera_resize(&app->skyCam);
         app->ubo.cameraMVP = app->scene.camera->proj * app->scene.camera->view;
+        app->skyUbo.cameraMVP = app->skyCam.proj * app->skyCam.view;
         app->lightUBO.cameraPos = glm::vec4(app->scene.camera->object->globalPos * 0.5f, 1.0f);
     }
 }
@@ -744,6 +768,8 @@ void application_copy_uniforms(application_t *app)
 
     descriptor_set_update_buffer(&app->offscreenDescriptorSet, &app->ubo, 0);
     descriptor_set_update_buffer(&app->offscreenDescriptorSet, &app->scene.bones, 1);
+
+    descriptor_set_update_buffer(&app->skyDescriptorSet, &app->skyUbo, 0);
 }
 
 // draw frame
@@ -770,8 +796,23 @@ void application_draw_frame(application_t *app) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 
+    // sky
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = &app->offscreenSemaphore;
+    submitInfo.pWaitDstStageMask = waitStages;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &app->skyCommandBuffer;
+
+    signalSemaphores[0] = app->skySemaphore;
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    if (vkQueueSubmit(app->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit draw command buffer!");
+    }
+
     // shadows
-    VkSemaphore *lastSemaphore = &app->offscreenSemaphore;
+    VkSemaphore *lastSemaphore = &app->skySemaphore;
     for (size_t i = 0; i < scene_count_shadows(&app->scene); ++i)
     {
         submitInfo.waitSemaphoreCount = 1;
@@ -833,16 +874,6 @@ void application_cleanup_swap_chain(application_t *app) {
         pipeline_attachment_cleanup(&(*it), app->device);
     }
 
-    for (std::vector<pipeline_attachment_t>::iterator it = app->shadowAttachments1.begin(); it != app->shadowAttachments1.end(); ++it)
-    {
-        pipeline_attachment_cleanup(&(*it), app->device);
-    }
-
-    for (std::vector<pipeline_attachment_t>::iterator it = app->shadowAttachments2.begin(); it != app->shadowAttachments2.end(); ++it)
-    {
-        pipeline_attachment_cleanup(&(*it), app->device);
-    }
-
     for (auto it = app->shadowAttachments.begin(); it != app->shadowAttachments.end(); ++it)
     {
         for (auto it2 = it->begin(); it2 != it->end(); ++it2)
@@ -900,6 +931,16 @@ void application_init_vulkan(application_t *app) {
 
     scene_create(&app->scene, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->windowWidth, app->windowHeight);
 
+    app->skybox.cube = true;
+    texture_add(&app->skybox, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "right.png", false);
+    texture_add(&app->skybox, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "left.png", false);
+    texture_add(&app->skybox, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "down.png", false);
+    texture_add(&app->skybox, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "up.png", false);
+    texture_add(&app->skybox, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "front.png", false);
+    texture_add(&app->skybox, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "back.png", false);
+    texture_load(&app->skybox, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
+
+    // composite
     descriptor_set_setup(&app->descriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_buffer(&app->descriptorSet, sizeof(light_ubo_t), 0, false);
     descriptor_set_add_buffer(&app->descriptorSet, sizeof(render_ubo_t), 1, false);
@@ -909,12 +950,15 @@ void application_init_vulkan(application_t *app) {
     descriptor_set_add_image(&app->descriptorSet, &app->pbr.image, 5, false, false, false);
     descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 6, false, false, true);
     descriptor_set_add_image(&app->descriptorSet, app->shadowImageArray, 7, false, false, true);
+    descriptor_set_add_texture(&app->descriptorSet, &app->skybox, 8, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->sky.image, 9, false, false, false);
     descriptor_set_create(&app->descriptorSet);
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->attachments, false, false);
     app->renderUBO.sampleCount = app->sampleCount;
     app->renderUBO.ambient = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
     descriptor_set_update_buffer(&app->descriptorSet, &app->renderUBO, 1);
 
+    // offscreen
     descriptor_set_setup(&app->offscreenDescriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_buffer(&app->offscreenDescriptorSet, sizeof(uniform_buffer_object_t), 0, true);
     descriptor_set_add_buffer(&app->offscreenDescriptorSet, sizeof(bone_ubo_t), 1, true);
@@ -922,13 +966,24 @@ void application_init_vulkan(application_t *app) {
     descriptor_set_create(&app->offscreenDescriptorSet);
     pipeline_create(&app->offscreenPipeline, &app->offscreenDescriptorSet, app->windowWidth, app->windowHeight, "shaders/offscreen_vert.spv", "shaders/offscreen_frag.spv", app->device, app->physicalDevice, app->sampleCount, app->commandPool, app->graphicsQueue, app->offscreenAttachments, true, false);
 
+    // sky
+    descriptor_set_setup(&app->skyDescriptorSet, app->device, app->physicalDevice);
+    descriptor_set_add_buffer(&app->skyDescriptorSet, sizeof(uniform_buffer_object_t), 0, true);
+    descriptor_set_add_texture(&app->skyDescriptorSet, &app->skybox, 1, false);
+    descriptor_set_create(&app->skyDescriptorSet);
+    pipeline_create(&app->skyPipeline, &app->skyDescriptorSet, app->windowWidth, app->windowHeight, "shaders/sky_vert.spv", "shaders/sky_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->skyAttachments, true, false);
+    app->skyCam.object = new gameobject_t();
+
     application_create_frame_buffers(app);
     application_update_uniforms(app);
     application_copy_uniforms(app);
 
     app->quad.instances.push_back({});
+    app->cube.instances.push_back({});
     model_load(&app->quad, "quad.dae");
+    model_load(&app->cube, "skycube.dae");
     model_create_buffers(&app->quad, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
+    model_create_buffers(&app->cube, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
     application_create_command_buffers(app);
     application_create_semaphores(app);
 }
@@ -1014,6 +1069,8 @@ void application_cleanup(application_t *app) {
     model_cleanup(&app->quad, app->device);
     if (app->shadowImageArray)
         image_cleanup(app->shadowImageArray, app->device);
+
+    texture_cleanup(&app->skybox, app->device);
 
     vkDestroySemaphore(app->device, app->renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->offscreenSemaphore, nullptr);

@@ -47,9 +47,9 @@ struct descriptor_texture_t
 {
     texture_t *texture;
     uint32_t binding;
-    bool vertex;
-    bool repeat;
-    bool shadow;
+    bool vertex = false;
+    bool repeat = false;
+    bool shadow = false;
     bool fromImage = false;
 };
 

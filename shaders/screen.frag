@@ -7,6 +7,8 @@ layout (binding = 4) uniform sampler2DMS samplerPosition;
 layout (binding = 5) uniform sampler2DMS samplerPBR;
 layout (binding = 6) uniform sampler2DMS samplerDepth;
 layout (binding = 7) uniform sampler2DArray shadowDepth;
+layout (binding = 8) uniform samplerCube samplerSkybox;
+layout (binding = 9) uniform sampler2D samplerSky;
 
 struct light {
     vec4 position;
@@ -122,38 +124,40 @@ float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
 }
 
 // Fresnel
-vec3 F_Schlick(float cosTheta, float metallic, vec3 albedo)
+vec3 F_Schlick(float cosTheta, vec3 F0)
 {
-    vec3 F0 = mix(vec3(0.04), albedo, metallic);
-    vec3 F = F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0); 
-    return F;
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+vec3 F_SchlickR(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-// Specular BRDF
-vec3 BRDF(vec3 L, vec3 V, vec3 N, vec3 albedo, vec3 lightColor, float metallic, float roughness)
+
+// Specular
+vec3 specularContribution(vec3 L, vec3 V, vec3 N, vec3 F0, vec3 albedo, float metallic, float roughness)
 {
     // Precalculate vectors and dot products    
     vec3 H = normalize (V + L);
+    float dotNH = clamp(dot(N, H), 0.0, 1.0);
     float dotNV = clamp(dot(N, V), 0.0, 1.0);
     float dotNL = clamp(dot(N, L), 0.0, 1.0);
-    float dotLH = clamp(dot(L, H), 0.0, 1.0);
-    float dotNH = clamp(dot(N, H), 0.0, 1.0);
+
+    // Light color fixed
+    vec3 lightColor = vec3(1.0);
 
     vec3 color = vec3(0.0);
 
-    if (dotNL > 0.0)
-    {
-        float rroughness = max(0.05, roughness);
+    if (dotNL > 0.0) {
         // D = Normal distribution (Distribution of the microfacets)
         float D = D_GGX(dotNH, roughness); 
         // G = Geometric shadowing term (Microfacets shadowing)
         float G = G_SchlicksmithGGX(dotNL, dotNV, roughness);
         // F = Fresnel factor (Reflectance depending on angle of incidence)
-        vec3 F = F_Schlick(dotNV, metallic, albedo);
-
-        vec3 spec = D * F * G / (4.0 * dotNL * dotNV);
-
-        color += spec * dotNL * lightColor;
+        vec3 F = F_Schlick(dotNV, F0);        
+        vec3 spec = D * F * G / (4.0 * dotNL * dotNV + 0.001);        
+        vec3 kD = (vec3(1.0) - F) * (1.0 - metallic);            
+        color += (kD * albedo / PI + spec) * dotNL;
     }
 
     return color;
@@ -168,43 +172,53 @@ void main()
     vec3 normal = resolve(samplerNormal, UV).rgb;
     vec3 position = resolve(samplerPosition, UV).rgb;
     vec3 pbr = resolve(samplerPBR, UV).rgb;
+    float depth = resolve(samplerDepth, UV).r;
 
     vec3 N = normalize(normal);
     vec3 V = normalize(lightUBO.cameraPos.xyz - position);
+    vec3 sky = texture(samplerSkybox, -N).rgb;
 
-    vec3 shadedColor = vec3(0.0, 0.0, 0.0);
+    vec3 L0 = vec3(0.0, 0.0, 0.0);
+    vec3 F0 = vec3(0.04); 
+    F0 = mix(F0, albedo, pbr.r);
+
     for (int i = 0; i < lightUBO.lightCount; ++i)
     {
         vec3 L;
-        float shade = 1.0;
         float attenuation = 1.0;
         if (lightUBO.lights[i].direction.w < 0.0)
         {
             L = lightUBO.lights[i].position.xyz - (position * 2.0);
             attenuation = 2.0 / (pow(length(L), 2.0) + 1.0);
             L = normalize(L);
-            //shade = max(0.0, dot(normalize(L), N) * attenuation);
         }
         else
         {
             L = normalize(lightUBO.lights[i].position.xyz - (position * 2.0));
-            //shade = max(dot(normal, normalize(lightUBO.lights[i].direction.xyz)), 0.0);
             if (lightUBO.lights[i].shadowIdx.x > -1)
-                shade = filterPCF(lightUBO.lights[i].mvp * vec4(position, 1.0), i);
-            //shade = max(shade, 0.0);
+                attenuation = filterPCF(lightUBO.lights[i].mvp * vec4(position, 1.0), i);
         }
-        //vec3 shadeColor = albedo * lightUBO.lights[i].color.xyz * shade;
-        //shadedColor += shadeColor;
-        //shadedColor += BRDF(L, V, N, shadeColor, pbr.r, pbr.g);
-        shadedColor += BRDF(L, V, N, albedo, lightUBO.lights[i].color.xyz * attenuation, pbr.r, pbr.g) * shade;
+        L0 += specularContribution(L, V, N, F0, albedo, pbr.r, pbr.g) * attenuation * lightUBO.lights[i].color.xyz;
     }
-    vec3 color = shadedColor;
-    color += albedo * renderUBO.ambient.xyz;
+
+    vec3 F = F_SchlickR(max(dot(N, V), 0.0), F0, pbr.g);
+
+    vec3 diffuse = albedo;
+    vec3 specular = sky * F;
+
+    vec3 kD = 1.0 - F;
+    kD *= 1.0 - pbr.r;
+    vec3 ambient = (kD * diffuse + specular);
+
+    vec3 color = ambient + L0;
     color += albedo * pbr.b;
 
     //color = Tonemap(color * 4.5);
     //color = color * (1.0f / Tonemap(vec3(11.2f)));
     //color = pow(color, vec3(1.0f / 2.2f));
     outFragColor = vec4(color, 1.0f);
+
+    if (depth == 1.0)
+        outFragColor = texture(samplerSky, inUV).rgba;
 }
 
