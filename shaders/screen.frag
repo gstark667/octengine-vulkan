@@ -195,6 +195,7 @@ void main()
         else
         {
             L = normalize(lightUBO.lights[i].position.xyz - (position * 2.0));
+            L = normalize(lightUBO.lights[i].direction.xyz);
             if (lightUBO.lights[i].shadowIdx.x > -1)
                 attenuation = filterPCF(lightUBO.lights[i].mvp * vec4(position, 1.0), i);
         }

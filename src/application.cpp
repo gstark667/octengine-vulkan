@@ -744,9 +744,9 @@ void application_update_uniforms(application_t *app)
     if (app->scene.camera != NULL)
     {
         app->skyCam.object->globalRot = app->scene.camera->object->globalRot;
-        app->skyCam.fov = 120.0f;
-        app->skyCam.sizeX = -0.75f;
-        app->skyCam.sizeY = 0.75f;
+        app->skyCam.fov = app->scene.camera->fov;
+        app->skyCam.width = app->scene.camera->width;
+        app->skyCam.height = app->scene.camera->height;
         camera_update(app->scene.camera);
         camera_update(&app->skyCam);
         camera_resize(&app->skyCam);
@@ -980,6 +980,7 @@ void application_init_vulkan(application_t *app) {
 
     app->quad.instances.push_back({});
     app->cube.instances.push_back({});
+    app->cube.instances[0].scale = glm::vec3(100.0f, 100.0f, 100.0f);
     model_load(&app->quad, "quad.dae");
     model_load(&app->cube, "skycube.dae");
     model_create_buffers(&app->quad, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
@@ -1050,8 +1051,11 @@ void application_main_loop(application_t *app) {
 void application_cleanup(application_t *app) {
     application_cleanup_swap_chain(app);
 
+    delete app->skyCam.object;
+
     pipeline_cleanup(&app->pipeline);
     pipeline_cleanup(&app->offscreenPipeline);
+    pipeline_cleanup(&app->skyPipeline);
     for (auto it = app->shadowPipelines.begin(); it != app->shadowPipelines.end(); ++it)
     {
         pipeline_cleanup((*it));
@@ -1059,21 +1063,24 @@ void application_cleanup(application_t *app) {
     }
 
     scene_cleanup(&app->scene);
+    texture_cleanup(&app->skybox, app->device);
+
     descriptor_set_cleanup(&app->descriptorSet);
     descriptor_set_cleanup(&app->offscreenDescriptorSet);
+    descriptor_set_cleanup(&app->skyDescriptorSet);
     for (auto it = app->shadowDescriptorSets.begin(); it != app->shadowDescriptorSets.end(); ++it)
     {
         descriptor_set_cleanup((*it));
         delete *it;
     }
     model_cleanup(&app->quad, app->device);
+    model_cleanup(&app->cube, app->device);
     if (app->shadowImageArray)
         image_cleanup(app->shadowImageArray, app->device);
 
-    texture_cleanup(&app->skybox, app->device);
-
     vkDestroySemaphore(app->device, app->renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->offscreenSemaphore, nullptr);
+    vkDestroySemaphore(app->device, app->skySemaphore, nullptr);
     vkDestroySemaphore(app->device, app->imageAvailableSemaphore, nullptr);
     for (auto it = app->shadowSemaphores.begin(); it != app->shadowSemaphores.end(); ++it)
         vkDestroySemaphore(app->device, *(*it), nullptr);
