@@ -940,6 +940,16 @@ void application_init_vulkan(application_t *app) {
     texture_add(&app->skybox, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "back.png", false);
     texture_load(&app->skybox, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
 
+    app->illumination.cube = true;
+    texture_add(&app->illumination, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "right_ill.png", false);
+    texture_add(&app->illumination, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "left_ill.png", false);
+    texture_add(&app->illumination, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "down_ill.png", false);
+    texture_add(&app->illumination, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "up_ill.png", false);
+    texture_add(&app->illumination, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "front_ill.png", false);
+    texture_add(&app->illumination, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "back_ill.png", false);
+    texture_load(&app->illumination, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
+
+
     // composite
     descriptor_set_setup(&app->descriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_buffer(&app->descriptorSet, sizeof(light_ubo_t), 0, false);
@@ -952,6 +962,7 @@ void application_init_vulkan(application_t *app) {
     descriptor_set_add_image(&app->descriptorSet, app->shadowImageArray, 7, false, false, true);
     descriptor_set_add_texture(&app->descriptorSet, &app->skybox, 8, false);
     descriptor_set_add_image(&app->descriptorSet, &app->sky.image, 9, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->illumination.image, 10, false, false, false);
     descriptor_set_create(&app->descriptorSet);
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->attachments, false, false);
     app->renderUBO.sampleCount = app->sampleCount;

@@ -9,6 +9,7 @@ layout (binding = 6) uniform sampler2DMS samplerDepth;
 layout (binding = 7) uniform sampler2DArray shadowDepth;
 layout (binding = 8) uniform samplerCube samplerSkybox;
 layout (binding = 9) uniform sampler2D samplerSky;
+layout (binding = 10) uniform samplerCube samplerIllumination;
 
 struct light {
     vec4 position;
@@ -124,14 +125,25 @@ float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
 }
 
 // Fresnel
-vec3 F_Schlick(float cosTheta, vec3 F0)
+float fresnel(vec3 N, vec3 V, float roughness)
 {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+    N = mix(N, V, roughness);
+    float ior = 1.45;
+    float c = max(dot(N, V), 0.0);
+    float g = ior * ior - 1.0 + c * c;
+    if (g > 0.0)
+    {
+        g = sqrt(g);
+        float A = (g - c) / (g + c);
+        float B = (c * (g + c) - 1.0) / (c * (g - c) + 1.0);
+        return 0.5 * A * A * (1.0 + B * B);
+    }
+    else
+    {
+        return 1.0;
+    }
 }
-vec3 F_SchlickR(float cosTheta, vec3 F0, float roughness)
-{
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
-}
+
 
 
 // Specular
@@ -154,8 +166,8 @@ vec3 specularContribution(vec3 L, vec3 V, vec3 N, vec3 F0, vec3 albedo, float me
         // G = Geometric shadowing term (Microfacets shadowing)
         float G = G_SchlicksmithGGX(dotNL, dotNV, roughness);
         // F = Fresnel factor (Reflectance depending on angle of incidence)
-        vec3 F = F_Schlick(dotNV, F0);        
-        vec3 spec = D * F * G / (4.0 * dotNL * dotNV + 0.001);        
+        float F = fresnel(N, V, roughness);        
+        vec3 spec = vec3(D * F * G) / (4.0 * dotNL * dotNV + 0.001);
         vec3 kD = (vec3(1.0) - F) * (1.0 - metallic);            
         color += (kD * albedo / PI + spec) * dotNL;
     }
@@ -176,7 +188,9 @@ void main()
 
     vec3 N = normalize(normal);
     vec3 V = normalize(lightUBO.cameraPos.xyz - position);
+
     vec3 sky = texture(samplerSkybox, -N).rgb;
+    vec3 illum = texture(samplerIllumination, -N).rgb;
 
     vec3 L0 = vec3(0.0, 0.0, 0.0);
     vec3 F0 = vec3(0.04); 
@@ -202,16 +216,12 @@ void main()
         L0 += specularContribution(L, V, N, F0, albedo, pbr.r, pbr.g) * attenuation * lightUBO.lights[i].color.xyz;
     }
 
-    vec3 F = F_SchlickR(max(dot(N, V), 0.0), F0, pbr.g);
+    float F = fresnel(N, V, pbr.g) - (fresnel(V, V, pbr.g) * pbr.r);
+    vec3 diffuse = albedo * illum * 0.5;
+    vec3 specular = mix(sky, illum * ((1.0 - pbr.g) * 0.5 + 0.5), pbr.g);
 
-    vec3 diffuse = albedo;
-    vec3 specular = sky * F;
-
-    vec3 kD = 1.0 - F;
-    kD *= 1.0 - pbr.r;
-    vec3 ambient = (kD * diffuse + specular);
-
-    vec3 color = ambient + L0;
+    vec3 color = mix(diffuse, specular, F);
+    color += L0;
     color += albedo * pbr.b;
 
     //color = Tonemap(color * 4.5);

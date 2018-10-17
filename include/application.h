@@ -92,7 +92,7 @@ struct application_t
 
     model_t model;
     texture_t texture;
-    texture_t skybox;
+    texture_t skybox, illumination;
     scene_t scene;
     camera_t skyCam;
     uniform_buffer_object_t ubo, skyUbo;
