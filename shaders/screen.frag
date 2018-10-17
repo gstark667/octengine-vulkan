@@ -144,10 +144,8 @@ float fresnel(vec3 N, vec3 V, float roughness)
     }
 }
 
-
-
 // Specular
-vec3 specularContribution(vec3 L, vec3 V, vec3 N, vec3 F0, vec3 albedo, float metallic, float roughness)
+vec3 specularContribution(vec3 L, vec3 V, vec3 N, vec3 albedo, float metallic, float roughness)
 {
     // Precalculate vectors and dot products    
     vec3 H = normalize (V + L);
@@ -156,8 +154,6 @@ vec3 specularContribution(vec3 L, vec3 V, vec3 N, vec3 F0, vec3 albedo, float me
     float dotNL = clamp(dot(N, L), 0.0, 1.0);
 
     // Light color fixed
-    vec3 lightColor = vec3(1.0);
-
     vec3 color = vec3(0.0);
 
     if (dotNL > 0.0) {
@@ -196,6 +192,10 @@ void main()
     vec3 F0 = vec3(0.04); 
     F0 = mix(F0, albedo, pbr.r);
 
+    float F = fresnel(N, V, pbr.g) - (fresnel(V, V, pbr.g) * pbr.r);
+    vec3 diffuse = albedo * illum * 0.5;
+    vec3 specular = mix(sky, illum * ((1.0 - pbr.g) * 0.5 + 0.5), pbr.g);
+
     for (int i = 0; i < lightUBO.lightCount; ++i)
     {
         vec3 L;
@@ -203,25 +203,30 @@ void main()
         if (lightUBO.lights[i].direction.w < 0.0)
         {
             L = lightUBO.lights[i].position.xyz - (position * 2.0);
-            attenuation = 2.0 / (pow(length(L), 2.0) + 1.0);
+            attenuation = 0.25 / (pow(length(L), 2.0));
             L = normalize(L);
         }
         else
         {
-            L = normalize(lightUBO.lights[i].position.xyz - (position * 2.0));
             L = normalize(lightUBO.lights[i].direction.xyz);
             if (lightUBO.lights[i].shadowIdx.x > -1)
                 attenuation = filterPCF(lightUBO.lights[i].mvp * vec4(position, 1.0), i);
         }
-        L0 += specularContribution(L, V, N, F0, albedo, pbr.r, pbr.g) * attenuation * lightUBO.lights[i].color.xyz;
+        vec3 H = normalize (V + L);
+        float dotNH = clamp(dot(N, H), 0.0, 1.0);
+        float dotNV = clamp(dot(N, V), 0.0, 1.0);
+        float dotNL = clamp(dot(N, L), 0.0, 1.0);
+        float D = D_GGX(dotNH, pbr.g);
+        float G = G_SchlicksmithGGX(dotNL, dotNV, pbr.g);
+        float F = fresnel(N, V, pbr.g);
+        vec3 spec = vec3(D * F * G) / (4.0 * dotNL * dotNV + 0.001);
+        vec3 kD = (vec3(1.0) - F) * (1.0 - pbr.r);
+        diffuse += vec3(D * F * G) * lightUBO.lights[i].color.rgb * mix(vec3(1), albedo, pbr.r);
+        diffuse += mix(G, D * G, pbr.r) * attenuation * lightUBO.lights[i].color.rgb * albedo;
     }
 
-    float F = fresnel(N, V, pbr.g) - (fresnel(V, V, pbr.g) * pbr.r);
-    vec3 diffuse = albedo * illum * 0.5;
-    vec3 specular = mix(sky, illum * ((1.0 - pbr.g) * 0.5 + 0.5), pbr.g);
-
     vec3 color = mix(diffuse, specular, F);
-    color += L0;
+    //color += L0;
     color += albedo * pbr.b;
 
     //color = Tonemap(color * 4.5);
