@@ -2,14 +2,22 @@
 
 #include <iostream>
 
+#ifdef _WIN32
+#define VALIDATION false
+#define MAIN WinMain
+#else
+#define VALIDATION true
+#define MAIN main
+#endif
 
-int main()
+
+int MAIN()
 {
     application_t app;
-    app.enableValidationLayers = true;
-    app.windowWidth = 1280;
-    app.windowHeight = 720;
-    app.fullscreen = false;
+    app.enableValidationLayers = VALIDATION;
+    app.windowWidth = 1920;
+    app.windowHeight = 1080;
+    app.fullscreen = true;
 
     try {
         application_run(&app);

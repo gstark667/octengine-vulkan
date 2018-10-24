@@ -228,6 +228,7 @@ bone_t *model_load_node(model_t *model, aiNode *node)
 
 void model_load(model_t *model, std::string path)
 {
+    path = "models/" + path;
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(path,
         aiProcess_CalcTangentSpace |

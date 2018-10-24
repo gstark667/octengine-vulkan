@@ -21,7 +21,7 @@ extern "C"
 extern "C"
 {
 
-static int gameobject_transform(lua_State *L)
+static int libgameobject_transform(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     float x = lua_tonumber(L, 2);
@@ -31,7 +31,7 @@ static int gameobject_transform(lua_State *L)
     return 0;
 }
 
-static int gameobject_set_transform(lua_State *L)
+static int libgameobject_set_transform(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     float x = lua_tonumber(L, 2);
@@ -41,7 +41,7 @@ static int gameobject_set_transform(lua_State *L)
     return 0;
 }
 
-static int gameobject_get_transform(lua_State *L)
+static int libgameobject_get_transform(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     lua_pushnumber(L, object->pos.x);
@@ -50,7 +50,7 @@ static int gameobject_get_transform(lua_State *L)
     return 3;
 }
 
-static int gameobject_get_global_transform(lua_State *L)
+static int libgameobject_get_global_transform(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     lua_pushnumber(L, object->globalPos.x);
@@ -59,7 +59,7 @@ static int gameobject_get_global_transform(lua_State *L)
     return 3;
 }
 
-static int gameobject_rotate(lua_State *L)
+static int libgameobject_rotate(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     float x = lua_tonumber(L, 2);
@@ -69,7 +69,7 @@ static int gameobject_rotate(lua_State *L)
     return 0;
 }
 
-static int gameobject_set_rotation(lua_State *L)
+static int libgameobject_set_rotation(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     float x = lua_tonumber(L, 2);
@@ -79,7 +79,7 @@ static int gameobject_set_rotation(lua_State *L)
     return 0;
 }
 
-static int gameobject_get_rotation(lua_State *L)
+static int libgameobject_get_rotation(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     lua_pushnumber(L, (lua_Number)object->rot.x);
@@ -88,7 +88,7 @@ static int gameobject_get_rotation(lua_State *L)
     return 3;
 }
 
-static int gameobject_get_global_rotation(lua_State *L)
+static int libgameobject_get_global_rotation(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     lua_pushnumber(L, object->globalRot.x);
@@ -98,7 +98,7 @@ static int gameobject_get_global_rotation(lua_State *L)
 }
 
 
-static int gameobject_scale(lua_State *L)
+static int libgameobject_scale(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     float x = lua_tonumber(L, 2);
@@ -110,7 +110,7 @@ static int gameobject_scale(lua_State *L)
     return 0;
 }
 
-static int gameobject_set_scale(lua_State *L)
+static int libgameobject_set_scale(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     float x = lua_tonumber(L, 2);
@@ -121,7 +121,7 @@ static int gameobject_set_scale(lua_State *L)
 }
 
 
-static int gameobject_set_parent(lua_State *L)
+static int libgameobject_set_parent(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     gameobject_t *parent = (gameobject_t*)lua_tointeger(L, 2);
@@ -129,7 +129,7 @@ static int gameobject_set_parent(lua_State *L)
     return 0;
 }
 
-static int gameobject_get_parent(lua_State *L)
+static int libgameobject_get_parent(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     lua_pushinteger(L, (lua_Integer)object->parent);
@@ -137,7 +137,7 @@ static int gameobject_get_parent(lua_State *L)
 }
 
 
-static int gameobject_set_string(lua_State *L)
+static int libgameobject_set_string(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     const char *name = lua_tostring(L, 2);
@@ -147,7 +147,7 @@ static int gameobject_set_string(lua_State *L)
 }
 
 
-static int gameobject_get_string(lua_State *L)
+static int libgameobject_get_string(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     const char *name = lua_tostring(L, 2);
@@ -157,7 +157,7 @@ static int gameobject_get_string(lua_State *L)
 }
 
 
-static int gameobject_set_integer(lua_State *L)
+static int libgameobject_set_integer(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     const char *name = lua_tostring(L, 2);
@@ -166,7 +166,7 @@ static int gameobject_set_integer(lua_State *L)
     return 0;
 }
 
-static int gameobject_get_integer(lua_State *L)
+static int libgameobject_get_integer(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     const char *name = lua_tostring(L, 2);
@@ -176,7 +176,7 @@ static int gameobject_get_integer(lua_State *L)
 }
 
 
-static int gameobject_set_number(lua_State *L)
+static int libgameobject_set_number(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     const char *name = lua_tostring(L, 2);
@@ -185,7 +185,7 @@ static int gameobject_set_number(lua_State *L)
     return 0;
 }
 
-static int gameobject_get_number(lua_State *L)
+static int libgameobject_get_number(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     const char *name = lua_tostring(L, 2);
@@ -195,7 +195,7 @@ static int gameobject_get_number(lua_State *L)
 }
 
 
-static int gameobject_rotate_vector(lua_State *L)
+static int libgameobject_rotate_vector(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     float x = lua_tonumber(L, 2);
@@ -210,7 +210,7 @@ static int gameobject_rotate_vector(lua_State *L)
     return 3;
 }
 
-static int gameobject_unrotate_vector(lua_State *L)
+static int libgameobject_unrotate_vector(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     float x = lua_tonumber(L, 2);
@@ -226,7 +226,7 @@ static int gameobject_unrotate_vector(lua_State *L)
 }
 
 
-static int gameobject_look_at(lua_State *L)
+static int libgameobject_look_at(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
     float xt = lua_tonumber(L, 2);
@@ -248,27 +248,27 @@ static int gameobject_look_at(lua_State *L)
 int EXPORT luaopen_gameobject(lua_State *L)
 {
     std::cout << "loading gameobject" << std::endl;
-    lua_register(L, "gameobject_transform", gameobject_transform);
-    lua_register(L, "gameobject_set_transform", gameobject_set_transform);
-    lua_register(L, "gameobject_get_transform", gameobject_get_transform);
-    lua_register(L, "gameobject_get_global_transform", gameobject_get_global_transform);
-    lua_register(L, "gameobject_rotate", gameobject_rotate);
-    lua_register(L, "gameobject_set_rotation", gameobject_set_rotation);
-    lua_register(L, "gameobject_get_rotation", gameobject_get_rotation);
-    lua_register(L, "gameobject_get_global_rotation", gameobject_get_global_rotation);
-    lua_register(L, "gameobject_scale", gameobject_scale);
-    lua_register(L, "gameobject_set_scale", gameobject_set_scale);
-    lua_register(L, "gameobject_set_parent", gameobject_set_parent);
-    lua_register(L, "gameobject_get_parent", gameobject_get_parent);
-    lua_register(L, "gameobject_set_string", gameobject_set_string);
-    lua_register(L, "gameobject_get_string", gameobject_get_string);
-    lua_register(L, "gameobject_set_integer", gameobject_set_integer);
-    lua_register(L, "gameobject_get_integer", gameobject_get_integer);
-    lua_register(L, "gameobject_set_number", gameobject_set_number);
-    lua_register(L, "gameobject_get_number", gameobject_get_number);
-    lua_register(L, "gameobject_rotate_vector", gameobject_rotate_vector);
-    lua_register(L, "gameobject_unrotate_vector", gameobject_unrotate_vector);
-    lua_register(L, "gameobject_look_at", gameobject_look_at);
+    lua_register(L, "gameobject_transform", libgameobject_transform);
+    lua_register(L, "gameobject_set_transform", libgameobject_set_transform);
+    lua_register(L, "gameobject_get_transform", libgameobject_get_transform);
+    lua_register(L, "gameobject_get_global_transform", libgameobject_get_global_transform);
+    lua_register(L, "gameobject_rotate", libgameobject_rotate);
+    lua_register(L, "gameobject_set_rotation", libgameobject_set_rotation);
+    lua_register(L, "gameobject_get_rotation", libgameobject_get_rotation);
+    lua_register(L, "gameobject_get_global_rotation", libgameobject_get_global_rotation);
+    lua_register(L, "gameobject_scale", libgameobject_scale);
+    lua_register(L, "gameobject_set_scale", libgameobject_set_scale);
+    lua_register(L, "gameobject_set_parent", libgameobject_set_parent);
+    lua_register(L, "gameobject_get_parent", libgameobject_get_parent);
+    lua_register(L, "gameobject_set_string", libgameobject_set_string);
+    lua_register(L, "gameobject_get_string", libgameobject_get_string);
+    lua_register(L, "gameobject_set_integer", libgameobject_set_integer);
+    lua_register(L, "gameobject_get_integer", libgameobject_get_integer);
+    lua_register(L, "gameobject_set_number", libgameobject_set_number);
+    lua_register(L, "gameobject_get_number", libgameobject_get_number);
+    lua_register(L, "gameobject_rotate_vector", libgameobject_rotate_vector);
+    lua_register(L, "gameobject_unrotate_vector", libgameobject_unrotate_vector);
+    lua_register(L, "gameobject_look_at", libgameobject_look_at);
     return 0;
 }
 

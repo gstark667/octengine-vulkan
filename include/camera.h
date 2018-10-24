@@ -2,6 +2,7 @@
 #define H_CAMERA
 
 #include "gameobject.h"
+#include "export.h"
 
 
 struct camera_t
@@ -16,7 +17,9 @@ struct camera_t
     float sizeY = 10.0f;
 };
 
-void camera_update(camera_t *camera);
-void camera_resize(camera_t *camera);
+extern "C" {
+void EXPORT camera_update(camera_t *camera);
+void EXPORT camera_resize(camera_t *camera);
+}
 
 #endif

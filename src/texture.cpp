@@ -45,6 +45,7 @@ texture_data_t texture_get_data(std::string path)
 
 void texture_add(texture_t *texture, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, std::string path, bool load)
 {
+    path = "textures/" + path;
     if (texture->indicies.find(path) != texture->indicies.end())
         return;
 
@@ -63,10 +64,10 @@ void texture_add(texture_t *texture, VkDevice device, VkPhysicalDevice physicalD
 
 size_t texture_get(texture_t *texture, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, std::string path, bool load)
 {
-    if (texture->indicies.find(path) == texture->indicies.end())
+    if (texture->indicies.find("textures/" + path) == texture->indicies.end())
         texture_add(texture, device, physicalDevice, commandPool, graphicsQueue, path, load);
 
-    return texture->indicies[path];
+    return texture->indicies["textures/" + path];
 }
 
 

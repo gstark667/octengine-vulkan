@@ -15,7 +15,7 @@ void script_create(script_t *script, string path)
     script->lua = luaL_newstate();
     luaL_openlibs(script->lua);
     
-    if (luaL_loadfile(script->lua, path.c_str()))
+    if (luaL_loadfile(script->lua, ("scripts/" + path).c_str()))
         script_error(script, "luaL_loadfile failed");
 
     if (lua_pcall(script->lua, 0, 0, 0))

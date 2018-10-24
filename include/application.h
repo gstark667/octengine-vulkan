@@ -25,6 +25,8 @@
 #include "settings.h"
 #include "descriptorset.h"
 
+#include "export.h"
+
 
 struct queue_family_t
 {
@@ -50,8 +52,8 @@ struct application_t
     uint32_t windowWidth;
     uint32_t windowHeight;
 
-    uint32_t shadowHeight = 1024;
-    uint32_t shadowWidth = 1024;
+    uint32_t shadowHeight = 4096;
+    uint32_t shadowWidth = 4096;
 
     SDL_Window *window;
 
@@ -133,7 +135,9 @@ struct application_t
     SDL_Joystick *gameController;
 };
 
-void application_recreate_swap_chain(application_t *app);
-void application_run(application_t *app);
+extern "C" {
+void EXPORT application_recreate_swap_chain(application_t *app);
+void EXPORT application_run(application_t *app);
+}
 
 #endif

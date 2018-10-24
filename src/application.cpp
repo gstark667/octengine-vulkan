@@ -260,7 +260,7 @@ void application_get_usable_samples(application_t *app) {
     if (counts & VK_SAMPLE_COUNT_16_BIT) { app->sampleCount = VK_SAMPLE_COUNT_16_BIT; }
     if (counts & VK_SAMPLE_COUNT_32_BIT) { app->sampleCount = VK_SAMPLE_COUNT_32_BIT; }
     if (counts & VK_SAMPLE_COUNT_64_BIT) { app->sampleCount = VK_SAMPLE_COUNT_64_BIT; }
-    app->sampleCount = VK_SAMPLE_COUNT_2_BIT;
+    app->sampleCount = VK_SAMPLE_COUNT_4_BIT;
     std::cout << "sample count: " << app->sampleCount << std::endl;
 }
 
