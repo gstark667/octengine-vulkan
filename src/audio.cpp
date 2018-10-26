@@ -46,12 +46,14 @@ void audio_world_init(audio_world_t *audio)
     alutUnloadWAV(format, data, size, freq);
 
     alSourcef(source, AL_PITCH, 1.0f);
-    alSourcef(source, AL_GAIN, 1.0f);
+    alSourcef(source, AL_GAIN, 0.9f);
     alSourcefv(source, AL_POSITION, source0Pos);
     alSourcefv(source, AL_VELOCITY, source0Vel);
     alSourcei(source, AL_BUFFER, buffer);
     alSourcei(source, AL_LOOPING, AL_TRUE);
-    alSourcef(source, AL_ROLLOFF_FACTOR, 0.0f);
+    alSourcef(source, AL_ROLLOFF_FACTOR, 1.0f);
+    alSourcef(source, AL_MAX_DISTANCE, 100.0f);
+    alSourcef(source, AL_REFERENCE_DISTANCE, 1.0f);
 
     alSourcePlay(source);
 }
