@@ -221,7 +221,7 @@ void main()
         float F = fresnel(N, V, pbr.g);
         vec3 spec = vec3(D * F * G) / (4.0 * dotNL * dotNV + 0.001);
         vec3 kD = (vec3(1.0) - F) * (1.0 - pbr.r);
-        diffuse += vec3(D * F * G) * lightUBO.lights[i].color.rgb * mix(vec3(1), albedo, pbr.r);
+        diffuse += vec3(D * F * G) * lightUBO.lights[i].color.rgb * mix(vec3(1), albedo, pbr.r) * attenuation;
         diffuse += mix(G, D * G, pbr.r) * attenuation * lightUBO.lights[i].color.rgb * albedo;
     }
 

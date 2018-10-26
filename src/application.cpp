@@ -260,7 +260,7 @@ void application_get_usable_samples(application_t *app) {
     if (counts & VK_SAMPLE_COUNT_16_BIT) { app->sampleCount = VK_SAMPLE_COUNT_16_BIT; }
     if (counts & VK_SAMPLE_COUNT_32_BIT) { app->sampleCount = VK_SAMPLE_COUNT_32_BIT; }
     if (counts & VK_SAMPLE_COUNT_64_BIT) { app->sampleCount = VK_SAMPLE_COUNT_64_BIT; }
-    app->sampleCount = VK_SAMPLE_COUNT_4_BIT;
+    app->sampleCount = VK_SAMPLE_COUNT_2_BIT;
     std::cout << "sample count: " << app->sampleCount << std::endl;
 }
 
@@ -645,7 +645,7 @@ void application_create_semaphores(application_t *app) {
 auto lastTime = std::chrono::high_resolution_clock::now();
 auto startTime = std::chrono::high_resolution_clock::now();
 auto initialTime = std::chrono::high_resolution_clock::now();
-float total = 0.0f;
+int startup = 2;
 
 void application_add_shadow_pipelines(application_t *app)
 {
@@ -703,8 +703,13 @@ void application_update_uniforms(application_t *app)
     auto currentTime = std::chrono::high_resolution_clock::now();
     float delta = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
     lastTime = std::chrono::high_resolution_clock::now();
-    total += delta;
 
+    if (startup > 0)
+    {
+        std::cout << "startup: " << startup << std::endl;
+        startup--;
+        delta = 0.001f;
+    }
     //std::cout << "fps: " << 1.0f/delta << std::endl;
 
     scene_update(&app->scene, delta);
@@ -962,7 +967,7 @@ void application_init_vulkan(application_t *app) {
     descriptor_set_add_image(&app->descriptorSet, app->shadowImageArray, 7, false, false, true);
     descriptor_set_add_texture(&app->descriptorSet, &app->skybox, 8, false);
     descriptor_set_add_image(&app->descriptorSet, &app->sky.image, 9, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->illumination.image, 10, false, false, false);
+    descriptor_set_add_texture(&app->descriptorSet, &app->illumination, 10, false);
     descriptor_set_create(&app->descriptorSet);
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->attachments, false, false);
     app->renderUBO.sampleCount = app->sampleCount;
@@ -1075,6 +1080,10 @@ void application_cleanup(application_t *app) {
 
     scene_cleanup(&app->scene);
     texture_cleanup(&app->skybox, app->device);
+    texture_cleanup(&app->illumination, app->device);
+
+    image_cleanup(&app->sky.image, app->device);
+    image_cleanup(&app->skyDepth.image, app->device);
 
     descriptor_set_cleanup(&app->descriptorSet);
     descriptor_set_cleanup(&app->offscreenDescriptorSet);
