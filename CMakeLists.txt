@@ -55,11 +55,6 @@ set(SOURCES
 )
 
 ADD_CUSTOM_COMMAND(
-    OUTPUT shaders/
-    COMMAND mkdir -p shaders
-)
-
-ADD_CUSTOM_COMMAND(
     OUTPUT shaders/frag.spv
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shader.frag
     COMMAND glslangValidator -V ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shader.frag -o shaders/frag.spv

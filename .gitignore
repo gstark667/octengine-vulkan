@@ -1,4 +1,11 @@
 a.out
 *.spv
+octengine
+octengine.exe
+*.so
+*.dll
 *.swp
 build
+CMakeFiles
+cmake_install.cmake
+Makefile
