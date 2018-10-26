@@ -8,6 +8,7 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(Vulkan)
 find_package(glm)
+find_package(OpenAL)
 find_package(SDL2)
 find_package(assimp)
 find_package(Bullet)
@@ -22,6 +23,7 @@ set(HEADERS
     include/physics.h
     include/pipeline.h
     include/scene.h
+    include/audio.h
     include/gameobject.h
     include/buffer.h
     include/framebuffer.h
@@ -43,6 +45,7 @@ set(SOURCES
     src/pipeline.cpp
     src/scene.cpp
     src/gameobject.cpp
+    src/audio.cpp
     src/buffer.cpp
     src/framebuffer.cpp
     src/descriptorset.cpp
@@ -123,11 +126,11 @@ include_directories(${BULLET_INCLUDE_DIR})
 
 ADD_LIBRARY(liboctengine SHARED ${SOURCES} ${HEADERS} ${SHADERS})
 set_target_properties(liboctengine PROPERTIES OUTPUT_NAME "octengine")
-target_link_libraries (liboctengine ${CMAKE_THREAD_LIBS_INIT} vulkan SDL2 assimp freeimage lua ${BULLET_LIBRARIES})
+target_link_libraries (liboctengine ${CMAKE_THREAD_LIBS_INIT} vulkan openal alut SDL2 assimp freeimage lua ${BULLET_LIBRARIES})
 
 add_executable(mainoctengine src/main.cpp)
 set_target_properties(mainoctengine PROPERTIES OUTPUT_NAME "octengine")
-target_link_libraries (mainoctengine ${CMAKE_THREAD_LIBS_INIT} vulkan SDL2 assimp freeimage lua liboctengine ${BULLET_LIBRARIES})
+target_link_libraries (mainoctengine ${CMAKE_THREAD_LIBS_INIT} vulkan openal alut SDL2 assimp freeimage lua liboctengine ${BULLET_LIBRARIES})
 target_include_directories (mainoctengine PUBLIC include/)
 add_dependencies(mainoctengine shader_files)
 

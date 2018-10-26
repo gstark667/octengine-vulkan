@@ -8,6 +8,7 @@
 #include "gameobject.h"
 #include "script.h"
 #include "physics.h"
+#include "audio.h"
 #include "camera.h"
 #include "light.h"
 #include "settings.h"
@@ -43,6 +44,7 @@ struct scene_t
     std::set<gameobject_t*> tempGameobjects;
 
     physics_world_t world;
+    audio_world_t audio;
 
     uint32_t width, height;
     bool isDirty = true;

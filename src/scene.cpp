@@ -14,6 +14,8 @@ void scene_create(scene_t *scene, VkDevice device, VkPhysicalDevice physicalDevi
     texture_load(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue);
 
     physics_world_init(&scene->world);
+
+    audio_world_init(&scene->audio);
 }
 
 void scene_add_model(scene_t *scene, std::string modelPath)
@@ -148,6 +150,9 @@ void scene_update(scene_t *scene, float delta)
         model_update(it->first, delta, &scene->bones);
         model_copy_instance_buffer(it->first, it->second, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue);
     }
+
+    if (scene->camera)
+        audio_world_update_listener(&scene->audio, scene->camera->object, delta);
 }
 
 void scene_load(scene_t *scene, std::string path)
@@ -164,6 +169,8 @@ void scene_cleanup(scene_t *scene)
     }
 
     physics_world_destroy(&scene->world);
+
+    audio_world_cleanup(&scene->audio);
 
     texture_cleanup(&scene->textures, scene->device);
 }
