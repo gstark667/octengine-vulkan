@@ -151,8 +151,9 @@ void scene_update(scene_t *scene, float delta)
         model_copy_instance_buffer(it->first, it->second, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue);
     }
 
-    if (scene->camera)
-        audio_world_update_listener(&scene->audio, scene->camera->object, delta);
+    if (scene->camera && scene->camera->object)
+        scene->audio.listener = scene->camera->object;
+    audio_world_update(&scene->audio, delta);
 }
 
 void scene_load(scene_t *scene, std::string path)

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.9)
 
 project(octengine)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -DGLM_FORCE_RADIANS -DGLM_FORCE_DEPTH_ZERO_TO_ONE")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -Wall -DGLM_FORCE_RADIANS -DGLM_FORCE_DEPTH_ZERO_TO_ONE")
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 
@@ -153,3 +153,7 @@ TARGET_LINK_LIBRARIES(camera lua liboctengine)
 ADD_LIBRARY(light SHARED lualibs/light.cpp ${HEADERS})
 SET_TARGET_PROPERTIES(light PROPERTIES PREFIX "")
 TARGET_LINK_LIBRARIES(light lua liboctengine)
+
+ADD_LIBRARY(audio SHARED lualibs/audio.cpp ${HEADERS})
+SET_TARGET_PROPERTIES(audio PROPERTIES PREFIX "")
+TARGET_LINK_LIBRARIES(audio lua liboctengine)
