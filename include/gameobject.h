@@ -3,7 +3,8 @@
 
 extern "C"
 {
-#include <lua.h>
+/* OSX brew puts lua headers under /usr/local/include/lua */
+#include <lua/lua.h>
 }
 
 #define GLM_ENABLE_EXPERIMENTAL
