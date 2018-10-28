@@ -106,11 +106,11 @@ ALuint audio_source_create(audio_world_t *audio, gameobject_t *object, std::stri
     if (audio->buffers.find(path) == audio->buffers.end())
     {
         alGenBuffers(1, &audio->buffers[path]);
-        char alBool;
         ALsizei size, freq;
         ALenum format;
         ALvoid *data;
-        alutLoadWAVFile((ALbyte*)path.c_str(), &format, &data, &size, &freq, &alBool);
+        /* OSX freealut AL/alut.h doesn't have the alBool field */
+        alutLoadWAVFile((ALbyte*)path.c_str(), &format, &data, &size, &freq);
         alBufferData(audio->buffers[path], format, data, size, freq);
         alutUnloadWAV(format, data, size, freq);
     }
