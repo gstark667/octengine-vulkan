@@ -85,7 +85,9 @@ void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physical
     }
     size *= texture->data.size();
 
-    texture->mipLevels = (uint32_t)(std::floor(std::log2(std::max(texture->width, texture->height)))) + 1;
+    /* OSX has floor() in math.h */
+    /* OSX has log2() in math.h  */
+    texture->mipLevels = (uint32_t)(floor(log2(std::max(texture->width, texture->height)))) + 1;
     std::cout << "mip levels: " << texture->mipLevels << std::endl;
 
     VkBuffer stagingBuffer;
