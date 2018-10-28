@@ -1,8 +1,8 @@
 #ifndef H_AUDIO
 #define H_AUDIO
 
-#include <AL/al.h>
-#include <AL/alc.h>
+#include <OpenAL/al.h>
+#include <OpenAL/alc.h>
 #include <AL/alut.h>
 
 #include <vector>
