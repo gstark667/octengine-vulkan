@@ -8,10 +8,11 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 #endif
-#include <AL/alut.h>
+//#include <AL/alut.h>
 
 #include <vector>
 
+#include "export.h"
 #include "gameobject.h"
 
 
@@ -36,10 +37,12 @@ struct audio_world_t
     std::vector<audio_source_t> sources;
 };
 
-void audio_world_init(audio_world_t *audio);
-void audio_world_update(audio_world_t *audio, float delta);
-void audio_world_cleanup(audio_world_t *audio);
+extern "C" {
+void EXPORT audio_world_init(audio_world_t *audio);
+void EXPORT audio_world_update(audio_world_t *audio, float delta);
+void EXPORT audio_world_cleanup(audio_world_t *audio);
 
-ALuint audio_source_create(audio_world_t *audio, gameobject_t *object, std::string path);
+ALuint EXPORT audio_source_create(audio_world_t *audio, gameobject_t *object, std::string path);
+}
 
 #endif

@@ -22,8 +22,9 @@ struct pipeline_attachment_t
     VkFormat format;
     VkImageLayout layout;
     VkImageLayout finalLayout;
-    bool destroy = true;
+    bool destroy = false;
     bool resolve = false;
+    bool shadow = false;
 };
 
 struct pipeline_t
@@ -47,7 +48,7 @@ struct pipeline_t
 
     VkFramebuffer framebuffer = NULL;
 
-    std::vector<pipeline_attachment_t> attachments;
+    std::vector<pipeline_attachment_t*> attachments;
     bool offscreen;
     bool shadow;
     bool cullBack = true;
@@ -58,7 +59,7 @@ void pipeline_attachment_from_image(pipeline_attachment_t *attachment, VkDevice 
 std::vector<VkImageView> pipeline_attachment_views(std::vector<pipeline_attachment_t> attachments);
 void pipeline_attachment_cleanup(pipeline_attachment_t *attachment, VkDevice device);
 
-void pipeline_create(pipeline_t *pipeline, descriptor_set_t *descriptorSet, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkCommandPool commandPool, VkQueue graphicsQueue, std::vector<pipeline_attachment_t> attachments, bool offscreen, bool shadow);
+void pipeline_create(pipeline_t *pipeline, descriptor_set_t *descriptorSet, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkCommandPool commandPool, VkQueue graphicsQueue, std::vector<pipeline_attachment_t*> attachments, bool offscreen, bool shadow);
 void pipeline_begin_render(pipeline_t *pipeline, VkCommandBuffer commandBuffer);
 void pipeline_end_render(pipeline_t *pipeline, VkCommandBuffer commandBuffer);
 void pipeline_recreate(pipeline_t *pipeline, uint32_t width, uint32_t height, VkDevice device);

@@ -107,14 +107,14 @@ struct application_t
     VkCommandBuffer skyCommandBuffer;
     std::vector<VkCommandBuffer*> shadowCommandBuffers;
 
-    pipeline_attachment_t albedo, normal, position, pbr, offscreenDepthAttachment, shadowPosition, sky, skyDepth;
-    std::vector<pipeline_attachment_t> attachments;
-    std::vector<pipeline_attachment_t> offscreenAttachments;
-    std::vector<pipeline_attachment_t> skyAttachments;
+    pipeline_attachment_t colorAttachment, depthAttachment, albedo, normal, position, pbr, offscreenDepthAttachment, shadowPosition, sky, skyDepth;
+    std::vector<pipeline_attachment_t*> attachments;
+    std::vector<pipeline_attachment_t*> offscreenAttachments;
+    std::vector<pipeline_attachment_t*> skyAttachments;
 
     image_t *shadowImageArray = NULL;
     std::vector<pipeline_t*> shadowPipelines;
-    std::vector<std::vector<pipeline_attachment_t>> shadowAttachments;
+    std::vector<std::vector<pipeline_attachment_t*>> shadowAttachments;
 
     descriptor_set_t descriptorSet;
     descriptor_set_t offscreenDescriptorSet;

@@ -71,6 +71,7 @@ void audio_world_cleanup(audio_world_t *audio)
 
 ALuint audio_source_create(audio_world_t *audio, gameobject_t *object, std::string path)
 {
+    return -1;
     if (audio->buffers.find(path) == audio->buffers.end())
     {
         alGenBuffers(1, &audio->buffers[path]);
@@ -78,13 +79,13 @@ ALuint audio_source_create(audio_world_t *audio, gameobject_t *object, std::stri
         ALenum format;
         ALvoid *data;
 #ifdef __APPLE__
-        alutLoadWAVFile((ALbyte*)path.c_str(), &format, &data, &size, &freq);
+        //alutLoadWAVFile((ALbyte*)path.c_str(), &format, &data, &size, &freq);
 #else
         char alBool;
-        alutLoadWAVFile((ALbyte*)path.c_str(), &format, &data, &size, &freq, &alBool);
+        //alutLoadWAVFile((ALbyte*)path.c_str(), &format, &data, &size, &freq, &alBool);
 #endif
         alBufferData(audio->buffers[path], format, data, size, freq);
-        alutUnloadWAV(format, data, size, freq);
+        //alutUnloadWAV(format, data, size, freq);
     }
 
 

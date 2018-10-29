@@ -12,6 +12,8 @@ void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice devi
 {
     attachment->format = format;
     attachment->usage = usage;
+    attachment->destroy = true;
+    attachment->shadow = shadow;
 
     VkImageAspectFlags aspectFlags;
     if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
@@ -36,6 +38,8 @@ void pipeline_attachment_from_image(pipeline_attachment_t *attachment, VkDevice 
     attachment->usage = image.usage;
     attachment->image = image;
     attachment->destroy = false;
+    attachment->shadow = shadow;
+
     if (image.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
     {
         attachment->layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -49,12 +53,12 @@ void pipeline_attachment_from_image(pipeline_attachment_t *attachment, VkDevice 
     image_create_view(&attachment->image, device, attachment->format, aspectFlags, layer, false); 
 }
 
-std::vector<VkImageView> pipeline_attachment_views(std::vector<pipeline_attachment_t> attachments)
+std::vector<VkImageView> pipeline_attachment_views(std::vector<pipeline_attachment_t*> attachments)
 {
     std::vector<VkImageView> output;
-    for (std::vector<pipeline_attachment_t>::iterator it = attachments.begin(); it != attachments.end(); ++it)
+    for (auto it = attachments.begin(); it != attachments.end(); ++it)
     {
-        output.push_back(it->image.view);
+        output.push_back((*it)->image.view);
     }
     return output;
 }
@@ -74,28 +78,28 @@ void pipeline_create_render_pass(pipeline_t *pipeline)
     VkAttachmentReference depthRef;
     VkAttachmentReference resolveRef;
     bool resolve = false;
-    for (std::vector<pipeline_attachment_t>::iterator it = pipeline->attachments.begin(); it != pipeline->attachments.end(); ++it)
+    for (auto it = pipeline->attachments.begin(); it != pipeline->attachments.end(); ++it)
     {
         VkAttachmentDescription attachment = {};
-        attachment.format = it->format;
-        attachment.samples = it->image.samples;
+        attachment.format = (*it)->format;
+        attachment.samples = (*it)->image.samples;
         attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachment.finalLayout = it->finalLayout;
+        attachment.finalLayout = (*it)->finalLayout;
 
         VkAttachmentReference attachmentRef = {};
         attachmentRef.attachment = descriptions.size();
-        attachmentRef.layout = it->layout;
-        if (it->usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+        attachmentRef.layout = (*it)->layout;
+        if ((*it)->usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
         {
             depthRef = attachmentRef;
         }
         else
         {
-            if (it->resolve)
+            if ((*it)->resolve)
             {
                 resolve = true;
                 resolveRef = attachmentRef;
@@ -281,7 +285,7 @@ void pipeline_create_graphics(pipeline_t *pipeline, uint32_t width, uint32_t hei
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
     for (auto it = pipeline->attachments.begin(); it != pipeline->attachments.end(); ++it)
     {
-        if (it->usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT || it->resolve)
+        if ((*it)->usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT || (*it)->resolve)
             continue;
         VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
         colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -372,28 +376,6 @@ void pipeline_create_framebuffer(pipeline_t *pipeline)
     }
 }
 
-void pipeline_create(pipeline_t *pipeline, descriptor_set_t *descriptorSet, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkCommandPool commandPool, VkQueue graphicsQueue, std::vector<pipeline_attachment_t> attachments, bool offscreen, bool shadow) {
-    pipeline->device = device;
-    pipeline->physicalDevice = physicalDevice;
-    pipeline->samples = samples;
-    pipeline->width = width;
-    pipeline->height = height;
-    pipeline->vertShader = vertShader;
-    pipeline->fragShader = fragShader;
-    pipeline->commandPool = commandPool;
-    pipeline->graphicsQueue = graphicsQueue;
-    pipeline->descriptorSet = descriptorSet;
-    pipeline->attachments = attachments;
-    pipeline->offscreen = offscreen;
-    pipeline->shadow = shadow;
-    pipeline_create_render_pass(pipeline);
-    pipeline_create_graphics(pipeline, width, height, device);
-    if (offscreen)
-    {
-        pipeline_create_framebuffer(pipeline);
-    }
-}
-
 void pipeline_begin_render(pipeline_t *pipeline, VkCommandBuffer commandBuffer)
 {
     VkCommandBufferBeginInfo beginInfo = {};
@@ -413,7 +395,7 @@ void pipeline_begin_render(pipeline_t *pipeline, VkCommandBuffer commandBuffer)
     for (auto it = pipeline->attachments.begin(); it != pipeline->attachments.end(); ++it)
     {
         VkClearValue clearValue;
-        if (it->usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+        if ((*it)->usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
             clearValue.depthStencil = {1.0f, 0};
         else
             clearValue.color = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -435,22 +417,65 @@ void pipeline_end_render(pipeline_t *pipeline, VkCommandBuffer commandBuffer)
     }
 }
 
+void pipeline_create(pipeline_t *pipeline, descriptor_set_t *descriptorSet, uint32_t width, uint32_t height, std::string vertShader, std::string fragShader, VkDevice device, VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkCommandPool commandPool, VkQueue graphicsQueue, std::vector<pipeline_attachment_t*> attachments, bool offscreen, bool shadow) {
+    pipeline->device = device;
+    pipeline->physicalDevice = physicalDevice;
+    pipeline->samples = samples;
+    pipeline->width = width;
+    pipeline->height = height;
+    pipeline->vertShader = vertShader;
+    pipeline->fragShader = fragShader;
+    pipeline->commandPool = commandPool;
+    pipeline->graphicsQueue = graphicsQueue;
+    pipeline->descriptorSet = descriptorSet;
+    pipeline->attachments = attachments;
+    pipeline->offscreen = offscreen;
+    pipeline->shadow = shadow;
+    pipeline_create_render_pass(pipeline);
+    pipeline_create_graphics(pipeline, width, height, device);
+    if (offscreen)
+    {
+        pipeline_create_framebuffer(pipeline);
+    }
+}
+
 void pipeline_recreate(pipeline_t *pipeline, uint32_t width, uint32_t height, VkDevice device)
 {
-    vkDestroyPipeline(device, pipeline->pipeline, nullptr);
-    vkDestroyPipelineLayout(device, pipeline->layout, nullptr);
-    vkDestroyRenderPass(device, pipeline->renderPass, nullptr);
+    pipeline_cleanup(pipeline);
 
-    pipeline_create_graphics(pipeline, width, height, device);
+    for (auto it = pipeline->attachments.begin(); it != pipeline->attachments.end(); ++it)
+    {
+        if ((*it)->destroy)
+            pipeline_attachment_create((*it), pipeline->device, pipeline->physicalDevice, width, height, (*it)->image.samples, (*it)->image.format, (*it)->image.usage, pipeline->commandPool, pipeline->graphicsQueue, (*it)->shadow);
+    }
+
     pipeline_create_render_pass(pipeline);
+    pipeline_create_graphics(pipeline, width, height, device);
+    if (pipeline->offscreen)
+    {
+        pipeline_create_framebuffer(pipeline);
+    }
 }
 
 void pipeline_cleanup(pipeline_t *pipeline)
 {
+    std::cout << "pipeline cleanup: " << std::endl;
     vkDestroyPipeline(pipeline->device, pipeline->pipeline, nullptr);
     vkDestroyPipelineLayout(pipeline->device, pipeline->layout, nullptr);
     vkDestroyRenderPass(pipeline->device, pipeline->renderPass, nullptr);
     if (pipeline->offscreen)
         vkDestroyFramebuffer(pipeline->device, pipeline->framebuffer, nullptr);
+    int i = 0;
+    for (auto it = pipeline->attachments.begin(); it != pipeline->attachments.end(); ++it)
+    {
+        i++;
+        if ((*it)->destroy)
+        {
+            std::cout << "cleaning up attachment: " << i << std::endl;
+            pipeline_attachment_cleanup((*it), pipeline->device);
+        }
+        else
+            std::cout << "not cleaning: " << i << std::endl;
+    }
 }
 

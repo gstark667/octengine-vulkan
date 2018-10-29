@@ -11,7 +11,7 @@
 extern "C"
 {
 
-static int audio_source_create(lua_State *L)
+static int libaudio_source_create(lua_State *L)
 {
     scene_t *scene = (scene_t*)lua_tointeger(L, 1);
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 2);
@@ -21,14 +21,14 @@ static int audio_source_create(lua_State *L)
     return 1;
 }
 
-static int audio_source_play(lua_State *L)
+static int libaudio_source_play(lua_State *L)
 {
     ALuint source = lua_tointeger(L, 1);
     alSourcePlay(source);
     return 0;
 }
 
-static int audio_source_set_pitch(lua_State *L)
+static int libaudio_source_set_pitch(lua_State *L)
 {
     ALuint source = lua_tointeger(L, 1);
     float pitch = lua_tonumber(L, 2);
@@ -36,7 +36,7 @@ static int audio_source_set_pitch(lua_State *L)
     return 0;
 }
 
-static int audio_source_set_gain(lua_State *L)
+static int libaudio_source_set_gain(lua_State *L)
 {
     ALuint source = lua_tointeger(L, 1);
     float gain = lua_tonumber(L, 2);
@@ -47,10 +47,10 @@ static int audio_source_set_gain(lua_State *L)
 
 int EXPORT luaopen_audio(lua_State *L)
 {
-    lua_register(L, "audio_source_create", audio_source_create);
-    lua_register(L, "audio_source_play", audio_source_play);
-    lua_register(L, "audio_source_set_pitch", audio_source_set_pitch);
-    lua_register(L, "audio_source_set_gain", audio_source_set_gain);
+    lua_register(L, "audio_source_create", libaudio_source_create);
+    lua_register(L, "audio_source_play", libaudio_source_play);
+    lua_register(L, "audio_source_set_pitch", libaudio_source_set_pitch);
+    lua_register(L, "audio_source_set_gain", libaudio_source_set_gain);
     return 0;
 }
 
