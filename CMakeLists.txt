@@ -31,6 +31,7 @@ set(HEADERS
     include/model.h
     include/camera.h
     include/light.h
+    include/luaheaders.h
     include/script.h
     include/settings.h
     include/application.h
@@ -56,6 +57,14 @@ set(SOURCES
     src/settings.cpp
     src/application.cpp
 )
+
+if(WIN32)
+    set(EXTENSION ".dll")
+ELSEIF(APPLE)
+    set(EXTENSION ".dylib")
+ELSE()
+    set(EXTENSION ".so")
+ENDIF()
 
 ADD_CUSTOM_COMMAND(
     OUTPUT shaders/frag.spv
@@ -134,26 +143,20 @@ target_link_libraries (mainoctengine ${CMAKE_THREAD_LIBS_INIT} vulkan openal alu
 target_include_directories (mainoctengine PUBLIC include/)
 add_dependencies(mainoctengine shader_files)
 
-ADD_LIBRARY(gameobject SHARED lualibs/gameobject.cpp ${HEADERS})
-SET_TARGET_PROPERTIES(gameobject PROPERTIES PREFIX "")
-TARGET_LINK_LIBRARIES(gameobject lua liboctengine)
-
-ADD_LIBRARY(scene SHARED lualibs/scene.cpp ${HEADERS})
-SET_TARGET_PROPERTIES(scene PROPERTIES PREFIX "")
-TARGET_LINK_LIBRARIES(scene lua liboctengine)
-
-ADD_LIBRARY(physics SHARED lualibs/physics.cpp ${HEADERS})
-SET_TARGET_PROPERTIES(physics PROPERTIES PREFIX "")
-TARGET_LINK_LIBRARIES(physics lua liboctengine)
-
-ADD_LIBRARY(camera SHARED lualibs/camera.cpp ${HEADERS})
-SET_TARGET_PROPERTIES(camera PROPERTIES PREFIX "")
-TARGET_LINK_LIBRARIES(camera lua liboctengine)
-
-ADD_LIBRARY(light SHARED lualibs/light.cpp ${HEADERS})
-SET_TARGET_PROPERTIES(light PROPERTIES PREFIX "")
-TARGET_LINK_LIBRARIES(light lua liboctengine)
-
-ADD_LIBRARY(audio SHARED lualibs/audio.cpp ${HEADERS})
-SET_TARGET_PROPERTIES(audio PROPERTIES PREFIX "")
-TARGET_LINK_LIBRARIES(audio lua liboctengine)
+SET(LUALIBS "" PARENT_SCOPE)
+SET(BINARIES "" PARENT_SCOPE)
+LIST(APPEND LUALIBS "liboctengine${EXTENSION}")
+LIST(APPEND BINARIES "octengine")
+LIST(APPEND BINARIES "mainoctengine")
+LIST(APPEND BINARIES "liboctengine")
+file(GLOB libfiles "${CMAKE_CURRENT_SOURCE_DIR}/lualibs/*.cpp")
+foreach(item ${libfiles})
+    GET_FILENAME_COMPONENT(item ${item} NAME_WE)
+    LIST(APPEND LUALIBS "${item}${EXTENSION}")
+    LIST(APPEND BINARIES "${item}")
+    ADD_LIBRARY(${item} SHARED lualibs/${item}.cpp ${HEADERS})
+    SET_TARGET_PROPERTIES(${item} PROPERTIES PREFIX "")
+    TARGET_LINK_LIBRARIES(${item} lua liboctengine)
+endforeach()
+SET(LUALIBS ${LUALIBS} PARENT_SCOPE)
+SET(BINARIES ${BINARIES} PARENT_SCOPE)

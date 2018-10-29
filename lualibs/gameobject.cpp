@@ -1,20 +1,9 @@
-extern "C"
-{
-#include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
-}
-
-#ifdef _WIN32
-#define EXPORT __stdcall __declspec(dllexport)
-#else
-#define EXPORT
-#endif
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
 
+#include "luaheaders.h"
+#include "export.h"
 #include "gameobject.h"
 
 

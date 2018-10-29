@@ -18,6 +18,14 @@ void script_create(script_t *script, string path)
     if (luaL_loadfile(script->lua, ("scripts/" + path).c_str()))
         script_error(script, "luaL_loadfile failed");
 
+#ifdef _WIN32
+    luaL_dostring(script->lua, "package.cpath = package.cpath .. ';libs/?.dll'");
+#elif defined __APPLE__
+    luaL_dostring(script->lua, "package.cpath = package.cpath .. ';libs/?.so;libs/?.dylib'");
+#else
+    luaL_dostring(script->lua, "package.cpath = package.cpath .. ';libs/?.so'");
+#endif
+
     if (lua_pcall(script->lua, 0, 0, 0))
         script_error(script, "loading script failed");
 

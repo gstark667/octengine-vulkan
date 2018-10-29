@@ -3,6 +3,7 @@ a.out
 octengine
 octengine.exe
 *.so
+*.dylib
 *.dll
 *.swp
 build

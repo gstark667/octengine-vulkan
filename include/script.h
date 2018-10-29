@@ -1,19 +1,13 @@
 #ifndef H_SCRIPT
 #define H_SCRIPT
 
-extern "C"
-{
-#include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
-}
-
 #include <string>
 #include <iostream>
 #include <stdlib.h>
 
 struct event_t;
 
+#include "luaheaders.h"
 #include "settings.h"
 
  

@@ -9,7 +9,9 @@
 #include <math.h>
 
 
-texture_data_t texture_get_data(std::string path)
+using namespace std;
+
+texture_data_t texture_get_data(string path)
 {
     texture_data_t output;
 
@@ -21,7 +23,7 @@ texture_data_t texture_get_data(std::string path)
     output.size = output.width * output.height * 4;
     BYTE *bitmapData = FreeImage_GetBits(bitmap);
 
-    std::cout << "adding texture: " << path << ":" << output.width << ":" << output.height << std::endl;
+    cout << "adding texture: " << path << ":" << output.width << ":" << output.height << endl;
 
     #if FREEIMAGE_COLORORDER == FREEIMAGE_COLORORDER_BGR
     for (size_t i = 0; i < output.size; i += 4)
@@ -43,7 +45,7 @@ texture_data_t texture_get_data(std::string path)
 }
 
 
-void texture_add(texture_t *texture, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, std::string path, bool load)
+void texture_add(texture_t *texture, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, string path, bool load)
 {
     path = "textures/" + path;
     if (texture->indicies.find(path) != texture->indicies.end())
@@ -62,7 +64,7 @@ void texture_add(texture_t *texture, VkDevice device, VkPhysicalDevice physicalD
 }
 
 
-size_t texture_get(texture_t *texture, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, std::string path, bool load)
+size_t texture_get(texture_t *texture, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, string path, bool load)
 {
     if (texture->indicies.find("textures/" + path) == texture->indicies.end())
         texture_add(texture, device, physicalDevice, commandPool, graphicsQueue, path, load);
@@ -78,15 +80,15 @@ void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physical
     texture->needsUpdate = true;
         
     size_t size = 0;
-    for (std::vector<texture_data_t>::iterator it = texture->data.begin(); it != texture->data.end(); ++it)
+    for (vector<texture_data_t>::iterator it = texture->data.begin(); it != texture->data.end(); ++it)
     {
         size = it->width * it->height * 4;
         break;
     }
     size *= texture->data.size();
 
-    texture->mipLevels = (uint32_t)(std::floor(std::log2(std::max(texture->width, texture->height)))) + 1;
-    std::cout << "mip levels: " << texture->mipLevels << std::endl;
+    texture->mipLevels = (uint32_t)(floor(log2(max(texture->width, texture->height)))) + 1;
+    cout << "mip levels: " << texture->mipLevels << endl;
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -95,9 +97,9 @@ void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physical
     size_t offset = 0;
     size_t layer = 0;
     BYTE *data;
-    std::vector<VkBufferImageCopy> bufferCopyRegions;
+    vector<VkBufferImageCopy> bufferCopyRegions;
     vkMapMemory(device, stagingBufferMemory, 0, size, 0, (void**)&data);
-    for (std::vector<texture_data_t>::iterator it = texture->data.begin(); it != texture->data.end(); ++it)
+    for (vector<texture_data_t>::iterator it = texture->data.begin(); it != texture->data.end(); ++it)
     {
         VkBufferImageCopy bufferCopyRegion = {};
         bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -151,7 +153,7 @@ void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physical
     samplerInfo.maxLod = (float)texture->mipLevels;
 
     if (vkCreateSampler(device, &samplerInfo, nullptr, &texture->sampler) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create texture sampler!");
+        throw runtime_error("failed to create texture sampler!");
     }
 }
 
