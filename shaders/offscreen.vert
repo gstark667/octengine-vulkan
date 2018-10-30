@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : enable
 
-#include "rotate.vert"
+#include "rotate"
 
 layout(binding = 0) uniform uniform_buffer_object {
     mat4 cameraMVP;

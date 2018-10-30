@@ -503,15 +503,7 @@ void application_create_command_pool(application_t *app) {
 // create depth resources
 void application_create_pipeline_attachments(application_t *app) {
     // composite
-    app->colorAttachment.image.image = app->swapChainImages[0];
-    app->colorAttachment.image.view = app->swapChainImageViews[0];
-    app->colorAttachment.image.samples = VK_SAMPLE_COUNT_1_BIT;
-    app->colorAttachment.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    app->colorAttachment.format = app->swapChainImageFormat;
-    app->colorAttachment.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    app->colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    app->colorAttachment.external = true;
-
+    pipeline_attachment_create(&app->colorAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     pipeline_attachment_create(&app->depthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     app->attachments.push_back(&app->colorAttachment);
     app->attachments.push_back(&app->depthAttachment);
@@ -534,6 +526,20 @@ void application_create_pipeline_attachments(application_t *app) {
     pipeline_attachment_create(&app->skyDepth, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     app->skyAttachments.push_back(&app->sky);
     app->skyAttachments.push_back(&app->skyDepth);
+
+    // ui
+    app->uiColor.image.image = app->swapChainImages[0];
+    app->uiColor.image.view = app->swapChainImageViews[0];
+    app->uiColor.image.samples = VK_SAMPLE_COUNT_1_BIT;
+    app->uiColor.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    app->uiColor.format = app->swapChainImageFormat;
+    app->uiColor.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    app->uiColor.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    app->uiColor.external = true;
+    pipeline_attachment_create(&app->uiDepth, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
+    app->uiAttachments.push_back(&app->uiColor);
+    app->uiAttachments.push_back(&app->uiDepth);
+
 
     // shadow
     if (!app->shadowImageArray)
@@ -561,7 +567,7 @@ void application_create_pipelines(application_t *app)
     descriptor_set_add_image(&app->descriptorSet, &app->sky.image, 9, false, false, false);
     descriptor_set_add_texture(&app->descriptorSet, &app->illumination, 10, false);
     descriptor_set_create(&app->descriptorSet);
-    pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->attachments, false, false);
+    pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->attachments, true, false);
     app->renderUBO.sampleCount = app->sampleCount;
     app->renderUBO.ambient = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
     descriptor_set_update_buffer(&app->descriptorSet, &app->renderUBO, 1);
@@ -580,6 +586,12 @@ void application_create_pipelines(application_t *app)
     descriptor_set_add_texture(&app->skyDescriptorSet, &app->skybox, 1, false);
     descriptor_set_create(&app->skyDescriptorSet);
     pipeline_create(&app->skyPipeline, &app->skyDescriptorSet, app->windowWidth, app->windowHeight, "shaders/sky_vert.spv", "shaders/sky_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->skyAttachments, true, false);
+
+    // ui
+    descriptor_set_setup(&app->uiDescriptorSet, app->device, app->physicalDevice);
+    descriptor_set_add_image(&app->uiDescriptorSet, &app->colorAttachment.image, 0, false, false, false);
+    descriptor_set_create(&app->uiDescriptorSet);
+    pipeline_create(&app->uiPipeline, &app->uiDescriptorSet, app->windowWidth, app->windowHeight, "shaders/ui_vert.spv", "shaders/ui_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->uiAttachments, false, false);
 }
 
 // create frame buffers
@@ -616,22 +628,23 @@ void application_create_command_buffers(application_t *app) {
     std::cout << "creating command buffers" << std::endl;
     app->commandBuffers.resize(app->swapChainFramebuffers.size());
 
+    // composite
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = app->commandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = (uint32_t) app->commandBuffers.size();
+    allocInfo.commandBufferCount = 1;
 
-    if (vkAllocateCommandBuffers(app->device, &allocInfo, app->commandBuffers.data()) != VK_SUCCESS) {
+    if (vkAllocateCommandBuffers(app->device, &allocInfo, &app->commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 
-    for (size_t i = 0; i < app->commandBuffers.size(); i++) {
-        app->pipeline.framebuffer = app->swapChainFramebuffers[i];
-        pipeline_begin_render(&app->pipeline, app->commandBuffers[i]);
-        model_render(&app->quad, app->commandBuffers[i], app->pipeline.layout, app->pipeline.pipeline, app->descriptorSet.descriptorSet);
-        pipeline_end_render(&app->pipeline, app->commandBuffers[i]);
-    }
+    //for (size_t i = 0; i < app->commandBuffers.size(); i++) {
+    //    app->pipeline.framebuffer = app->swapChainFramebuffers[i];
+        pipeline_begin_render(&app->pipeline, app->commandBuffer);
+        model_render(&app->quad, app->commandBuffer, app->pipeline.layout, app->pipeline.pipeline, app->descriptorSet.descriptorSet);
+        pipeline_end_render(&app->pipeline, app->commandBuffer);
+    //}
 
     // create the offscreen command buffer
     allocInfo.commandBufferCount = 1;
@@ -655,6 +668,19 @@ void application_create_command_buffers(application_t *app) {
     model_render(&app->cube, app->skyCommandBuffer, app->skyPipeline.layout, app->skyPipeline.pipeline, app->skyDescriptorSet.descriptorSet);
     pipeline_end_render(&app->skyPipeline, app->skyCommandBuffer);
 
+    // create the ui command buffer
+    allocInfo.commandBufferCount = (uint32_t) app->commandBuffers.size();
+
+    if (vkAllocateCommandBuffers(app->device, &allocInfo, app->commandBuffers.data()) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate command buffers!");
+    }
+
+    for (size_t i = 0; i < app->commandBuffers.size(); i++) {
+        app->uiPipeline.framebuffer = app->swapChainFramebuffers[i];
+        pipeline_begin_render(&app->uiPipeline, app->commandBuffers[i]);
+        model_render(&app->quad, app->commandBuffers[i], app->uiPipeline.layout, app->uiPipeline.pipeline, app->uiDescriptorSet.descriptorSet);
+        pipeline_end_render(&app->uiPipeline, app->commandBuffers[i]);
+    }
 
     // create the shadow command buffers
     for (size_t idx = 0; idx < app->shadowPipelines.size(); ++idx)
@@ -680,6 +706,7 @@ void application_create_semaphores(application_t *app) {
     if (vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->imageAvailableSemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->offscreenSemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->skySemaphore) != VK_SUCCESS ||
+        vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->uiSemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->renderFinishedSemaphore) != VK_SUCCESS) {
 
         throw std::runtime_error("failed to create semaphores!");
@@ -879,9 +906,24 @@ void application_draw_frame(application_t *app) {
         }
     }
 
-    // onscreen
+    // composite
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = lastSemaphore;
+    submitInfo.pWaitDstStageMask = waitStages;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &app->commandBuffer;
+
+    signalSemaphores[0] = app->uiSemaphore;
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    if (vkQueueSubmit(app->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit draw command buffer!");
+    }
+
+    // ui
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = &app->uiSemaphore;
     submitInfo.pWaitDstStageMask = waitStages;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &app->commandBuffers[imageIndex];
@@ -918,14 +960,17 @@ void application_cleanup_pipelines(application_t *app)
     pipeline_cleanup(&app->pipeline);
     pipeline_cleanup(&app->offscreenPipeline);
     pipeline_cleanup(&app->skyPipeline);
+    pipeline_cleanup(&app->uiPipeline);
     // cleanup descriptor sets
     descriptor_set_cleanup(&app->descriptorSet);
     descriptor_set_cleanup(&app->offscreenDescriptorSet);
     descriptor_set_cleanup(&app->skyDescriptorSet);
+    descriptor_set_cleanup(&app->uiDescriptorSet);
     // clear out attachment lists
     app->attachments.clear();
     app->offscreenAttachments.clear();
     app->skyAttachments.clear();
+    app->uiAttachments.clear();
 }
 
 // cleanup swapchain
@@ -1122,6 +1167,7 @@ void application_cleanup(application_t *app) {
     vkDestroySemaphore(app->device, app->renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->offscreenSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->skySemaphore, nullptr);
+    vkDestroySemaphore(app->device, app->uiSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->imageAvailableSemaphore, nullptr);
     for (auto it = app->shadowSemaphores.begin(); it != app->shadowSemaphores.end(); ++it)
         vkDestroySemaphore(app->device, *(*it), nullptr);

@@ -91,6 +91,7 @@ struct application_t
     pipeline_t pipeline;
     pipeline_t offscreenPipeline;
     pipeline_t skyPipeline;
+    pipeline_t uiPipeline;
 
     model_t model;
     texture_t texture;
@@ -103,14 +104,16 @@ struct application_t
 
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;
+    VkCommandBuffer commandBuffer;
     VkCommandBuffer offscreenCommandBuffer;
     VkCommandBuffer skyCommandBuffer;
     std::vector<VkCommandBuffer*> shadowCommandBuffers;
 
-    pipeline_attachment_t colorAttachment, depthAttachment, albedo, normal, position, pbr, offscreenDepthAttachment, shadowPosition, sky, skyDepth;
+    pipeline_attachment_t colorAttachment, depthAttachment, albedo, normal, position, pbr, offscreenDepthAttachment, shadowPosition, sky, skyDepth, uiColor, uiDepth;
     std::vector<pipeline_attachment_t*> attachments;
     std::vector<pipeline_attachment_t*> offscreenAttachments;
     std::vector<pipeline_attachment_t*> skyAttachments;
+    std::vector<pipeline_attachment_t*> uiAttachments;
 
     image_t *shadowImageArray = NULL;
     std::vector<pipeline_t*> shadowPipelines;
@@ -119,11 +122,13 @@ struct application_t
     descriptor_set_t descriptorSet;
     descriptor_set_t offscreenDescriptorSet;
     descriptor_set_t skyDescriptorSet;
+    descriptor_set_t uiDescriptorSet;
     std::vector<descriptor_set_t*> shadowDescriptorSets;
 
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore offscreenSemaphore;
     VkSemaphore skySemaphore;
+    VkSemaphore uiSemaphore;
     VkSemaphore renderFinishedSemaphore;
     std::vector<VkSemaphore*> shadowSemaphores;
 

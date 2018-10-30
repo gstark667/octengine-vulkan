@@ -66,69 +66,32 @@ ELSE()
     set(EXTENSION ".so")
 ENDIF()
 
-ADD_CUSTOM_COMMAND(
-    OUTPUT shaders/frag.spv
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shader.frag
-    COMMAND glslangValidator -V ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shader.frag -o shaders/frag.spv
-)
-
-ADD_CUSTOM_COMMAND(
-    OUTPUT shaders/vert.spv
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shader.vert
-    COMMAND glslangValidator -V ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shader.vert -o shaders/vert.spv
-)
-
-ADD_CUSTOM_COMMAND(
-    OUTPUT shaders/offscreen_frag.spv
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/offscreen.frag
-    COMMAND glslangValidator -V ${CMAKE_CURRENT_SOURCE_DIR}/shaders/offscreen.frag -o shaders/offscreen_frag.spv
-)
-
-ADD_CUSTOM_COMMAND(
-    OUTPUT shaders/offscreen_vert.spv
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/offscreen.vert ${CMAKE_CURRENT_SOURCE_DIR}/shaders/rotate.vert
-    COMMAND glslangValidator -V ${CMAKE_CURRENT_SOURCE_DIR}/shaders/offscreen.vert -o shaders/offscreen_vert.spv
-)
-
-ADD_CUSTOM_COMMAND(
-    OUTPUT shaders/screen_frag.spv
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/screen.frag
-    COMMAND glslangValidator -V ${CMAKE_CURRENT_SOURCE_DIR}/shaders/screen.frag -o shaders/screen_frag.spv
-)
-
-ADD_CUSTOM_COMMAND(
-    OUTPUT shaders/screen_vert.spv
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/screen.vert
-    COMMAND glslangValidator -V ${CMAKE_CURRENT_SOURCE_DIR}/shaders/screen.vert -o shaders/screen_vert.spv
-)
-
-ADD_CUSTOM_COMMAND(
-    OUTPUT shaders/shadow_frag.spv
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shadow.frag
-    COMMAND glslangValidator -V ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shadow.frag -o shaders/shadow_frag.spv
-)
-
-ADD_CUSTOM_COMMAND(
-    OUTPUT shaders/shadow_vert.spv
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shadow.vert ${CMAKE_CURRENT_SOURCE_DIR}/shaders/rotate.vert
-    COMMAND glslangValidator -V ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shadow.vert -o shaders/shadow_vert.spv
-)
-
-ADD_CUSTOM_COMMAND(
-    OUTPUT shaders/sky_frag.spv
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/sky.frag
-    COMMAND glslangValidator -V ${CMAKE_CURRENT_SOURCE_DIR}/shaders/sky.frag -o shaders/sky_frag.spv
-)
-
-ADD_CUSTOM_COMMAND(
-    OUTPUT shaders/sky_vert.spv
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/sky.vert ${CMAKE_CURRENT_SOURCE_DIR}/shaders/rotate.vert
-    COMMAND glslangValidator -V ${CMAKE_CURRENT_SOURCE_DIR}/shaders/sky.vert -o shaders/sky_vert.spv
-)
+SET(SHADERS "" PARENT_SCOPE)
+file(GLOB vertshaders "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.vert")
+file(GLOB fragshaders "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.frag")
+foreach(item ${vertshaders})
+    GET_FILENAME_COMPONENT(name ${item} NAME_WE)
+    LIST(APPEND SHADERS "shaders/${name}_vert.spv")
+    ADD_CUSTOM_COMMAND(
+        OUTPUT "shaders/${name}_vert.spv"
+        DEPENDS ${item}
+        COMMAND glslangValidator -V ${item} -o "shaders/${name}_vert.spv"
+    )
+endforeach()
+foreach(item ${fragshaders})
+    GET_FILENAME_COMPONENT(name ${item} NAME_WE)
+    LIST(APPEND SHADERS "shaders/${name}_frag.spv")
+    ADD_CUSTOM_COMMAND(
+        OUTPUT "shaders/${name}_frag.spv"
+        DEPENDS ${item}
+        COMMAND glslangValidator -V ${item} -o "shaders/${name}_frag.spv"
+    )
+endforeach()
+SET(SHADERS ${SHADERS} PARENT_SCOPE)
 
 ADD_CUSTOM_TARGET(
     shader_files
-    DEPENDS shaders/ shaders/frag.spv shaders/vert.spv shaders/offscreen_frag.spv shaders/offscreen_vert.spv shaders/screen_vert.spv shaders/screen_frag.spv shaders/shadow_vert.spv shaders/shadow_frag.spv shaders/sky_vert.spv shaders/sky_frag.spv
+    DEPENDS ${SHADERS}
 )
 
 include_directories(${BULLET_INCLUDE_DIR})
