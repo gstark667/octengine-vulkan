@@ -6,7 +6,7 @@ extern "C"
 {
 #ifdef __APPLE__
 #include <lua/lua.h>
-#include <lua/luaxlib.h>
+#include <lua/lauxlib.h>
 #include <lua/lualib.h>
 #else
 #include <lua.h>

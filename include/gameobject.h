@@ -1,10 +1,7 @@
 #ifndef H_GAMEOBJECT
 #define H_GAMEOBJECT
 
-extern "C"
-{
-#include <lua.h>
-}
+#include "luaheaders.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
