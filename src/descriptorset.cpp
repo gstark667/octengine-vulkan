@@ -306,12 +306,15 @@ void descriptor_set_cleanup(descriptor_set_t *descriptorSet)
 {
     vkDestroyDescriptorSetLayout(descriptorSet->device, descriptorSet->descriptorSetLayout, nullptr);
     vkDestroyDescriptorPool(descriptorSet->device, descriptorSet->descriptorPool, nullptr);
+    descriptorSet->descriptorSetLayout = nullptr;
+    descriptorSet->descriptorPool = nullptr;
 
     for (auto it = descriptorSet->buffers.begin(); it != descriptorSet->buffers.end(); ++it)
     {
         vkDestroyBuffer(descriptorSet->device, it->uniformBuffer, nullptr);
         vkFreeMemory(descriptorSet->device, it->uniformBufferMemory, nullptr);
     }
+    descriptorSet->buffers.clear();
 
     for (auto it = descriptorSet->textures.begin(); it != descriptorSet->textures.end(); ++it)
     {
@@ -321,5 +324,6 @@ void descriptor_set_cleanup(descriptor_set_t *descriptorSet)
             delete it->texture;
         }
     }
+    descriptorSet->textures.clear();
 }
 

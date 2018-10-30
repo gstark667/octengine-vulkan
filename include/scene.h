@@ -63,6 +63,7 @@ void EXPORT scene_set_texture(scene_t *scene, gameobject_t *object, std::string 
 void EXPORT scene_set_normal(scene_t *scene, gameobject_t *object, std::string texturePath);
 void EXPORT scene_set_pbr(scene_t *scene, gameobject_t *object, std::string texturePath);
 void EXPORT scene_add_script(scene_t *scene, gameobject_t *object, std::string scriptPath);
+void EXPORT scene_resize(scene_t *scene, uint32_t width, uint32_t height);
 void EXPORT scene_update(scene_t *scene, float delta);
 void EXPORT scene_load(scene_t *scene, std::string path);
 void EXPORT scene_cleanup(scene_t *scene);

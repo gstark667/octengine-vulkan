@@ -22,9 +22,11 @@ struct pipeline_attachment_t
     VkFormat format;
     VkImageLayout layout;
     VkImageLayout finalLayout;
+    uint32_t layer = 0;
     bool destroy = false;
     bool resolve = false;
     bool shadow = false;
+    bool external = false;
 };
 
 struct pipeline_t

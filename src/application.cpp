@@ -37,6 +37,15 @@ swapchain_support_t application_query_swap_chain_support(application_t *app, VkP
 
 void application_init_window(application_t *app) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
+    // figure out how big the screen is if we're full screen
+    if (app->fullscreen)
+    {
+        SDL_DisplayMode displayMode;
+        SDL_GetCurrentDisplayMode(0, &displayMode);
+        app->windowWidth = displayMode.w;
+        app->windowHeight = displayMode.h;
+    }
+    // make the window
     app->window = SDL_CreateWindow(
         "octengine",
         SDL_WINDOWPOS_UNDEFINED,
@@ -45,11 +54,9 @@ void application_init_window(application_t *app) {
         app->windowHeight,
         (app->fullscreen ? SDL_WINDOW_FULLSCREEN | SDL_WINDOW_VULKAN : SDL_WINDOW_VULKAN) | SDL_WINDOW_RESIZABLE
     );
-
     // setup mouse
-    //SDL_SetWindowGrab(app->window, SDL_TRUE);
-    //SDL_SetRelativeMouseMode(SDL_TRUE);
-
+    SDL_SetWindowGrab(app->window, SDL_TRUE);
+    SDL_SetRelativeMouseMode(SDL_TRUE);
     // setup joystick
     if (SDL_NumJoysticks() != 0)
     {
@@ -494,7 +501,7 @@ void application_create_command_pool(application_t *app) {
 }
 
 // create depth resources
-void application_create_depth_resources(application_t *app) {
+void application_create_pipeline_attachments(application_t *app) {
     // composite
     app->colorAttachment.image.image = app->swapChainImages[0];
     app->colorAttachment.image.view = app->swapChainImageViews[0];
@@ -503,6 +510,7 @@ void application_create_depth_resources(application_t *app) {
     app->colorAttachment.format = app->swapChainImageFormat;
     app->colorAttachment.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     app->colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    app->colorAttachment.external = true;
 
     pipeline_attachment_create(&app->depthAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     app->attachments.push_back(&app->colorAttachment);
@@ -528,10 +536,50 @@ void application_create_depth_resources(application_t *app) {
     app->skyAttachments.push_back(&app->skyDepth);
 
     // shadow
-    app->shadowImageArray = new image_t();
-    app->shadowImageArray->forceArray = true;
-    image_create(app->shadowImageArray, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, 1, 1, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
-    image_create_view(app->shadowImageArray, app->device, app->depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 0, true);
+    if (!app->shadowImageArray)
+    {
+        app->shadowImageArray = new image_t();
+        app->shadowImageArray->forceArray = true;
+        image_create(app->shadowImageArray, app->device, app->physicalDevice, app->shadowWidth, app->shadowHeight, 1, 1, app->depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT);
+        image_create_view(app->shadowImageArray, app->device, app->depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 0, true);
+    }
+}
+
+void application_create_pipelines(application_t *app)
+{
+    // composite
+    descriptor_set_setup(&app->descriptorSet, app->device, app->physicalDevice);
+    descriptor_set_add_buffer(&app->descriptorSet, sizeof(light_ubo_t), 0, false);
+    descriptor_set_add_buffer(&app->descriptorSet, sizeof(render_ubo_t), 1, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->albedo.image, 2, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 3, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->position.image, 4, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->pbr.image, 5, false, false, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 6, false, false, true);
+    descriptor_set_add_image(&app->descriptorSet, app->shadowImageArray, 7, false, false, true);
+    descriptor_set_add_texture(&app->descriptorSet, &app->skybox, 8, false);
+    descriptor_set_add_image(&app->descriptorSet, &app->sky.image, 9, false, false, false);
+    descriptor_set_add_texture(&app->descriptorSet, &app->illumination, 10, false);
+    descriptor_set_create(&app->descriptorSet);
+    pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->attachments, false, false);
+    app->renderUBO.sampleCount = app->sampleCount;
+    app->renderUBO.ambient = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
+    descriptor_set_update_buffer(&app->descriptorSet, &app->renderUBO, 1);
+
+    // offscreen
+    descriptor_set_setup(&app->offscreenDescriptorSet, app->device, app->physicalDevice);
+    descriptor_set_add_buffer(&app->offscreenDescriptorSet, sizeof(uniform_buffer_object_t), 0, true);
+    descriptor_set_add_buffer(&app->offscreenDescriptorSet, sizeof(bone_ubo_t), 1, true);
+    descriptor_set_add_texture(&app->offscreenDescriptorSet, &app->scene.textures, 2, false);
+    descriptor_set_create(&app->offscreenDescriptorSet);
+    pipeline_create(&app->offscreenPipeline, &app->offscreenDescriptorSet, app->windowWidth, app->windowHeight, "shaders/offscreen_vert.spv", "shaders/offscreen_frag.spv", app->device, app->physicalDevice, app->sampleCount, app->commandPool, app->graphicsQueue, app->offscreenAttachments, true, false);
+
+    // sky
+    descriptor_set_setup(&app->skyDescriptorSet, app->device, app->physicalDevice);
+    descriptor_set_add_buffer(&app->skyDescriptorSet, sizeof(uniform_buffer_object_t), 0, true);
+    descriptor_set_add_texture(&app->skyDescriptorSet, &app->skybox, 1, false);
+    descriptor_set_create(&app->skyDescriptorSet);
+    pipeline_create(&app->skyPipeline, &app->skyDescriptorSet, app->windowWidth, app->windowHeight, "shaders/sky_vert.spv", "shaders/sky_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->skyAttachments, true, false);
 }
 
 // create frame buffers
@@ -864,6 +912,22 @@ void application_draw_frame(application_t *app) {
     vkQueueWaitIdle(app->presentQueue);
 }
 
+void application_cleanup_pipelines(application_t *app)
+{
+    // cleanup pipelines
+    pipeline_cleanup(&app->pipeline);
+    pipeline_cleanup(&app->offscreenPipeline);
+    pipeline_cleanup(&app->skyPipeline);
+    // cleanup descriptor sets
+    descriptor_set_cleanup(&app->descriptorSet);
+    descriptor_set_cleanup(&app->offscreenDescriptorSet);
+    descriptor_set_cleanup(&app->skyDescriptorSet);
+    // clear out attachment lists
+    app->attachments.clear();
+    app->offscreenAttachments.clear();
+    app->skyAttachments.clear();
+}
+
 // cleanup swapchain
 void application_cleanup_swap_chain(application_t *app) {
     std::cout << "cleanup swap chain" << std::endl;
@@ -890,27 +954,18 @@ void application_recreate_swap_chain(application_t *app) {
 
     app->windowWidth = width;
     app->windowHeight = height;
+    scene_resize(&app->scene, app->windowWidth, app->windowHeight);
 
     vkDeviceWaitIdle(app->device);
 
     application_cleanup_swap_chain(app);
+    application_cleanup_pipelines(app);
 
     application_create_swap_chain(app);
     application_create_image_views(app);
-    // recreate the pipelines (that aren't shadows)
-    pipeline_recreate(&app->pipeline, app->windowWidth, app->windowHeight, app->device);
-    pipeline_recreate(&app->offscreenPipeline, app->windowWidth, app->windowHeight, app->device);
-    pipeline_recreate(&app->skyPipeline, app->windowWidth, app->windowHeight, app->device);
+    application_create_pipeline_attachments(app);
+    application_create_pipelines(app);
 
-    // update the render images
-    descriptor_set_update_image(&app->descriptorSet, &app->albedo.image, 2);
-    descriptor_set_update_image(&app->descriptorSet, &app->normal.image, 3);
-    descriptor_set_update_image(&app->descriptorSet, &app->position.image, 4);
-    descriptor_set_update_image(&app->descriptorSet, &app->pbr.image, 5);
-    descriptor_set_update_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 6);
-    descriptor_set_update_image(&app->descriptorSet, &app->sky.image, 9);
-
-    //application_create_depth_resources(app);
     application_create_frame_buffers(app);
     application_create_command_buffers(app);
 }
@@ -927,7 +982,7 @@ void application_init_vulkan(application_t *app) {
     application_create_command_pool(app);
 
     app->depthFormat = application_find_depth_format(app);
-    application_create_depth_resources(app);
+    application_create_pipeline_attachments(app);
 
     scene_create(&app->scene, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, app->windowWidth, app->windowHeight);
 
@@ -949,40 +1004,8 @@ void application_init_vulkan(application_t *app) {
     texture_add(&app->illumination, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "back_ill.png", false);
     texture_load(&app->illumination, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
 
+    application_create_pipelines(app);
 
-    // composite
-    descriptor_set_setup(&app->descriptorSet, app->device, app->physicalDevice);
-    descriptor_set_add_buffer(&app->descriptorSet, sizeof(light_ubo_t), 0, false);
-    descriptor_set_add_buffer(&app->descriptorSet, sizeof(render_ubo_t), 1, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->albedo.image, 2, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->normal.image, 3, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->position.image, 4, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->pbr.image, 5, false, false, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->offscreenDepthAttachment.image, 6, false, false, true);
-    descriptor_set_add_image(&app->descriptorSet, app->shadowImageArray, 7, false, false, true);
-    descriptor_set_add_texture(&app->descriptorSet, &app->skybox, 8, false);
-    descriptor_set_add_image(&app->descriptorSet, &app->sky.image, 9, false, false, false);
-    descriptor_set_add_texture(&app->descriptorSet, &app->illumination, 10, false);
-    descriptor_set_create(&app->descriptorSet);
-    pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->attachments, false, false);
-    app->renderUBO.sampleCount = app->sampleCount;
-    app->renderUBO.ambient = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
-    descriptor_set_update_buffer(&app->descriptorSet, &app->renderUBO, 1);
-
-    // offscreen
-    descriptor_set_setup(&app->offscreenDescriptorSet, app->device, app->physicalDevice);
-    descriptor_set_add_buffer(&app->offscreenDescriptorSet, sizeof(uniform_buffer_object_t), 0, true);
-    descriptor_set_add_buffer(&app->offscreenDescriptorSet, sizeof(bone_ubo_t), 1, true);
-    descriptor_set_add_texture(&app->offscreenDescriptorSet, &app->scene.textures, 2, false);
-    descriptor_set_create(&app->offscreenDescriptorSet);
-    pipeline_create(&app->offscreenPipeline, &app->offscreenDescriptorSet, app->windowWidth, app->windowHeight, "shaders/offscreen_vert.spv", "shaders/offscreen_frag.spv", app->device, app->physicalDevice, app->sampleCount, app->commandPool, app->graphicsQueue, app->offscreenAttachments, true, false);
-
-    // sky
-    descriptor_set_setup(&app->skyDescriptorSet, app->device, app->physicalDevice);
-    descriptor_set_add_buffer(&app->skyDescriptorSet, sizeof(uniform_buffer_object_t), 0, true);
-    descriptor_set_add_texture(&app->skyDescriptorSet, &app->skybox, 1, false);
-    descriptor_set_create(&app->skyDescriptorSet);
-    pipeline_create(&app->skyPipeline, &app->skyDescriptorSet, app->windowWidth, app->windowHeight, "shaders/sky_vert.spv", "shaders/sky_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->skyAttachments, true, false);
     app->skyCam.object = new gameobject_t();
 
     application_create_frame_buffers(app);
@@ -1029,9 +1052,8 @@ void application_main_loop(application_t *app) {
                 settings_on_button(&app->settings, "JB_" + std::to_string(event.jbutton.button), event.jbutton.state == SDL_PRESSED);
                 break;
             case SDL_WINDOWEVENT:
-                if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+                if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED && !app->fullscreen)
                 {
-                    std::cout << "resized window: " << event.window.data1 << ":" << event.window.data2 << std::endl;
                     application_recreate_swap_chain(app);
                     break;
                 }
@@ -1069,15 +1091,10 @@ void application_main_loop(application_t *app) {
 
 void application_cleanup(application_t *app) {
     application_cleanup_swap_chain(app);
+    application_cleanup_pipelines(app);
 
     delete app->skyCam.object;
 
-    std::cout << "screen" << std::endl;
-    pipeline_cleanup(&app->pipeline);
-    std::cout << "offscreen" << std::endl;
-    pipeline_cleanup(&app->offscreenPipeline);
-    std::cout << "sky" << std::endl;
-    pipeline_cleanup(&app->skyPipeline);
     for (auto it = app->shadowPipelines.begin(); it != app->shadowPipelines.end(); ++it)
     {
         std::cout << "shadow cleanup" << std::endl;
@@ -1089,9 +1106,6 @@ void application_cleanup(application_t *app) {
     texture_cleanup(&app->skybox, app->device);
     texture_cleanup(&app->illumination, app->device);
 
-    descriptor_set_cleanup(&app->descriptorSet);
-    descriptor_set_cleanup(&app->offscreenDescriptorSet);
-    descriptor_set_cleanup(&app->skyDescriptorSet);
     for (auto it = app->shadowDescriptorSets.begin(); it != app->shadowDescriptorSets.end(); ++it)
     {
         descriptor_set_cleanup((*it));

@@ -114,6 +114,16 @@ void scene_add_script(scene_t *scene, gameobject_t *object, std::string scriptPa
     object->scripts.insert(script);
 }
 
+void scene_resize(scene_t *scene, uint32_t width, uint32_t height)
+{
+    if (scene->camera)
+    {
+        scene->camera->width = width;
+        scene->camera->height = height;
+        camera_resize(scene->camera);
+    }
+}
+
 void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, descriptor_set_t *descriptorSet)
 {   
     for (std::vector<std::string>::iterator it = scene->modelOrder.begin(); it != scene->modelOrder.end(); ++it)
