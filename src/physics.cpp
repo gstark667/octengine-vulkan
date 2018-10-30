@@ -28,10 +28,12 @@ void physics_world_update(physics_world_t *world, void *scene, float delta)
         btPersistentManifold* contactManifold = world->dispatcher->getManifoldByIndexInternal(i);
         btCollisionObject* obA = (btCollisionObject*)contactManifold->getBody0();
         btCollisionObject* obB = (btCollisionObject*)contactManifold->getBody1();
+        int contacts = contactManifold->getNumContacts();
         void *a = (gameobject_t*)obA->getUserPointer();
         void *b = (gameobject_t*)obB->getUserPointer();
         
-        newCollisions.insert(std::pair<void*, void*>(a, b));
+        if (contacts > 0)
+            newCollisions.insert(std::pair<void*, void*>(a, b));
     }
 
     for (std::set<std::pair<void*, void*>>::iterator it = newCollisions.begin(); it != newCollisions.end(); ++it)

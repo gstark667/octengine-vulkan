@@ -44,6 +44,14 @@ static int libaudio_source_set_gain(lua_State *L)
     return 0;
 }
 
+static int libaudio_source_set_loop(lua_State *L)
+{
+    ALuint source = lua_tointeger(L, 1);
+    bool loop = lua_toboolean(L, 2);
+    alSourcef(source, AL_LOOPING, loop);
+    return 0;
+}
+
 
 int EXPORT luaopen_audio(lua_State *L)
 {
@@ -51,6 +59,7 @@ int EXPORT luaopen_audio(lua_State *L)
     lua_register(L, "audio_source_play", libaudio_source_play);
     lua_register(L, "audio_source_set_pitch", libaudio_source_set_pitch);
     lua_register(L, "audio_source_set_gain", libaudio_source_set_gain);
+    lua_register(L, "audio_source_set_loop", libaudio_source_set_loop);
     return 0;
 }
 
