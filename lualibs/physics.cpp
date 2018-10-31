@@ -88,6 +88,16 @@ static int physics_set_position(lua_State *L)
     return 0;
 }
 
+static int physics_get_position(lua_State *L)
+{
+    gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
+    glm::vec3 pos = physics_object_get_position(object->physics);
+    lua_pushnumber(L, pos.x);
+    lua_pushnumber(L, pos.y);
+    lua_pushnumber(L, pos.z);
+    return 3;
+}
+
 static int physics_set_rotation(lua_State *L)
 {
     gameobject_t *object = (gameobject_t*)lua_tointeger(L, 1);
@@ -208,6 +218,7 @@ int EXPORT luaopen_physics(lua_State *L)
     lua_register(L, "physics_init_convex_hull", physics_init_convex_hull);
     lua_register(L, "physics_init_mesh", physics_init_mesh);
     lua_register(L, "physics_set_position", physics_set_position);
+    lua_register(L, "physics_get_position", physics_get_position);
     lua_register(L, "physics_set_rotation", physics_set_rotation);
     lua_register(L, "physics_get_rotation", physics_get_rotation);
     lua_register(L, "physics_set_mass", physics_set_mass);
