@@ -57,6 +57,9 @@ void font_buffer_texture(font_t *font)
     int offset = 0;
     for (int i = 0; i < 128; ++i)
     {
+        font->glyphs[i].width = ((float)font->glyphs[i].bitmap.width)/((float)width);
+        font->glyphs[i].height = ((float)font->glyphs[i].bitmap.rows)/((float)height);
+        font->glyphs[i].offset = ((float)offset)/((float)width);
         for (int y = 0; y < font->glyphs[i].bitmap.rows; ++y)
         {
             for (int x = 0; x < font->glyphs[i].bitmap.width; ++x)

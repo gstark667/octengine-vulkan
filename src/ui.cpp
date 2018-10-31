@@ -45,8 +45,19 @@ void ui_update(ui_t *ui)
 size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset)
 {
     ui->model.instances[offset].pos = glm::vec3(element->x / element->width, element->y / element->height, 0.0f);
+    ui->model.instances[offset].rot = glm::vec3(1.0f, 1.0f, 0.0f);
     ui->model.instances[offset].scale = glm::vec3(element->width, element->height, 1.0f);
     ui->model.instances[offset].textureIdx.x = element->textureIdx;
+
+    for (size_t i = 0; i < element->text.length(); ++i)
+    {
+        offset++;
+        font_glyph_t glyph = ui->font.glyphs[(short)element->text.at(i)];
+        ui->model.instances[offset].pos = glm::vec3(2.0f * i, 0.0f, 0.0f);
+        ui->model.instances[offset].scale = glm::vec3(0.1f, 0.1f, 1.0f);
+        ui->model.instances[offset].rot = glm::vec3(glyph.width, glyph.height, glyph.offset);
+        ui->model.instances[offset].textureIdx.x = 0;
+    }
 
     for (auto it = element->children.begin(); it != element->children.end(); ++it)
     {
@@ -69,6 +80,7 @@ ui_element_t *ui_element_create(ui_t *ui, ui_element_t *parent)
     element->height = parent->height;
     element->x = parent->x;
     element->y = parent->y;
+    element->textureIdx = 1;
 
     parent->children.push_back(element);
 
@@ -89,7 +101,7 @@ void ui_element_move(ui_element_t *element, float x, float y)
 
 size_t ui_element_count_children(ui_element_t *element)
 {
-    size_t output = 1;
+    size_t output = 1 + element->text.length();
     for (auto it = element->children.begin(); it != element->children.end(); ++it)
     {
         output += ui_element_count_children(*it);

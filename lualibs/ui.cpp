@@ -54,12 +54,21 @@ static int libui_element_allign(lua_State *L)
     return 0;
 }
 
+static int libui_element_set_text(lua_State *L)
+{
+    ui_element_t *element = (ui_element_t*)lua_tointeger(L, 1);
+    const char *text = lua_tostring(L, 2);
+    element->text = std::string(text);
+
+    return 0;
+}
 
 int EXPORT luaopen_ui(lua_State *L)
 {
     lua_register(L, "ui_element_create", libui_element_create);
     lua_register(L, "ui_element_size", libui_element_size);
     lua_register(L, "ui_element_allign", libui_element_allign);
+    lua_register(L, "ui_element_set_text", libui_element_set_text);
     return 0;
 }
 

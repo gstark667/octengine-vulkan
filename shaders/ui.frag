@@ -12,7 +12,9 @@ layout (location = 0) out vec4 outFragColor;
 void main()
 {
     if (textureIdx == -1)
-        outFragColor = vec4(texture(samplerComposite, inUV).rgb, 1.0);
+        outFragColor = texture(samplerComposite, inUV).rgba;
+    else if (textureIdx == 0)
+        outFragColor = texture(samplerFont, inUV).rgba;
     else
-        outFragColor = vec4(texture(samplerFont, inUV).rgb, 1.0);
+        outFragColor = vec4(0.0, 0.0, 0.0, 1.0);
 }

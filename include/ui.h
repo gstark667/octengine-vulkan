@@ -18,6 +18,7 @@ struct ui_element_t
     float width = 1.0f;
     float height = 1.0f;
     int textureIdx = 0;
+    std::string text;
 };
 
 struct ui_t
