@@ -11,7 +11,6 @@ void ui_create(ui_t *ui, VkDevice device, VkPhysicalDevice physicalDevice, VkCom
     ui->graphicsQueue = graphicsQueue;
     std::cout << ui->device << std::endl;
 
-    std::cout << "ui create" << std::endl;
     model_load(&ui->model, "quad.dae");
     ui->model.instances.push_back({});
     model_create_buffers(&ui->model, device, physicalDevice, commandPool, graphicsQueue);
@@ -21,14 +20,12 @@ void ui_create(ui_t *ui, VkDevice device, VkPhysicalDevice physicalDevice, VkCom
 
 void ui_render(ui_t *ui, VkCommandBuffer commandBuffer, pipeline_t *pipeline, descriptor_set_t *descriptorSet)
 {
-    std::cout << "ui render: " << ui->model.instances.size() << std::endl;
     model_render(&ui->model, commandBuffer, pipeline, descriptorSet);
 }
 
 void ui_update(ui_t *ui)
 {
     size_t count = ui_element_count_children(ui->root);
-    std::cout << "updating instances: " << count << std::endl;
     while (ui->model.instances.size() < count)
     {
         ui->model.instances.push_back({});
@@ -39,7 +36,7 @@ void ui_update(ui_t *ui)
 
 size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset)
 {
-    ui->model.instances[offset].pos = glm::vec3(element->x, element->y, 0.0f);
+    ui->model.instances[offset].pos = glm::vec3(element->x / element->width, element->y / element->height, 0.0f);
     ui->model.instances[offset].scale = glm::vec3(element->width, element->height, 1.0f);
 
     for (auto it = element->children.begin(); it != element->children.end(); ++it)
@@ -54,7 +51,7 @@ void ui_cleanup(ui_t *ui)
     model_cleanup(&ui->model, ui->device);
 }
 
-ui_element_t *ui_add_element(ui_t *ui, ui_element_t *parent)
+ui_element_t *ui_element_create(ui_t *ui, ui_element_t *parent)
 {
     ui->dirty = true;
     ui_element_t *element = new ui_element_t();

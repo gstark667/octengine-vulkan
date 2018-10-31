@@ -676,8 +676,7 @@ void application_create_command_buffers(application_t *app) {
     for (size_t i = 0; i < app->commandBuffers.size(); i++) {
         app->uiPipeline.framebuffer = app->swapChainFramebuffers[i];
         pipeline_begin_render(&app->uiPipeline, app->commandBuffers[i]);
-        scene_render(&app->scene, app->offscreenCommandBuffer, &app->offscreenPipeline, &app->offscreenDescriptorSet, true);
-        //ui_render(&app->ui, app->commandBuffers[i], &app->uiPipeline, &app->uiDescriptorSet);
+        scene_render(&app->scene, app->commandBuffers[i], &app->uiPipeline, &app->uiDescriptorSet, true);
         pipeline_end_render(&app->uiPipeline, app->commandBuffers[i]);
     }
 
@@ -782,7 +781,7 @@ void application_update_uniforms(application_t *app)
     //std::cout << "fps: " << 1.0f/delta << std::endl;
 
     scene_update(&app->scene, delta);
-    ui_update(&app->ui);
+    //ui_update(&app->ui);
 
     if (app->shadowPipelines.size() < scene_count_shadows(&app->scene))
     {
@@ -1052,10 +1051,6 @@ void application_init_vulkan(application_t *app) {
     application_create_pipelines(app);
 
     app->skyCam.object = new gameobject_t();
-    ui_create(&app->ui, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
-    ui_element_t *el = ui_add_element(&app->ui, app->ui.root);
-    ui_element_size(el, 0.5f, 0.5f);
-
 
     application_create_frame_buffers(app);
     application_update_uniforms(app);
@@ -1160,7 +1155,6 @@ void application_cleanup(application_t *app) {
         descriptor_set_cleanup((*it));
         delete *it;
     }
-    ui_cleanup(&app->ui);
     model_cleanup(&app->quad, app->device);
     model_cleanup(&app->cube, app->device);
     if (app->shadowImageArray)

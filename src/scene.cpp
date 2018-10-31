@@ -130,10 +130,12 @@ void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, pipeline_t *pip
 {
     if (ui)
     {
+        std::cout << "render ui" << std::endl;
         ui_render(&scene->ui, commandBuffer, pipeline, descriptorSet);
         return;
     }
 
+    std::cout << "render scene" << std::endl;
     for (std::vector<std::string>::iterator it = scene->modelOrder.begin(); it != scene->modelOrder.end(); ++it)
     {
         model_render(scene->models[*it], commandBuffer, pipeline, descriptorSet);
@@ -173,6 +175,7 @@ void scene_update(scene_t *scene, float delta)
     if (scene->camera && scene->camera->object)
         scene->audio.listener = scene->camera->object;
     audio_world_update(&scene->audio, delta);
+    ui_update(&scene->ui);
 }
 
 void scene_load(scene_t *scene, std::string path)

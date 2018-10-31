@@ -34,7 +34,7 @@ void ui_update(ui_t *ui);
 size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset);
 void ui_cleanup(ui_t *ui);
 
-ui_element_t *ui_add_element(ui_t *ui, ui_element_t *parent);
+ui_element_t *ui_element_create(ui_t *ui, ui_element_t *parent);
 void ui_element_size(ui_element_t *element, float width, float height);
 void ui_element_move(ui_element_t *element, float x, float y);
 
