@@ -54,6 +54,7 @@ struct pipeline_t
     bool offscreen;
     bool shadow;
     bool cullBack = true;
+    bool depth = true;
 };
 
 void pipeline_attachment_create(pipeline_attachment_t *attachment, VkDevice device, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkSampleCountFlagBits samples, VkFormat format, VkImageUsageFlags usage, VkCommandPool, VkQueue graphicsQueue, bool shadow);

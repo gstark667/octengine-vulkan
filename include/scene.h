@@ -12,7 +12,9 @@
 #include "camera.h"
 #include "light.h"
 #include "settings.h"
+#include "pipeline.h"
 #include "descriptorset.h"
+#include "ui.h"
 
 #include <vector>
 #include <map>
@@ -26,7 +28,7 @@ struct scene_t
 {
     camera_t *camera = NULL;
     script_t script;
-
+    ui_t ui;
     bone_ubo_t bones;
 
     VkDevice device;
@@ -52,7 +54,7 @@ struct scene_t
 
 extern "C" {
 void EXPORT scene_create(scene_t *scene, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, uint32_t width, uint32_t height);
-void EXPORT scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, descriptor_set_t *descriptorSet);
+void EXPORT scene_render(scene_t *scene, VkCommandBuffer commandBuffer, pipeline_t *pipeline, descriptor_set_t *descriptorSet, bool ui);
 gameobject_t* EXPORT scene_add_gameobject(scene_t *scene);
 camera_t* EXPORT scene_add_camera(scene_t *scene);
 light_t* EXPORT scene_add_light(scene_t *scene);

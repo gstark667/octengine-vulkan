@@ -17,6 +17,7 @@ include_directories(include/)
 
 set(HEADERS
     include/util.h
+    include/ui.h
     include/shader.h
     include/image.h
     include/texture.h
@@ -39,6 +40,7 @@ set(HEADERS
 
 set(SOURCES
     src/util.cpp
+    src/ui.cpp
     src/shader.cpp
     src/image.cpp
     src/texture.cpp

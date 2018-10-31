@@ -591,6 +591,7 @@ void application_create_pipelines(application_t *app)
     descriptor_set_setup(&app->uiDescriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_image(&app->uiDescriptorSet, &app->colorAttachment.image, 0, false, false, false);
     descriptor_set_create(&app->uiDescriptorSet);
+    app->uiPipeline.depth = false;
     pipeline_create(&app->uiPipeline, &app->uiDescriptorSet, app->windowWidth, app->windowHeight, "shaders/ui_vert.spv", "shaders/ui_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->uiAttachments, false, false);
 }
 
@@ -639,12 +640,9 @@ void application_create_command_buffers(application_t *app) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 
-    //for (size_t i = 0; i < app->commandBuffers.size(); i++) {
-    //    app->pipeline.framebuffer = app->swapChainFramebuffers[i];
-        pipeline_begin_render(&app->pipeline, app->commandBuffer);
-        model_render(&app->quad, app->commandBuffer, app->pipeline.layout, app->pipeline.pipeline, app->descriptorSet.descriptorSet);
-        pipeline_end_render(&app->pipeline, app->commandBuffer);
-    //}
+    pipeline_begin_render(&app->pipeline, app->commandBuffer);
+    model_render(&app->quad, app->commandBuffer, &app->pipeline, &app->descriptorSet);
+    pipeline_end_render(&app->pipeline, app->commandBuffer);
 
     // create the offscreen command buffer
     allocInfo.commandBufferCount = 1;
@@ -654,7 +652,7 @@ void application_create_command_buffers(application_t *app) {
     }
 
     pipeline_begin_render(&app->offscreenPipeline, app->offscreenCommandBuffer);
-    scene_render(&app->scene, app->offscreenCommandBuffer, app->offscreenPipeline.layout, app->offscreenPipeline.pipeline, &app->offscreenDescriptorSet);
+    scene_render(&app->scene, app->offscreenCommandBuffer, &app->offscreenPipeline, &app->offscreenDescriptorSet, false);
     pipeline_end_render(&app->offscreenPipeline, app->offscreenCommandBuffer);
 
     // create the sky command buffer
@@ -665,7 +663,7 @@ void application_create_command_buffers(application_t *app) {
     }
 
     pipeline_begin_render(&app->skyPipeline, app->skyCommandBuffer);
-    model_render(&app->cube, app->skyCommandBuffer, app->skyPipeline.layout, app->skyPipeline.pipeline, app->skyDescriptorSet.descriptorSet);
+    model_render(&app->cube, app->skyCommandBuffer, &app->skyPipeline, &app->skyDescriptorSet);
     pipeline_end_render(&app->skyPipeline, app->skyCommandBuffer);
 
     // create the ui command buffer
@@ -678,7 +676,8 @@ void application_create_command_buffers(application_t *app) {
     for (size_t i = 0; i < app->commandBuffers.size(); i++) {
         app->uiPipeline.framebuffer = app->swapChainFramebuffers[i];
         pipeline_begin_render(&app->uiPipeline, app->commandBuffers[i]);
-        model_render(&app->quad, app->commandBuffers[i], app->uiPipeline.layout, app->uiPipeline.pipeline, app->uiDescriptorSet.descriptorSet);
+        scene_render(&app->scene, app->offscreenCommandBuffer, &app->offscreenPipeline, &app->offscreenDescriptorSet, true);
+        //ui_render(&app->ui, app->commandBuffers[i], &app->uiPipeline, &app->uiDescriptorSet);
         pipeline_end_render(&app->uiPipeline, app->commandBuffers[i]);
     }
 
@@ -693,7 +692,7 @@ void application_create_command_buffers(application_t *app) {
         }
 
         pipeline_begin_render(app->shadowPipelines[idx], *app->shadowCommandBuffers[idx]);
-        scene_render(&app->scene, *app->shadowCommandBuffers[idx], app->shadowPipelines[idx]->layout, app->shadowPipelines[idx]->pipeline, app->shadowDescriptorSets[idx]);
+        scene_render(&app->scene, *app->shadowCommandBuffers[idx], app->shadowPipelines[idx], app->shadowDescriptorSets[idx], false);
         pipeline_end_render(app->shadowPipelines[idx], *app->shadowCommandBuffers[idx]);
     }
 }
@@ -783,6 +782,7 @@ void application_update_uniforms(application_t *app)
     //std::cout << "fps: " << 1.0f/delta << std::endl;
 
     scene_update(&app->scene, delta);
+    ui_update(&app->ui);
 
     if (app->shadowPipelines.size() < scene_count_shadows(&app->scene))
     {
@@ -1052,6 +1052,10 @@ void application_init_vulkan(application_t *app) {
     application_create_pipelines(app);
 
     app->skyCam.object = new gameobject_t();
+    ui_create(&app->ui, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
+    ui_element_t *el = ui_add_element(&app->ui, app->ui.root);
+    ui_element_size(el, 0.5f, 0.5f);
+
 
     application_create_frame_buffers(app);
     application_update_uniforms(app);
@@ -1156,6 +1160,7 @@ void application_cleanup(application_t *app) {
         descriptor_set_cleanup((*it));
         delete *it;
     }
+    ui_cleanup(&app->ui);
     model_cleanup(&app->quad, app->device);
     model_cleanup(&app->cube, app->device);
     if (app->shadowImageArray)

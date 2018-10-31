@@ -24,6 +24,7 @@
 #include "script.h"
 #include "settings.h"
 #include "descriptorset.h"
+#include "ui.h"
 
 #include "export.h"
 
@@ -134,6 +135,7 @@ struct application_t
 
     camera_t shadowCam;
 
+    ui_t ui;
     model_t quad, cube;
 
     settings_t settings;

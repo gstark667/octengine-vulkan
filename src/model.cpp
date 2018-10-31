@@ -350,14 +350,13 @@ void model_create_instance_buffer(model_t *model, VkDevice device, VkPhysicalDev
     }
 }
 
-void model_copy_instance_buffer(model_t *model, std::vector<gameobject_t*> instances, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
+void model_copy_instances(model_t *model, std::vector<gameobject_t*>instances)
 {
     while (instances.size() > model->instances.size())
         model->instances.push_back({});
     while (instances.size() < model->instances.size())
         model->instances.pop_back();
 
-    VkDeviceSize bufferSize = (sizeof(model_instance_t) * instances.size());
     for (size_t i = 0; i < instances.size(); ++i)
     {
         model->instances[i].pos = instances[i]->globalPos;
@@ -365,7 +364,11 @@ void model_copy_instance_buffer(model_t *model, std::vector<gameobject_t*> insta
         model->instances[i].scale = instances[i]->scale;
         model->instances[i].textureIdx = instances[i]->textureIdx;
     }
+}
 
+void model_copy_instance_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
+{
+    VkDeviceSize bufferSize = (sizeof(model_instance_t) * model->instances.size());
     VkCommandBuffer commandBuffer = begin_single_time_commands(device, commandPool);
     buffer_stage(&model->instanceBuffer, &model->instanceStagingBuffer, device, commandBuffer, model->instances.data(), bufferSize);
     buffer_inline_copy(&model->instanceBuffer, &model->instanceStagingBuffer, commandBuffer);
@@ -395,6 +398,8 @@ void model_update_bone(model_t *model, bone_t *bone, float time, aiMatrix4x4 par
 
 void model_update(model_t *model, float delta, bone_ubo_t *boneUBO)
 {
+    if (!boneUBO)
+        return;
     model->time += delta;
     // TODO allign this with actual animation length
     while (model->time > 2.5f)
@@ -418,10 +423,10 @@ void model_update(model_t *model, float delta, bone_ubo_t *boneUBO)
     }
 }
 
-void model_render(model_t *model, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, VkDescriptorSet descriptorSet)
+void model_render(model_t *model, VkCommandBuffer commandBuffer, pipeline_t *pipeline, descriptor_set_t *descriptorSet)
 {
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1, &descriptorSet->descriptorSet, 0, NULL);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
 
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->vertexBuffer.buffer, offsets);

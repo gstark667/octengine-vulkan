@@ -16,6 +16,8 @@ void scene_create(scene_t *scene, VkDevice device, VkPhysicalDevice physicalDevi
     physics_world_init(&scene->world);
 
     audio_world_init(&scene->audio);
+
+    ui_create(&scene->ui, device, physicalDevice, commandPool, graphicsQueue);
 }
 
 void scene_add_model(scene_t *scene, std::string modelPath)
@@ -124,11 +126,17 @@ void scene_resize(scene_t *scene, uint32_t width, uint32_t height)
     }
 }
 
-void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkPipeline graphicsPipeline, descriptor_set_t *descriptorSet)
-{   
+void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, pipeline_t *pipeline, descriptor_set_t *descriptorSet, bool ui)
+{
+    if (ui)
+    {
+        ui_render(&scene->ui, commandBuffer, pipeline, descriptorSet);
+        return;
+    }
+
     for (std::vector<std::string>::iterator it = scene->modelOrder.begin(); it != scene->modelOrder.end(); ++it)
     {
-        model_render(scene->models[*it], commandBuffer, pipelineLayout, graphicsPipeline, descriptorSet->descriptorSet);
+        model_render(scene->models[*it], commandBuffer, pipeline, descriptorSet);
     }
 }
 
@@ -158,7 +166,8 @@ void scene_update(scene_t *scene, float delta)
     for (std::map<model_t*, std::vector<gameobject_t*>>::iterator it = modelUpdates.begin(); it != modelUpdates.end(); ++it)
     {   
         model_update(it->first, delta, &scene->bones);
-        model_copy_instance_buffer(it->first, it->second, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue);
+        model_copy_instances(it->first, it->second);
+        model_copy_instance_buffer(it->first, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue);
     }
 
     if (scene->camera && scene->camera->object)
@@ -184,6 +193,8 @@ void scene_cleanup(scene_t *scene)
     audio_world_cleanup(&scene->audio);
 
     texture_cleanup(&scene->textures, scene->device);
+
+    ui_cleanup(&scene->ui);
 }
 
 void scene_on_cursor_pos(scene_t *scene, double x, double y)
