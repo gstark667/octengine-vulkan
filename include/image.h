@@ -1,6 +1,7 @@
 #ifndef H_IMAGE
 #define H_IMAGE
 
+#include <vulkan/vulkan.h>
 
 struct image_t
 {

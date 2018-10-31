@@ -268,7 +268,6 @@ void application_get_usable_samples(application_t *app) {
     if (counts & VK_SAMPLE_COUNT_32_BIT) { app->sampleCount = VK_SAMPLE_COUNT_32_BIT; }
     if (counts & VK_SAMPLE_COUNT_64_BIT) { app->sampleCount = VK_SAMPLE_COUNT_64_BIT; }
     app->sampleCount = VK_SAMPLE_COUNT_2_BIT;
-    std::cout << "sample count: " << app->sampleCount << std::endl;
 }
 
 void application_pick_physical_device(application_t *app) {
@@ -590,6 +589,7 @@ void application_create_pipelines(application_t *app)
     // ui
     descriptor_set_setup(&app->uiDescriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_image(&app->uiDescriptorSet, &app->colorAttachment.image, 0, false, false, false);
+    descriptor_set_add_texture(&app->uiDescriptorSet, &app->scene.ui.fontTexture, 1, false);
     descriptor_set_create(&app->uiDescriptorSet);
     app->uiPipeline.depth = false;
     pipeline_create(&app->uiPipeline, &app->uiDescriptorSet, app->windowWidth, app->windowHeight, "shaders/ui_vert.spv", "shaders/ui_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->uiAttachments, false, false);
@@ -626,7 +626,6 @@ void application_draw_quad(application_t *app, VkCommandBuffer commandBuffer, Vk
 
 // create command buffers
 void application_create_command_buffers(application_t *app) {
-    std::cout << "creating command buffers" << std::endl;
     app->commandBuffers.resize(app->swapChainFramebuffers.size());
 
     // composite
@@ -683,7 +682,6 @@ void application_create_command_buffers(application_t *app) {
     // create the shadow command buffers
     for (size_t idx = 0; idx < app->shadowPipelines.size(); ++idx)
     {
-        std::cout << "creating shadow command buffer" << std::endl;
         allocInfo.commandBufferCount = 1;
 
         if (vkAllocateCommandBuffers(app->device, &allocInfo, app->shadowCommandBuffers[idx]) != VK_SUCCESS) {
@@ -728,7 +726,6 @@ void application_add_shadow_pipelines(application_t *app)
     int count = scene_count_shadows(&app->scene);
     while (app->shadowSemaphores.size() < count)
     {
-        std::cout << "adding semaphore" << std::endl;
         VkSemaphoreCreateInfo semaphoreInfo = {};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
         app->shadowSemaphores.push_back(new VkSemaphore());
@@ -746,7 +743,6 @@ void application_add_shadow_pipelines(application_t *app)
 
     while (app->shadowPipelines.size() < count)
     {
-        std::cout << "adding pipeline" << std::endl;
         size_t idx = app->shadowPipelines.size();
         app->shadowPipelines.push_back(new pipeline_t());
         app->shadowDescriptorSets.push_back(new descriptor_set_t());
@@ -774,7 +770,6 @@ void application_update_uniforms(application_t *app)
 
     if (startup > 0)
     {
-        std::cout << "startup: " << startup << std::endl;
         startup--;
         delta = 0.001f;
     }
@@ -974,7 +969,6 @@ void application_cleanup_pipelines(application_t *app)
 
 // cleanup swapchain
 void application_cleanup_swap_chain(application_t *app) {
-    std::cout << "cleanup swap chain" << std::endl;
     for (auto framebuffer: app->swapChainFramebuffers) {
         vkDestroyFramebuffer(app->device, framebuffer, nullptr);
     }
@@ -990,7 +984,6 @@ void application_cleanup_swap_chain(application_t *app) {
 
 // recreate swapchain
 void application_recreate_swap_chain(application_t *app) {
-    std::cout << "recreate swap chain" << std::endl;
     int width, height; 
     SDL_GetWindowSize(app->window, &width, &height);
     if (width == 0 || height == 0)
@@ -1124,7 +1117,6 @@ void application_main_loop(application_t *app) {
         if (app->scene.isDirty)
         {
             app->scene.isDirty = false;
-            std::cout << "making render" << std::endl;
             application_create_command_buffers(app);
         }
 
@@ -1141,7 +1133,6 @@ void application_cleanup(application_t *app) {
 
     for (auto it = app->shadowPipelines.begin(); it != app->shadowPipelines.end(); ++it)
     {
-        std::cout << "shadow cleanup" << std::endl;
         pipeline_cleanup((*it));
         delete *it;
     }
@@ -1159,7 +1150,6 @@ void application_cleanup(application_t *app) {
     model_cleanup(&app->cube, app->device);
     if (app->shadowImageArray)
     {
-        std::cout << "cleanup shadow image array" << std::endl;
         image_cleanup(app->shadowImageArray, app->device);
     }
 

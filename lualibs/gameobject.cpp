@@ -236,7 +236,6 @@ static int libgameobject_look_at(lua_State *L)
 
 int EXPORT luaopen_gameobject(lua_State *L)
 {
-    std::cout << "loading gameobject" << std::endl;
     lua_register(L, "gameobject_transform", libgameobject_transform);
     lua_register(L, "gameobject_set_transform", libgameobject_set_transform);
     lua_register(L, "gameobject_get_transform", libgameobject_get_transform);

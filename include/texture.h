@@ -3,6 +3,7 @@
 
 #include "image.h"
 
+#include <vulkan/vulkan.h>
 #include <FreeImage.h>
 #include <string>
 #include <vector>

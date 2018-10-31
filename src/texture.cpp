@@ -23,8 +23,6 @@ texture_data_t texture_get_data(string path)
     output.size = output.width * output.height * 4;
     BYTE *bitmapData = FreeImage_GetBits(bitmap);
 
-    cout << "adding texture: " << path << ":" << output.width << ":" << output.height << endl;
-
     #if FREEIMAGE_COLORORDER == FREEIMAGE_COLORORDER_BGR
     for (size_t i = 0; i < output.size; i += 4)
     {
@@ -88,7 +86,6 @@ void texture_load(texture_t *texture, VkDevice device, VkPhysicalDevice physical
     size *= texture->data.size();
 
     texture->mipLevels = (uint32_t)(floor(log2(max(texture->width, texture->height)))) + 1;
-    cout << "mip levels: " << texture->mipLevels << endl;
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;

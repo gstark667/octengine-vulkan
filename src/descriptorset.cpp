@@ -38,7 +38,6 @@ void descriptor_set_create_layout(descriptor_set_t *descriptorSet)
     layoutInfo.bindingCount = bindings.size();
     layoutInfo.pBindings = bindings.data();
 
-    std::cout << "making descriptor set" << std::endl;
     if (vkCreateDescriptorSetLayout(descriptorSet->device, &layoutInfo, nullptr, &descriptorSet->descriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");
     }
@@ -239,12 +238,10 @@ void descriptor_set_update_texture(descriptor_set_t *descriptorSet, texture_t *t
 
 void descriptor_set_update_image(descriptor_set_t *descriptorSet, image_t *image, uint32_t binding)
 {
-    std::cout << "trying to update image" << std::endl;
     for (auto it = descriptorSet->textures.begin(); it != descriptorSet->textures.end(); ++it)
     {
         if (it->binding == binding)
         {
-            std::cout << "updating image" << std::endl;
             vkDestroySampler(descriptorSet->device, it->texture->sampler, nullptr);
 
             it->texture->image = *image;

@@ -6,8 +6,10 @@ layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inTexCoord;
 layout(location = 5) in vec3 instancePos;
 layout(location = 7) in vec3 instanceScale;
+layout(location = 8) in ivec3 instanceTex;
 
 layout(location = 0) out vec2 outUV;
+layout(location = 1) out int outTextureIdx;
 
 out gl_PerVertex
 {
@@ -17,6 +19,7 @@ out gl_PerVertex
 void main() 
 {
     outUV = inTexCoord;
+    outTextureIdx = instanceTex.x;
     mat4 scale = mat4(instanceScale.x, 0.0, 0.0, 0.0,
                       0.0, instanceScale.y, 0.0, 0.0,
                       0.0, 0.0, instanceScale.z, 0.0,

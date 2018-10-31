@@ -18,6 +18,7 @@ include_directories(include/)
 set(HEADERS
     include/util.h
     include/ui.h
+    include/font.h
     include/shader.h
     include/image.h
     include/texture.h
@@ -41,6 +42,7 @@ set(HEADERS
 set(SOURCES
     src/util.cpp
     src/ui.cpp
+    src/font.cpp
     src/shader.cpp
     src/image.cpp
     src/texture.cpp
@@ -97,14 +99,15 @@ ADD_CUSTOM_TARGET(
 )
 
 include_directories(${BULLET_INCLUDE_DIR})
+include_directories(/usr/include/freetype2)
 
 ADD_LIBRARY(liboctengine SHARED ${SOURCES} ${HEADERS} ${SHADERS})
 set_target_properties(liboctengine PROPERTIES OUTPUT_NAME "octengine")
-target_link_libraries (liboctengine ${CMAKE_THREAD_LIBS_INIT} vulkan openal alut SDL2 assimp freeimage lua ${BULLET_LIBRARIES})
+target_link_libraries (liboctengine ${CMAKE_THREAD_LIBS_INIT} vulkan openal alut SDL2 assimp freeimage freetype lua ${BULLET_LIBRARIES})
 
 add_executable(mainoctengine src/main.cpp)
 set_target_properties(mainoctengine PROPERTIES OUTPUT_NAME "octengine")
-target_link_libraries (mainoctengine ${CMAKE_THREAD_LIBS_INIT} vulkan openal alut SDL2 assimp freeimage lua liboctengine ${BULLET_LIBRARIES})
+target_link_libraries (mainoctengine ${CMAKE_THREAD_LIBS_INIT} vulkan openal alut SDL2 assimp freeimage freetype lua liboctengine ${BULLET_LIBRARIES})
 target_include_directories (mainoctengine PUBLIC include/)
 add_dependencies(mainoctengine shader_files)
 

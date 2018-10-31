@@ -6,6 +6,8 @@
 #include "model.h"
 #include "pipeline.h"
 #include "descriptorset.h"
+#include "font.h"
+#include "texture.h"
 
 
 struct ui_element_t
@@ -15,12 +17,15 @@ struct ui_element_t
     float y = 0.0f;
     float width = 1.0f;
     float height = 1.0f;
+    int textureIdx = 0;
 };
 
 struct ui_t
 {
     model_t model;
     ui_element_t *root = NULL;
+    font_t font;
+    texture_t fontTexture;
     bool dirty = false;
     VkDevice device;
     VkPhysicalDevice physicalDevice;

@@ -207,7 +207,6 @@ aiMatrix4x4 interpolate_position(bone_t *bone, float time)
 
 bone_t *model_load_node(model_t *model, aiNode *node)
 {
-    std::cout << node->mName.data << std::endl;
     bone_t *bone = NULL;
     for (size_t b = 0; b < model->bones.size(); ++b)
     {
@@ -267,7 +266,6 @@ void model_load(model_t *model, std::string path)
         for (unsigned int bone = 0; bone < scene->mMeshes[i]->mNumBones; ++bone)
         {
             aiBone *b = scene->mMeshes[i]->mBones[bone];
-            std::cout << b->mName.data << std::endl;
             bone_t newBone;
             newBone.offset = b->mOffsetMatrix;
             newBone.pos = model->bones.size();
@@ -300,7 +298,6 @@ void model_load(model_t *model, std::string path)
             }
             if (!bone)
                 continue;
-            std::cout << "found bone" << std::endl;
             for (unsigned int j = 0; j < channel->mNumScalingKeys; ++j)
             {
                 bone->scaleKeyframes.push_back({channel->mScalingKeys[j].mValue, (float)channel->mScalingKeys[j].mTime});
@@ -377,7 +374,6 @@ void model_copy_instance_buffer(model_t *model, VkDevice device, VkPhysicalDevic
 
 void model_create_buffers(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-    std::cout << "bones: " << model->bones.size() << std::endl;
     model_create_vertex_buffer(model, device, physicalDevice, commandPool, graphicsQueue);
     model_create_index_buffer(model, device, physicalDevice, commandPool, graphicsQueue);
     model_create_instance_buffer(model, device, physicalDevice, commandPool, graphicsQueue);
@@ -434,8 +430,6 @@ void model_render(model_t *model, VkCommandBuffer commandBuffer, pipeline_t *pip
     vkCmdBindIndexBuffer(commandBuffer, model->indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
 
     vkCmdDrawIndexed(commandBuffer, model->indices.size(), model->instances.size(), 0, 0, 0);
-
-    std::cout << model->vertices.size() << std::endl;
 }
 
 void model_cleanup(model_t *model, VkDevice device)

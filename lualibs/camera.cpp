@@ -39,7 +39,6 @@ static int camera_set_size(lua_State *L)
 
 int EXPORT luaopen_camera(lua_State *L)
 {
-    std::cout << "loading camera" << std::endl;
     lua_register(L, "camera_get_gameobject", camera_get_gameobject);
     lua_register(L, "camera_set_fov", camera_set_fov);
     lua_register(L, "camera_set_size", camera_set_size);

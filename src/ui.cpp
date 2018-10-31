@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "font.h"
 
 #include <iostream>
 
@@ -16,6 +17,13 @@ void ui_create(ui_t *ui, VkDevice device, VkPhysicalDevice physicalDevice, VkCom
     model_create_buffers(&ui->model, device, physicalDevice, commandPool, graphicsQueue);
 
     ui->root = new ui_element_t();
+    ui->root->textureIdx = -1;
+
+    font_create(&ui->font);
+    ui->fontTexture.data.push_back(ui->font.textureData);
+    ui->fontTexture.width = ui->font.textureData.width;
+    ui->fontTexture.height = ui->font.textureData.height;
+    texture_load(&ui->fontTexture, ui->device, ui->physicalDevice, ui->commandPool, ui->graphicsQueue);
 }
 
 void ui_render(ui_t *ui, VkCommandBuffer commandBuffer, pipeline_t *pipeline, descriptor_set_t *descriptorSet)
@@ -38,6 +46,7 @@ size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset)
 {
     ui->model.instances[offset].pos = glm::vec3(element->x / element->width, element->y / element->height, 0.0f);
     ui->model.instances[offset].scale = glm::vec3(element->width, element->height, 1.0f);
+    ui->model.instances[offset].textureIdx.x = element->textureIdx;
 
     for (auto it = element->children.begin(); it != element->children.end(); ++it)
     {
@@ -49,6 +58,7 @@ size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset)
 void ui_cleanup(ui_t *ui)
 {
     model_cleanup(&ui->model, ui->device);
+    texture_cleanup(&ui->fontTexture, ui->device);
 }
 
 ui_element_t *ui_element_create(ui_t *ui, ui_element_t *parent)
