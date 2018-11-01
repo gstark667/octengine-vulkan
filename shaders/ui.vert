@@ -22,9 +22,9 @@ void main()
     outUV.x = inTexCoord.x * instanceOff.x + instanceOff.z;
     outUV.y = inTexCoord.y * instanceOff.y;
     outTextureIdx = instanceTex.x;
-    mat4 scale = mat4(instanceScale.x, 0.0, 0.0, 0.0,
-                      0.0, instanceScale.y, 0.0, 0.0,
-                      0.0, 0.0, instanceScale.z, 0.0,
+    mat4 scale = mat4(instanceScale.x * 2.0, 0.0, 0.0, 0.0,
+                      0.0, instanceScale.y * 2.0, 0.0, 0.0,
+                      0.0, 0.0, instanceScale.z * 2.0, 0.0,
                       0.0, 0.0, 0.0, 1.0);
-    gl_Position = vec4(inPosition + instancePos, 1.0) * scale;
+    gl_Position = (vec4(inPosition, 1.0) * scale + vec4(instancePos * 2.0f, 1.0));
 }

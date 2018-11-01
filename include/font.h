@@ -15,9 +15,16 @@ struct font_glyph_t
     FT_Glyph glyph;
     FT_BitmapGlyph bitmapGlyph;
     FT_Bitmap bitmap;
-    float offset = 0.0f;
+    unsigned short * buffer;
+    int pxWidth = 0;
+    int pxHeight = 0;
     float width = 1.0f;
     float height = 1.0f;
+    float left = 0.0f;
+    float top = 0.0f;
+    float uvWidth = 1.0f;
+    float uvHeight = 1.0f;
+    float uvOffset = 0.0f;
 };
 
 struct font_t

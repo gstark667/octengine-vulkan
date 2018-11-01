@@ -38,30 +38,38 @@ void ui_update(ui_t *ui)
     {
         ui->model.instances.push_back({});
     }
-    ui_build(ui, ui->root, 0);
+    ui_build(ui, ui->root, 0, glm::vec2(0.0f), glm::vec2(1.0f));
     model_copy_instance_buffer(&ui->model, ui->device, ui->physicalDevice, ui->commandPool, ui->graphicsQueue);
 }
 
-size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset)
+size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset, glm::vec2 pos, glm::vec2 scale)
 {
-    ui->model.instances[offset].pos = glm::vec3(element->x / element->width, element->y / element->height, 0.0f);
+    pos.x = element->x * scale.x + pos.x;
+    pos.y = element->y * scale.y + pos.y;
+    scale.x = element->width * scale.x;
+    scale.y = element->height * scale.y;
+    ui->model.instances[offset].pos = glm::vec3(pos.x, pos.y, 0.0f);
     ui->model.instances[offset].rot = glm::vec3(1.0f, 1.0f, 0.0f);
-    ui->model.instances[offset].scale = glm::vec3(element->width, element->height, 1.0f);
+    ui->model.instances[offset].scale = glm::vec3(scale.x, scale.y, 1.0f);
     ui->model.instances[offset].textureIdx.x = element->textureIdx;
 
+    float textPos = 0.0f;
+    float textScale = element->textScale * scale.y;
     for (size_t i = 0; i < element->text.length(); ++i)
     {
         offset++;
         font_glyph_t glyph = ui->font.glyphs[(short)element->text.at(i)];
-        ui->model.instances[offset].pos = glm::vec3(2.0f * i, 0.0f, 0.0f);
-        ui->model.instances[offset].scale = glm::vec3(0.1f, 0.1f, 1.0f);
-        ui->model.instances[offset].rot = glm::vec3(glyph.width, glyph.height, glyph.offset);
+        std::cout << textPos << ":" << glyph.width << ":" << glyph.height << ":" << glyph.left << ":" << glyph.top << std::endl;
+        ui->model.instances[offset].pos = glm::vec3(textPos + pos.x + glyph.left * textScale, pos.y + (1.0f - glyph.height) * textScale, 0.0f);
+        ui->model.instances[offset].scale = glm::vec3(textScale * glyph.width, textScale * glyph.height, 1.0f);
+        ui->model.instances[offset].rot = glm::vec3(glyph.uvWidth, glyph.uvHeight, glyph.uvOffset);
         ui->model.instances[offset].textureIdx.x = 0;
+        textPos += glyph.width * textScale * 2.0f + glyph.left * textScale;
     }
 
     for (auto it = element->children.begin(); it != element->children.end(); ++it)
     {
-        offset = ui_build(ui, *it, offset + 1);
+        offset = ui_build(ui, *it, offset + 1, pos, scale);
     }
     return offset;
 }
