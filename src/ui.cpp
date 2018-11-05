@@ -53,18 +53,32 @@ size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset, glm::vec2 pos, g
     ui->model.instances[offset].scale = glm::vec3(scale.x, scale.y, 1.0f);
     ui->model.instances[offset].textureIdx.x = element->textureIdx;
 
-    float textPos = 0.0f;
-    float textScale = element->textScale * scale.y;
+    glm::vec2 textPos(0.0f);
+    size_t first = offset + 1;
+    size_t rows = 0;
+    glm::vec2 textScale(element->textScale * scale.y * 9.0f / 16.0f, element->textScale * scale.y);
     for (size_t i = 0; i < element->text.length(); ++i)
     {
         offset++;
         font_glyph_t glyph = ui->font.glyphs[(short)element->text.at(i)];
-        std::cout << textPos << ":" << glyph.width << ":" << glyph.height << ":" << glyph.left << ":" << glyph.top << std::endl;
-        ui->model.instances[offset].pos = glm::vec3(textPos + pos.x + glyph.left * textScale, pos.y + (1.0f - glyph.height) * textScale, 0.0f);
-        ui->model.instances[offset].scale = glm::vec3(textScale * glyph.width, textScale * glyph.height, 1.0f);
+        ui->model.instances[offset].pos = glm::vec3(pos.x + textPos.x + (glyph.width + glyph.left) * textScale.x, pos.y + (glyph.height / 2.0f - glyph.top) * textScale.y, 0.0f);
+        ui->model.instances[offset].scale = glm::vec3(textScale.x * glyph.width, textScale.y * glyph.height, 1.0f);
         ui->model.instances[offset].rot = glm::vec3(glyph.uvWidth, glyph.uvHeight, glyph.uvOffset);
         ui->model.instances[offset].textureIdx.x = 0;
-        textPos += glyph.width * textScale * 2.0f + glyph.left * textScale;
+        textPos.x += glyph.xAdv * textScale.x * 2.0f;
+    }
+
+    for (size_t i = first; i <= offset; ++i)
+    {
+        // center
+        if (element->textAllign == 0)
+            ui->model.instances[i].pos.x -= textPos.x / 2.0f;
+        // left
+        if (element->textAllign == -1)
+            ui->model.instances[i].pos.x -= scale.x;
+        // right
+        if (element->textAllign == 1)
+            ui->model.instances[i].pos.x += scale.x - textPos.x;
     }
 
     for (auto it = element->children.begin(); it != element->children.end(); ++it)

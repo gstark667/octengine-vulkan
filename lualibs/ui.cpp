@@ -73,6 +73,20 @@ static int libui_element_set_text(lua_State *L)
     return 0;
 }
 
+static int libui_element_set_text_allign(lua_State *L)
+{
+    ui_element_t *element = (ui_element_t*)lua_tointeger(L, 1);
+    const char *side = lua_tostring(L, 2);
+    if (strcmp(side, "left") == 0)
+        element->textAllign = -1;
+    if (strcmp(side, "center") == 0)
+        element->textAllign = 0;
+    if (strcmp(side, "right") == 0)
+        element->textAllign = 1;
+    return 0;
+}
+
+
 int EXPORT luaopen_ui(lua_State *L)
 {
     lua_register(L, "ui_element_create", libui_element_create);
@@ -80,6 +94,7 @@ int EXPORT luaopen_ui(lua_State *L)
     lua_register(L, "ui_element_move", libui_element_move);
     lua_register(L, "ui_element_allign", libui_element_allign);
     lua_register(L, "ui_element_set_text", libui_element_set_text);
+    lua_register(L, "ui_element_set_text_allign", libui_element_set_text_allign);
     return 0;
 }
 

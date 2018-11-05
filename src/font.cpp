@@ -11,7 +11,7 @@ void font_create(font_t *font)
     if (FT_New_Face(font->library, "liberation.ttf", 0, &font->face)) 
         throw std::runtime_error("FT_New_Face failed (there is probably a problem with your font file)");
 
-    int h = 16;
+    int h = 32;
     FT_Set_Char_Size(font->face, h << 6, h << 6, 96, 96);
 
     std::cout << "generating font" << std::endl;
@@ -37,10 +37,10 @@ void font_load_glyph(font_t *font, font_glyph_t *glyph, char ch)
     glyph->bitmap = glyph->bitmapGlyph->bitmap;
     glyph->pxWidth = glyph->bitmap.width + 2;
     glyph->pxHeight = glyph->bitmap.rows + 2;
-    glyph->width = ((float)glyph->pxWidth) / 16.0f;
-    glyph->height = ((float)glyph->pxHeight) / 16.0f;
-    glyph->left = ((float)glyph->bitmapGlyph->left) / 16.0f;
-    glyph->top = ((float)glyph->bitmapGlyph->top) / 16.0f;
+    glyph->left = ((float)glyph->bitmapGlyph->left);
+    glyph->top = ((float)glyph->bitmapGlyph->top);
+    glyph->xAdv = ((float)glyph->glyph->advance.x) / 65536.0f;
+    glyph->yAdv = ((float)glyph->glyph->advance.y) / 65536.0f;
     glyph->buffer = (unsigned short*)malloc(sizeof(unsigned short) * glyph->pxWidth * glyph->pxHeight);
     for (int y = 0; y < glyph->pxHeight; ++y)
     {
@@ -74,6 +74,12 @@ void font_buffer_texture(font_t *font)
     int offset = 0;
     for (int i = 0; i < 128; ++i)
     {
+        font->glyphs[i].width = ((float)font->glyphs[i].pxWidth) / ((float)height);
+        font->glyphs[i].height = ((float)font->glyphs[i].pxHeight) / ((float)height);
+        font->glyphs[i].left = ((float)font->glyphs[i].left) / ((float)height - 2.0f);
+        font->glyphs[i].top = ((float)font->glyphs[i].top) / ((float)height - 2.0f);
+        font->glyphs[i].xAdv = ((float)font->glyphs[i].xAdv) / ((float)height);
+        font->glyphs[i].yAdv = ((float)font->glyphs[i].yAdv) / ((float)height);
         font->glyphs[i].uvWidth = ((float)font->glyphs[i].pxWidth)/((float)width);
         font->glyphs[i].uvHeight = ((float)font->glyphs[i].pxHeight)/((float)height);
         font->glyphs[i].uvOffset = ((float)offset)/((float)width);

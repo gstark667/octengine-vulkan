@@ -22,6 +22,8 @@ struct font_glyph_t
     float height = 1.0f;
     float left = 0.0f;
     float top = 0.0f;
+    float xAdv = 0.0f;
+    float yAdv = 0.0f;
     float uvWidth = 1.0f;
     float uvHeight = 1.0f;
     float uvOffset = 0.0f;

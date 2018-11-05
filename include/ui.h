@@ -20,6 +20,7 @@ struct ui_element_t
     int textureIdx = 0;
     std::string text;
     float textScale = 0.2f;
+    short textAllign = 0;
 };
 
 struct ui_t
