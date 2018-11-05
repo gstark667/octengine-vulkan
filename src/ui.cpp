@@ -54,31 +54,47 @@ size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset, glm::vec2 pos, g
     ui->model.instances[offset].textureIdx.x = element->textureIdx;
 
     glm::vec2 textPos(0.0f);
+    std::map<int, float> widths;
     size_t first = offset + 1;
     size_t rows = 0;
+    size_t rowStart = first;
+    size_t lastWord = first;
     glm::vec2 textScale(element->textScale * scale.y * 9.0f / 16.0f, element->textScale * scale.y);
     for (size_t i = 0; i < element->text.length(); ++i)
     {
-        offset++;
-        font_glyph_t glyph = ui->font.glyphs[(short)element->text.at(i)];
-        ui->model.instances[offset].pos = glm::vec3(pos.x + textPos.x + (glyph.width + glyph.left) * textScale.x, pos.y + (glyph.height / 2.0f - glyph.top) * textScale.y, 0.0f);
-        ui->model.instances[offset].scale = glm::vec3(textScale.x * glyph.width, textScale.y * glyph.height, 1.0f);
-        ui->model.instances[offset].rot = glm::vec3(glyph.uvWidth, glyph.uvHeight, glyph.uvOffset);
-        ui->model.instances[offset].textureIdx.x = 0;
-        textPos.x += glyph.xAdv * textScale.x * 2.0f;
+        if (element->text.at(i) != '\n')
+        {
+            offset++;
+            font_glyph_t glyph = ui->font.glyphs[(short)element->text.at(i)];
+            ui->model.instances[offset].pos = glm::vec3(pos.x + textPos.x + (glyph.width + glyph.left) * textScale.x, pos.y + (glyph.height / 2.0f - glyph.top) * textScale.y + textPos.y, 0.0f);
+            ui->model.instances[offset].scale = glm::vec3(textScale.x * glyph.width, textScale.y * glyph.height, 1.0f);
+            ui->model.instances[offset].rot = glm::vec3(glyph.uvWidth, glyph.uvHeight, glyph.uvOffset);
+            ui->model.instances[offset].textureIdx.x = 0;
+            textPos.x += glyph.xAdv * textScale.x * 2.0f;
+        }
+        if (textPos.x > scale.x * 2.0f || i == element->text.length() - 1 || element->text.at(i) == '\n')
+        {
+            for (size_t j = rowStart; j <= offset; ++j)
+                widths[j] = textPos.x;
+            textPos.x = 0.0f;
+            textPos.y += textScale.y * 2.0f;
+            rowStart = offset + 1;
+        }
     }
 
     for (size_t i = first; i <= offset; ++i)
     {
         // center
         if (element->textAllign == 0)
-            ui->model.instances[i].pos.x -= textPos.x / 2.0f;
+            ui->model.instances[i].pos.x -= widths[i] / 2.0f;
         // left
         if (element->textAllign == -1)
             ui->model.instances[i].pos.x -= scale.x;
         // right
         if (element->textAllign == 1)
-            ui->model.instances[i].pos.x += scale.x - textPos.x;
+            ui->model.instances[i].pos.x += scale.x - widths[i];
+        // vertical
+        ui->model.instances[i].pos.y -= textPos.y / 2.0f - textScale.y * 1.5f;
     }
 
     for (auto it = element->children.begin(); it != element->children.end(); ++it)
