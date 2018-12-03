@@ -762,18 +762,9 @@ void application_add_shadow_pipelines(application_t *app)
     }
 }
 
-void application_update_uniforms(application_t *app)
+void application_update_uniforms(application_t *app, float delta)
 {
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float delta = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
-    lastTime = std::chrono::high_resolution_clock::now();
-
-    if (startup > 0)
-    {
-        startup--;
-        delta = 0.001f;
-    }
-    //std::cout << "fps: " << 1.0f/delta << std::endl;
+        //std::cout << "fps: " << 1.0f/delta << std::endl;
 
     scene_update(&app->scene, delta);
     //ui_update(&app->ui);
@@ -1046,7 +1037,7 @@ void application_init_vulkan(application_t *app) {
     app->skyCam.object = new gameobject_t();
 
     application_create_frame_buffers(app);
-    application_update_uniforms(app);
+    application_update_uniforms(app, 0.01);
     application_copy_uniforms(app);
 
     app->quad.instances.push_back({});
@@ -1064,54 +1055,77 @@ void application_main_loop(application_t *app) {
     scene_load(&app->scene, "scene_0.lua");
     bool running = true;
     while (running) {
-        int x = 0;
-        int y = 0;
-        SDL_Event event;
-        while (SDL_PollEvent(&event))
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float delta = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
+        lastTime = std::chrono::high_resolution_clock::now();
+
+        if (startup > 0)
         {
-            switch (event.type)
+            startup--;
+            delta = 0.001f;
+        }
+
+        while (true)
+        {
+            int x = 0;
+            int y = 0;
+            SDL_Event event;
+            while (SDL_PollEvent(&event))
             {
-            case SDL_MOUSEMOTION:
-                x = event.motion.xrel;
-                y = event.motion.yrel;
-                break;
-            case SDL_KEYDOWN:
-            case SDL_KEYUP:
-                if (event.key.repeat)
-                    continue;
-                settings_on_button(&app->settings, SDL_GetScancodeName(event.key.keysym.scancode), event.type == SDL_KEYDOWN);
-                break;
-            case SDL_JOYAXISMOTION:
-                settings_on_axis(&app->settings, "JA_" + std::to_string(event.jaxis.axis), ((float)event.jaxis.value) / 32767.0);
-                break;
-            case SDL_JOYBUTTONDOWN:
-            case SDL_JOYBUTTONUP:
-                settings_on_button(&app->settings, "JB_" + std::to_string(event.jbutton.button), event.jbutton.state == SDL_PRESSED);
-                break;
-            case SDL_WINDOWEVENT:
-                if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED && !app->fullscreen)
+                switch (event.type)
                 {
-                    application_recreate_swap_chain(app);
+                case SDL_MOUSEMOTION:
+                    x = event.motion.xrel;
+                    y = event.motion.yrel;
+                    break;
+                case SDL_KEYDOWN:
+                case SDL_KEYUP:
+                    if (event.key.repeat)
+                        continue;
+                    settings_on_button(&app->settings, SDL_GetScancodeName(event.key.keysym.scancode), event.type == SDL_KEYDOWN);
+                    break;
+                case SDL_JOYAXISMOTION:
+                    settings_on_axis(&app->settings, "JA_" + std::to_string(event.jaxis.axis), ((float)event.jaxis.value) / 32767.0);
+                    break;
+                case SDL_JOYBUTTONDOWN:
+                case SDL_JOYBUTTONUP:
+                    settings_on_button(&app->settings, "JB_" + std::to_string(event.jbutton.button), event.jbutton.state == SDL_PRESSED);
+                    break;
+                case SDL_WINDOWEVENT:
+                    if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED && !app->fullscreen)
+                    {
+                        application_recreate_swap_chain(app);
+                    }
+                    break;
+                case SDL_QUIT:
+                    running = false;
+                    break;
+                default:
                     break;
                 }
-                break;
-            case SDL_QUIT:
-                running = false;
-                break;
-            default:
+            }
+
+            if (x != 0 || y != 0)
+                scene_on_cursor_pos(&app->scene, (double)x, (double)y);
+            for (auto it = app->settings.triggeredEvents.begin(); it != app->settings.triggeredEvents.end(); ++it)
+            {
+                scene_on_event(&app->scene, {*it, app->settings.events[*it]});
+            }
+            app->settings.triggeredEvents.clear();
+
+            if (delta > 0.016)
+            {
+                delta -= 0.016;
+                application_update_uniforms(app, 0.016);
+                std::cout << "skipping frame" << std::endl;
+            }
+            else
+            {
+                application_update_uniforms(app, delta);
                 break;
             }
-        }
 
-        if (x != 0 || y != 0)
-            scene_on_cursor_pos(&app->scene, (double)x, (double)y);
-        for (auto it = app->settings.triggeredEvents.begin(); it != app->settings.triggeredEvents.end(); ++it)
-        {
-            scene_on_event(&app->scene, {*it, app->settings.events[*it]});
         }
-        app->settings.triggeredEvents.clear();
-
-        application_update_uniforms(app);
         application_copy_uniforms(app);
 
         if (app->scene.isDirty)

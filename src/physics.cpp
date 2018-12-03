@@ -169,6 +169,8 @@ void physics_object_init(physics_object_t *object, void *user, float mass)
         object->collisionShape,
         btVector3(0.1,0.1,0.1)
     );
+    rigidBodyCI.m_restitution = 0.0f;
+    rigidBodyCI.m_friction = 1.0f;
 
     object->rigidBody = new btRigidBody(rigidBodyCI);
     object->rigidBody->setCollisionFlags(object->rigidBody->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
