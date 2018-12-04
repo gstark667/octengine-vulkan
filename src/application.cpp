@@ -762,13 +762,8 @@ void application_add_shadow_pipelines(application_t *app)
     }
 }
 
-void application_update_uniforms(application_t *app, float delta)
+void application_update_uniforms(application_t *app)
 {
-        //std::cout << "fps: " << 1.0f/delta << std::endl;
-
-    scene_update(&app->scene, delta);
-    //ui_update(&app->ui);
-
     if (app->shadowPipelines.size() < scene_count_shadows(&app->scene))
     {
         application_add_shadow_pipelines(app);
@@ -1037,7 +1032,7 @@ void application_init_vulkan(application_t *app) {
     app->skyCam.object = new gameobject_t();
 
     application_create_frame_buffers(app);
-    application_update_uniforms(app, 0.01);
+    application_update_uniforms(app);
     application_copy_uniforms(app);
 
     app->quad.instances.push_back({});
@@ -1115,17 +1110,17 @@ void application_main_loop(application_t *app) {
 
             if (delta > 0.016)
             {
+                scene_update(&app->scene, 0.016);
                 delta -= 0.016;
-                application_update_uniforms(app, 0.016);
-                std::cout << "skipping frame" << std::endl;
             }
             else
             {
-                application_update_uniforms(app, delta);
+                scene_update(&app->scene, delta);
                 break;
             }
 
         }
+        application_update_uniforms(app);
         application_copy_uniforms(app);
 
         if (app->scene.isDirty)

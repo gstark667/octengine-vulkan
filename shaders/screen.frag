@@ -93,6 +93,18 @@ vec4 resolve(sampler2DMS tex, ivec2 uv)
     return result / float(renderUBO.sampleCount);
 }
 
+float resolveSky(sampler2DMS tex, ivec2 uv)
+{
+    float result = 0.0;
+    for (int i = 0; i < renderUBO.sampleCount; i++)
+    {
+        if (texelFetch(tex, uv, i).r == 1.0)
+            result += 1.0;
+    }    
+    // Average resolved samples
+    return result / float(renderUBO.sampleCount);
+}
+
 // Tone Mapping
 vec3 Tonemap(vec3 x)
 {
@@ -180,7 +192,6 @@ void main()
     vec3 normal = resolve(samplerNormal, UV).rgb;
     vec3 position = resolve(samplerPosition, UV).rgb;
     vec3 pbr = resolve(samplerPBR, UV).rgb;
-    float depth = resolve(samplerDepth, UV).r;
 
     vec3 N = normalize(normal);
     vec3 V = normalize(lightUBO.cameraPos.xyz - position);
@@ -234,7 +245,6 @@ void main()
     //color = pow(color, vec3(1.0f / 2.2f));
     outFragColor = vec4(color, 1.0f);
 
-    if (depth == 1.0)
-        outFragColor = texture(samplerSky, inUV).rgba;
+    outFragColor = vec4(mix(color, texture(samplerSky, inUV).rgb, resolveSky(samplerDepth, UV)), 1.0);
 }
 
