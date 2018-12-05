@@ -87,8 +87,7 @@ vec4 resolve(sampler2DMS tex, ivec2 uv)
     vec4 result = vec4(0.0);
     for (int i = 0; i < renderUBO.sampleCount; i++)
     {
-        vec4 val = texelFetch(tex, uv, i); 
-        result += val;
+        result += texelFetch(tex, uv, i); 
     }    
     // Average resolved samples
     return result / float(renderUBO.sampleCount);
@@ -196,9 +195,10 @@ void main()
 
     vec3 N = normalize(normal);
     vec3 V = normalize(lightUBO.cameraPos.xyz - position);
+    vec3 R = reflect(V, N);
 
-    vec3 sky = texture(samplerSkybox, -N).rgb;
-    vec3 illum = texture(samplerIllumination, -N).rgb;
+    vec3 sky = texture(samplerSkybox, R).rgb;
+    vec3 illum = texture(samplerIllumination, R).rgb;
 
     vec3 L0 = vec3(0.0, 0.0, 0.0);
     vec3 F0 = vec3(0.04); 
