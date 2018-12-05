@@ -26,8 +26,8 @@ void main()
     vec3 result = texture(samplerColor, inUV).rgb * weight[0]; // current fragment's contribution
     for(int i = 1; i < 5; ++i)
     {
-        result += texture(samplerColor, inUV + vec2(tex_offset.x * i, 0.0)).rgb * weight[i] * 1.5;
-        result += texture(samplerColor, inUV - vec2(tex_offset.x * i, 0.0)).rgb * weight[i] * 1.5;
+        result += texture(samplerColor, inUV + vec2(0.0, tex_offset.y * i)).rgb * weight[i] * 1.5;
+        result += texture(samplerColor, inUV - vec2(0.0, tex_offset.y * i)).rgb * weight[i] * 1.5;
     }
     outFragColor = vec4(result, 1.0);
 }

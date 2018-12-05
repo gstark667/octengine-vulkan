@@ -92,8 +92,9 @@ struct application_t
     pipeline_t pipeline;
     pipeline_t offscreenPipeline;
     pipeline_t skyPipeline;
-    pipeline_t blurHPipeline;
+    pipeline_t blurHPipeline, blurVPipeline;
     pipeline_t postPipeline;
+    pipeline_t copyPipeline;
     pipeline_t uiPipeline;
 
     model_t model;
@@ -110,17 +111,18 @@ struct application_t
     VkCommandBuffer commandBuffer;
     VkCommandBuffer offscreenCommandBuffer;
     VkCommandBuffer skyCommandBuffer;
-    VkCommandBuffer blurHCommandBuffer;
+    VkCommandBuffer blurHCommandBuffer, blurVCommandBuffer;
     VkCommandBuffer postCommandBuffer;
+    VkCommandBuffer copyCommandBuffer;
     std::vector<VkCommandBuffer*> shadowCommandBuffers;
 
-    pipeline_attachment_t colorAttachment, brightAttachment, depthAttachment, albedo, normal, position, pbr, offscreenDepthAttachment, shadowPosition, sky, blurH, blurV, postColor, uiColor, uiDepth;
+    pipeline_attachment_t colorAttachment, brightAttachment, depthAttachment, albedo, normal, position, currPosition, lastPosition, pbr, offscreenDepthAttachment, shadowPosition, sky, blurH, blurV, postColor, uiColor, uiDepth;
     std::vector<pipeline_attachment_t*> attachments;
     std::vector<pipeline_attachment_t*> offscreenAttachments;
     std::vector<pipeline_attachment_t*> skyAttachments;
-    std::vector<pipeline_attachment_t*> blurHAttachments;
-    std::vector<pipeline_attachment_t*> blurVAttachments;
+    std::vector<pipeline_attachment_t*> blurHAttachments, blurVAttachments;
     std::vector<pipeline_attachment_t*> postAttachments;
+    std::vector<pipeline_attachment_t*> copyAttachments;
     std::vector<pipeline_attachment_t*> uiAttachments;
 
     image_t *shadowImageArray = NULL;
@@ -130,8 +132,9 @@ struct application_t
     descriptor_set_t descriptorSet;
     descriptor_set_t offscreenDescriptorSet;
     descriptor_set_t skyDescriptorSet;
-    descriptor_set_t blurHDescriptorSet;
+    descriptor_set_t blurHDescriptorSet, blurVDescriptorSet;
     descriptor_set_t postDescriptorSet;
+    descriptor_set_t copyDescriptorSet;
     descriptor_set_t uiDescriptorSet;
     std::vector<descriptor_set_t*> shadowDescriptorSets;
 
@@ -139,8 +142,9 @@ struct application_t
     VkSemaphore offscreenSemaphore;
     VkSemaphore skySemaphore;
     VkSemaphore uiSemaphore;
-    VkSemaphore blurHSemaphore;
+    VkSemaphore blurHSemaphore, blurVSemaphore;
     VkSemaphore postSemaphore;
+    VkSemaphore copySemaphore;
     VkSemaphore renderFinishedSemaphore;
     std::vector<VkSemaphore*> shadowSemaphores;
 

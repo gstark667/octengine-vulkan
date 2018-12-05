@@ -504,8 +504,10 @@ void application_create_pipeline_attachments(application_t *app) {
     // composite
     pipeline_attachment_create(&app->colorAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     pipeline_attachment_create(&app->brightAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
+    pipeline_attachment_create(&app->currPosition, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     app->attachments.push_back(&app->colorAttachment);
     app->attachments.push_back(&app->brightAttachment);
+    app->attachments.push_back(&app->currPosition);
 
     // offscreen
     pipeline_attachment_create(&app->albedo, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
@@ -535,6 +537,10 @@ void application_create_pipeline_attachments(application_t *app) {
     // post
     pipeline_attachment_create(&app->postColor, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     app->postAttachments.push_back(&app->postColor);
+
+    // copy
+    pipeline_attachment_create(&app->lastPosition, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
+    app->copyAttachments.push_back(&app->lastPosition);
 
     // ui
     app->uiColor.image.image = app->swapChainImages[0];
@@ -605,13 +611,29 @@ void application_create_pipelines(application_t *app)
     app->blurHPipeline.depth = false;
     pipeline_create(&app->blurHPipeline, &app->blurHDescriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/blurh_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->blurHAttachments, true, false);
 
+    // blur vertical
+    descriptor_set_setup(&app->blurVDescriptorSet, app->device, app->physicalDevice);
+    descriptor_set_add_image(&app->blurVDescriptorSet, &app->brightAttachment.image, 0, false, false, false);
+    descriptor_set_create(&app->blurVDescriptorSet);
+    app->blurVPipeline.depth = false;
+    pipeline_create(&app->blurVPipeline, &app->blurVDescriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/blurv_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->blurVAttachments, true, false);
+
     // post
     descriptor_set_setup(&app->postDescriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_image(&app->postDescriptorSet, &app->colorAttachment.image, 0, false, false, false);
-    descriptor_set_add_image(&app->postDescriptorSet, &app->blurH.image, 1, false, false, false);
+    descriptor_set_add_image(&app->postDescriptorSet, &app->blurV.image, 1, false, false, false);
+    descriptor_set_add_image(&app->postDescriptorSet, &app->currPosition.image, 2, false, false, false);
+    //descriptor_set_add_image(&app->postDescriptorSet, &app->lastPosition.image, 3, false, false, false);
     descriptor_set_create(&app->postDescriptorSet);
     app->postPipeline.depth = false;
     pipeline_create(&app->postPipeline, &app->postDescriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/post_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->postAttachments, true, false);
+
+    // copy
+    descriptor_set_setup(&app->copyDescriptorSet, app->device, app->physicalDevice);
+    descriptor_set_add_image(&app->copyDescriptorSet, &app->currPosition.image, 0, false, false, false);
+    descriptor_set_create(&app->copyDescriptorSet);
+    app->copyPipeline.depth = false;
+    pipeline_create(&app->copyPipeline, &app->copyDescriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/copy_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->copyAttachments, true, false);
 
     // ui
     descriptor_set_setup(&app->uiDescriptorSet, app->device, app->physicalDevice);
@@ -699,6 +721,17 @@ void application_create_command_buffers(application_t *app) {
     model_render(&app->quad, app->blurHCommandBuffer, &app->blurHPipeline, &app->blurHDescriptorSet);
     pipeline_end_render(&app->blurHPipeline, app->blurHCommandBuffer);
 
+    // create the blur v command buffer
+    allocInfo.commandBufferCount = 1;
+
+    if (vkAllocateCommandBuffers(app->device, &allocInfo, &app->blurVCommandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate command buffers!");
+    }
+
+    pipeline_begin_render(&app->blurVPipeline, app->blurVCommandBuffer);
+    model_render(&app->quad, app->blurVCommandBuffer, &app->blurVPipeline, &app->blurVDescriptorSet);
+    pipeline_end_render(&app->blurVPipeline, app->blurVCommandBuffer);
+
     // create the post command buffer
     allocInfo.commandBufferCount = 1;
 
@@ -709,6 +742,17 @@ void application_create_command_buffers(application_t *app) {
     pipeline_begin_render(&app->postPipeline, app->postCommandBuffer);
     model_render(&app->quad, app->postCommandBuffer, &app->postPipeline, &app->postDescriptorSet);
     pipeline_end_render(&app->postPipeline, app->postCommandBuffer);
+
+    // create the copy command buffer
+    allocInfo.commandBufferCount = 1;
+
+    if (vkAllocateCommandBuffers(app->device, &allocInfo, &app->copyCommandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate command buffers!");
+    }
+
+    pipeline_begin_render(&app->copyPipeline, app->copyCommandBuffer);
+    model_render(&app->quad, app->copyCommandBuffer, &app->copyPipeline, &app->copyDescriptorSet);
+    pipeline_end_render(&app->copyPipeline, app->copyCommandBuffer);
 
     // create the ui command buffer
     allocInfo.commandBufferCount = (uint32_t) app->commandBuffers.size();
@@ -748,7 +792,9 @@ void application_create_semaphores(application_t *app) {
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->offscreenSemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->skySemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->blurHSemaphore) != VK_SUCCESS ||
+        vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->blurVSemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->postSemaphore) != VK_SUCCESS ||
+        vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->copySemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->uiSemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->renderFinishedSemaphore) != VK_SUCCESS) {
 
@@ -955,6 +1001,21 @@ void application_draw_frame(application_t *app) {
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &app->blurHCommandBuffer;
 
+    signalSemaphores[0] = app->blurVSemaphore;
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    if (vkQueueSubmit(app->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit draw command buffer!");
+    }
+
+    // blur v
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = &app->blurVSemaphore;
+    submitInfo.pWaitDstStageMask = waitStages;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &app->blurVCommandBuffer;
+
     signalSemaphores[0] = app->postSemaphore;
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
@@ -969,6 +1030,21 @@ void application_draw_frame(application_t *app) {
     submitInfo.pWaitDstStageMask = waitStages;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &app->postCommandBuffer;
+
+    signalSemaphores[0] = app->copySemaphore;
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    if (vkQueueSubmit(app->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit draw command buffer!");
+    }
+
+    // copy
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = &app->copySemaphore;
+    submitInfo.pWaitDstStageMask = waitStages;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &app->copyCommandBuffer;
 
     signalSemaphores[0] = app->uiSemaphore;
     submitInfo.signalSemaphoreCount = 1;
@@ -1017,18 +1093,24 @@ void application_cleanup_pipelines(application_t *app)
     pipeline_cleanup(&app->pipeline);
     pipeline_cleanup(&app->offscreenPipeline);
     pipeline_cleanup(&app->skyPipeline);
+    pipeline_cleanup(&app->blurHPipeline);
+    pipeline_cleanup(&app->blurVPipeline);
     pipeline_cleanup(&app->postPipeline);
     pipeline_cleanup(&app->uiPipeline);
     // cleanup descriptor sets
     descriptor_set_cleanup(&app->descriptorSet);
     descriptor_set_cleanup(&app->offscreenDescriptorSet);
     descriptor_set_cleanup(&app->skyDescriptorSet);
+    descriptor_set_cleanup(&app->blurHDescriptorSet);
+    descriptor_set_cleanup(&app->blurVDescriptorSet);
     descriptor_set_cleanup(&app->postDescriptorSet);
     descriptor_set_cleanup(&app->uiDescriptorSet);
     // clear out attachment lists
     app->attachments.clear();
     app->offscreenAttachments.clear();
     app->skyAttachments.clear();
+    app->blurHAttachments.clear();
+    app->blurVAttachments.clear();
     app->postAttachments.clear();
     app->uiAttachments.clear();
 }
@@ -1245,6 +1327,8 @@ void application_cleanup(application_t *app) {
     vkDestroySemaphore(app->device, app->renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->offscreenSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->skySemaphore, nullptr);
+    vkDestroySemaphore(app->device, app->blurHSemaphore, nullptr);
+    vkDestroySemaphore(app->device, app->blurVSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->postSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->uiSemaphore, nullptr);
     vkDestroySemaphore(app->device, app->imageAvailableSemaphore, nullptr);

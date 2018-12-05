@@ -34,6 +34,7 @@ layout (location = 0) in vec2 inUV;
 
 layout (location = 0) out vec4 outFragColor;
 layout (location = 1) out vec4 outFragBright;
+layout (location = 2) out vec4 outPosition;
 
 #define SHADOW_FACTOR 0.0
 #define PI 3.14159
@@ -192,6 +193,7 @@ void main()
     vec3 albedo = resolve(samplerAlbedo, UV).rgb;
     vec3 normal = resolve(samplerNormal, UV).rgb;
     vec3 position = resolve(samplerPosition, UV).rgb;
+    outPosition = vec4(albedo, 0.0);
     vec3 pbr = resolve(samplerPBR, UV).rgb;
 
     vec3 N = normalize(normal);
