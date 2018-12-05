@@ -117,7 +117,8 @@ void pipeline_create_render_pass(pipeline_t *pipeline)
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = colorRefs.size();
     subpass.pColorAttachments = colorRefs.data();
-    subpass.pDepthStencilAttachment = &depthRef;
+    if (pipeline->depth)
+        subpass.pDepthStencilAttachment = &depthRef;
     if (resolve)
     {
         subpass.pResolveAttachments = &resolveRef;
@@ -344,7 +345,8 @@ void pipeline_create_graphics(pipeline_t *pipeline, uint32_t width, uint32_t hei
     pipelineInfo.pRasterizationState = &rasterizer;
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pColorBlendState = &colorBlending;
-    pipelineInfo.pDepthStencilState = &depthStencil;
+    if (pipeline->depth)
+        pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.layout = pipeline->layout;
     pipelineInfo.renderPass = pipeline->renderPass;
     pipelineInfo.subpass = 0;

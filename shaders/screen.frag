@@ -33,6 +33,7 @@ layout (binding = 1) uniform render_uniform_buffer_object {
 layout (location = 0) in vec2 inUV;
 
 layout (location = 0) out vec4 outFragColor;
+layout (location = 1) out vec4 outFragBright;
 
 #define SHADOW_FACTOR 0.0
 #define PI 3.14159
@@ -236,15 +237,14 @@ void main()
         diffuse += mix(G, D * G, pbr.r) * attenuation * lightUBO.lights[i].color.rgb * albedo;
     }
 
-    vec3 color = mix(diffuse, specular, F);
-    //color += L0;
-    color += albedo * pbr.b;
-
-    //color = Tonemap(color * 4.5);
-    //color = color * (1.0f / Tonemap(vec3(11.2f)));
-    //color = pow(color, vec3(1.0f / 2.2f));
-    outFragColor = vec4(color, 1.0f);
+    vec3 color = mix(mix(diffuse, specular, F), albedo, pbr.b);
 
     outFragColor = vec4(mix(color, texture(samplerSky, inUV).rgb, resolveSky(samplerDepth, UV)), 1.0);
+
+    float brightness = dot(outFragColor.rgb, vec3(0.2126, 0.7152, 0.0722)) + pbr.b;
+    if(brightness > 1.0)
+        outFragBright = outFragColor;
+    else
+        outFragBright = vec4(0.0, 0.0, 0.0, 1.0);
 }
 
