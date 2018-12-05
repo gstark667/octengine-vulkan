@@ -43,6 +43,12 @@ struct render_ubo_t
     int sampleCount = 2;
 };
 
+struct post_ubo_t
+{
+    glm::vec4 velocity = glm::vec4(0.0f);
+    float fov = 90.0f;
+};
+
 struct descriptor_texture_t
 {
     texture_t *texture;

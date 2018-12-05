@@ -171,7 +171,9 @@ void scene_update(scene_t *scene, float delta)
     }
 
     if (scene->camera && scene->camera->object)
+    {
         scene->audio.listener = scene->camera->object;
+    }
     audio_world_update(&scene->audio, delta);
     ui_update(&scene->ui);
 }

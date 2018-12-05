@@ -94,7 +94,6 @@ struct application_t
     pipeline_t skyPipeline;
     pipeline_t blurHPipeline, blurVPipeline;
     pipeline_t postPipeline;
-    pipeline_t copyPipeline;
     pipeline_t uiPipeline;
 
     model_t model;
@@ -105,6 +104,7 @@ struct application_t
     uniform_buffer_object_t ubo, skyUbo;
     light_ubo_t lightUBO;
     render_ubo_t renderUBO;
+    post_ubo_t postUBO;
 
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;
@@ -113,7 +113,6 @@ struct application_t
     VkCommandBuffer skyCommandBuffer;
     VkCommandBuffer blurHCommandBuffer, blurVCommandBuffer;
     VkCommandBuffer postCommandBuffer;
-    VkCommandBuffer copyCommandBuffer;
     std::vector<VkCommandBuffer*> shadowCommandBuffers;
 
     pipeline_attachment_t colorAttachment, brightAttachment, depthAttachment, albedo, normal, position, currPosition, lastPosition, pbr, offscreenDepthAttachment, shadowPosition, sky, blurH, blurV, postColor, uiColor, uiDepth;
@@ -122,7 +121,6 @@ struct application_t
     std::vector<pipeline_attachment_t*> skyAttachments;
     std::vector<pipeline_attachment_t*> blurHAttachments, blurVAttachments;
     std::vector<pipeline_attachment_t*> postAttachments;
-    std::vector<pipeline_attachment_t*> copyAttachments;
     std::vector<pipeline_attachment_t*> uiAttachments;
 
     image_t *shadowImageArray = NULL;
@@ -134,7 +132,6 @@ struct application_t
     descriptor_set_t skyDescriptorSet;
     descriptor_set_t blurHDescriptorSet, blurVDescriptorSet;
     descriptor_set_t postDescriptorSet;
-    descriptor_set_t copyDescriptorSet;
     descriptor_set_t uiDescriptorSet;
     std::vector<descriptor_set_t*> shadowDescriptorSets;
 
@@ -144,7 +141,6 @@ struct application_t
     VkSemaphore uiSemaphore;
     VkSemaphore blurHSemaphore, blurVSemaphore;
     VkSemaphore postSemaphore;
-    VkSemaphore copySemaphore;
     VkSemaphore renderFinishedSemaphore;
     std::vector<VkSemaphore*> shadowSemaphores;
 

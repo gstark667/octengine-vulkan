@@ -504,10 +504,8 @@ void application_create_pipeline_attachments(application_t *app) {
     // composite
     pipeline_attachment_create(&app->colorAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     pipeline_attachment_create(&app->brightAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
-    pipeline_attachment_create(&app->currPosition, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     app->attachments.push_back(&app->colorAttachment);
     app->attachments.push_back(&app->brightAttachment);
-    app->attachments.push_back(&app->currPosition);
 
     // offscreen
     pipeline_attachment_create(&app->albedo, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
@@ -537,10 +535,6 @@ void application_create_pipeline_attachments(application_t *app) {
     // post
     pipeline_attachment_create(&app->postColor, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     app->postAttachments.push_back(&app->postColor);
-
-    // copy
-    pipeline_attachment_create(&app->lastPosition, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
-    app->copyAttachments.push_back(&app->lastPosition);
 
     // ui
     app->uiColor.image.image = app->swapChainImages[0];
@@ -622,18 +616,9 @@ void application_create_pipelines(application_t *app)
     descriptor_set_setup(&app->postDescriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_image(&app->postDescriptorSet, &app->colorAttachment.image, 0, false, false, false);
     descriptor_set_add_image(&app->postDescriptorSet, &app->blurV.image, 1, false, false, false);
-    descriptor_set_add_image(&app->postDescriptorSet, &app->currPosition.image, 2, false, false, false);
-    //descriptor_set_add_image(&app->postDescriptorSet, &app->lastPosition.image, 3, false, false, false);
     descriptor_set_create(&app->postDescriptorSet);
     app->postPipeline.depth = false;
     pipeline_create(&app->postPipeline, &app->postDescriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/post_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->postAttachments, true, false);
-
-    // copy
-    descriptor_set_setup(&app->copyDescriptorSet, app->device, app->physicalDevice);
-    descriptor_set_add_image(&app->copyDescriptorSet, &app->currPosition.image, 0, false, false, false);
-    descriptor_set_create(&app->copyDescriptorSet);
-    app->copyPipeline.depth = false;
-    pipeline_create(&app->copyPipeline, &app->copyDescriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/copy_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->copyAttachments, true, false);
 
     // ui
     descriptor_set_setup(&app->uiDescriptorSet, app->device, app->physicalDevice);
@@ -743,17 +728,6 @@ void application_create_command_buffers(application_t *app) {
     model_render(&app->quad, app->postCommandBuffer, &app->postPipeline, &app->postDescriptorSet);
     pipeline_end_render(&app->postPipeline, app->postCommandBuffer);
 
-    // create the copy command buffer
-    allocInfo.commandBufferCount = 1;
-
-    if (vkAllocateCommandBuffers(app->device, &allocInfo, &app->copyCommandBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate command buffers!");
-    }
-
-    pipeline_begin_render(&app->copyPipeline, app->copyCommandBuffer);
-    model_render(&app->quad, app->copyCommandBuffer, &app->copyPipeline, &app->copyDescriptorSet);
-    pipeline_end_render(&app->copyPipeline, app->copyCommandBuffer);
-
     // create the ui command buffer
     allocInfo.commandBufferCount = (uint32_t) app->commandBuffers.size();
 
@@ -794,7 +768,6 @@ void application_create_semaphores(application_t *app) {
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->blurHSemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->blurVSemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->postSemaphore) != VK_SUCCESS ||
-        vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->copySemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->uiSemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(app->device, &semaphoreInfo, nullptr, &app->renderFinishedSemaphore) != VK_SUCCESS) {
 
@@ -1030,21 +1003,6 @@ void application_draw_frame(application_t *app) {
     submitInfo.pWaitDstStageMask = waitStages;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &app->postCommandBuffer;
-
-    signalSemaphores[0] = app->copySemaphore;
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphores;
-
-    if (vkQueueSubmit(app->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
-        throw std::runtime_error("failed to submit draw command buffer!");
-    }
-
-    // copy
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = &app->copySemaphore;
-    submitInfo.pWaitDstStageMask = waitStages;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &app->copyCommandBuffer;
 
     signalSemaphores[0] = app->uiSemaphore;
     submitInfo.signalSemaphoreCount = 1;
