@@ -82,41 +82,6 @@ float filterPCF(vec4 sc, int layer)
     return shadowFactor / count;
 }
 
-vec4 resolve(sampler2DMS tex, ivec2 uv)
-{
-    vec4 result = vec4(0.0);
-    for (int i = 0; i < renderUBO.sampleCount; i++)
-    {
-        result += texelFetch(tex, uv, i); 
-    }    
-    // Average resolved samples
-    return result / float(renderUBO.sampleCount);
-}
-
-float resolveSky(sampler2DMS tex, ivec2 uv)
-{
-    float result = 0.0;
-    for (int i = 0; i < renderUBO.sampleCount; i++)
-    {
-        if (texelFetch(tex, uv, i).r == 1.0)
-            result += 1.0;
-    }    
-    // Average resolved samples
-    return result / float(renderUBO.sampleCount);
-}
-
-// Tone Mapping
-vec3 Tonemap(vec3 x)
-{
-    float A = 0.15;
-    float B = 0.50;
-    float C = 0.10;
-    float D = 0.20;
-    float E = 0.02;
-    float F = 0.30;
-    return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
-}
-
 // Normal Distribution
 float D_GGX(float dotNH, float roughness)
 {
@@ -183,15 +148,15 @@ vec3 specularContribution(vec3 L, vec3 V, vec3 N, vec3 albedo, float metallic, f
     return color;
 }
 
-void main()
+vec4 process(ivec2 UV, vec4 skyColor, int i)
 {
-    ivec2 attDim = textureSize(samplerAlbedo);
-    ivec2 UV = ivec2(inUV * attDim);
+    if (texelFetch(samplerDepth, UV, i).r == 1)
+        return skyColor;
 
-    vec3 albedo = resolve(samplerAlbedo, UV).rgb;
-    vec3 normal = resolve(samplerNormal, UV).rgb;
-    vec3 position = resolve(samplerPosition, UV).rgb;
-    vec3 pbr = resolve(samplerPBR, UV).rgb;
+    vec3 albedo = texelFetch(samplerAlbedo, UV, i).rgb;
+    vec3 normal = texelFetch(samplerNormal, UV, i).rgb;
+    vec3 position = texelFetch(samplerPosition, UV, i).rgb;
+    vec3 pbr = texelFetch(samplerPBR, UV, i).rgb;
 
     vec3 N = normalize(normal);
     vec3 V = normalize(lightUBO.cameraPos.xyz - position);
@@ -238,11 +203,27 @@ void main()
     }
 
     vec3 color = mix(mix(diffuse, specular, F), albedo, pbr.b);
+    float brightness = dot(color, vec3(0.2126, 0.7152, 0.0722)) + pbr.b;
 
-    outFragColor = vec4(mix(color, texture(samplerSky, inUV).rgb, resolveSky(samplerDepth, UV)), 1.0);
+    return vec4(color, brightness);
+}
 
-    float brightness = dot(outFragColor.rgb, vec3(0.2126, 0.7152, 0.0722)) + pbr.b;
-    if(brightness > 1.0)
+void main()
+{
+    ivec2 attDim = textureSize(samplerAlbedo);
+    ivec2 UV = ivec2(inUV * attDim);
+    vec4 skyColor = texture(samplerSky, inUV);
+    skyColor.w = dot(skyColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+
+    vec4 result = vec4(0.0);
+    for (int i = 0; i < renderUBO.sampleCount; i++)
+    {
+        result += process(UV, skyColor, i);
+    }
+    result /= float(renderUBO.sampleCount);
+    outFragColor = vec4(result.xyz, 1.0);
+
+    if(result.w > 1.0)
         outFragBright = outFragColor;
     else
         outFragBright = vec4(0.0, 0.0, 0.0, 1.0);

@@ -579,6 +579,7 @@ void application_create_pipelines(application_t *app)
     app->pipeline.depth = false;
     pipeline_create(&app->pipeline, &app->descriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/screen_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->attachments, true, false);
     app->renderUBO.sampleCount = app->sampleCount;
+    std::cout << app->sampleCount << std::endl;
     app->renderUBO.ambient = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
     descriptor_set_update_buffer(&app->descriptorSet, &app->renderUBO, 1);
 
@@ -1173,6 +1174,7 @@ void application_main_loop(application_t *app) {
         auto currentTime = std::chrono::high_resolution_clock::now();
         float delta = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
         lastTime = std::chrono::high_resolution_clock::now();
+        std::cout << "fps: " << 1.0f/delta << std::endl;
 
         if (startup > 0)
         {
