@@ -115,7 +115,7 @@ struct application_t
     VkCommandBuffer postCommandBuffer;
     std::vector<VkCommandBuffer*> shadowCommandBuffers;
 
-    pipeline_attachment_t colorAttachment, brightAttachment, depthAttachment, albedo, normal, position, currPosition, lastPosition, pbr, offscreenDepthAttachment, shadowPosition, sky, blurH, blurV, postColor, uiColor, uiDepth;
+    pipeline_attachment_t colorAttachment, brightAttachment, normalAttachment, positionAttachment, albedo, normal, position, currPosition, lastPosition, pbr, offscreenDepthAttachment, shadowPosition, sky, blurH, blurV, postColor, uiColor, uiDepth;
     std::vector<pipeline_attachment_t*> attachments;
     std::vector<pipeline_attachment_t*> offscreenAttachments;
     std::vector<pipeline_attachment_t*> skyAttachments;

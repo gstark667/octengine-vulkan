@@ -27,13 +27,15 @@ layout (binding = 0) uniform light_uniform_buffer_object {
 
 layout (binding = 1) uniform render_uniform_buffer_object {
     vec4 ambient;
-    int sampleCount;
+    float sampleCount;
 } renderUBO;
 
 layout (location = 0) in vec2 inUV;
 
 layout (location = 0) out vec4 outFragColor;
 layout (location = 1) out vec4 outFragBright;
+layout (location = 2) out vec4 outFragNormal;
+layout (location = 3) out vec4 outFragPosition;
 
 #define SHADOW_FACTOR 0.0
 #define PI 3.14159
@@ -43,6 +45,16 @@ const mat4 biasMat = mat4(
     0.0, 0.5, 0.0, 0.0,
     0.0, 0.0, 0.5, 0.0,
     0.5, 0.5, 0.5, 1.0);
+
+vec4 resolve(sampler2DMS tex, ivec2 uv)
+{
+    vec4 result = vec4(0.0);
+    for (float i = 0.0; i < renderUBO.sampleCount; i += 1.0)
+    {
+        result += texelFetch(tex, uv, int(i)); 
+    }    
+    return result / renderUBO.sampleCount;
+}
 
 float textureProj(vec4 P, vec2 off, int layer)
 {
@@ -216,12 +228,15 @@ void main()
     skyColor.w = dot(skyColor.rgb, vec3(0.2126, 0.7152, 0.0722));
 
     vec4 result = vec4(0.0);
-    for (int i = 0; i < renderUBO.sampleCount; i++)
+    for (float i = 0.0; i < renderUBO.sampleCount; i += 1.0)
     {
-        result += process(UV, skyColor, i);
+        result += process(UV, skyColor, int(i));
     }
-    result /= float(renderUBO.sampleCount);
+    result /= renderUBO.sampleCount;
     outFragColor = vec4(result.xyz, 1.0);
+
+    outFragPosition = resolve(samplerPosition, UV);
+    outFragNormal = resolve(samplerNormal, UV);
 
     if(result.w > 1.0)
         outFragBright = outFragColor;
