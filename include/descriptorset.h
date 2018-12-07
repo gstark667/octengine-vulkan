@@ -45,8 +45,8 @@ struct render_ubo_t
 
 struct post_ubo_t
 {
-    glm::vec4 velocity = glm::vec4(0.0f);
-    float fov = 90.0f;
+    glm::mat4 cameraMVP = glm::mat4(0.0f);
+    glm::vec4 cameraPos = glm::vec4(0.0f);
 };
 
 struct descriptor_texture_t

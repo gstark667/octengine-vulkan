@@ -27,7 +27,7 @@ layout(location = 8) in ivec3 instanceTex;
 layout (location = 0) out vec3 outNormal;
 layout (location = 1) out vec2 outUV;
 layout (location = 2) out vec3 outColor;
-layout (location = 3) out vec3 outWorldPos;
+layout (location = 3) out vec4 outWorldPos;
 layout (location = 4) out ivec3 outTexIdx;
 
 out gl_PerVertex {
@@ -56,5 +56,5 @@ void main() {
     outUV = inTexCoord;
     outColor = vec3(1.0, 1.0, 1.0);
     outTexIdx = instanceTex;
-    outWorldPos = worldPos.xyz * 0.5;
+    outWorldPos = vec4(worldPos.xyz * 0.5, 1.0);
 }

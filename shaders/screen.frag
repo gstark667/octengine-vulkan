@@ -60,7 +60,7 @@ float textureProj(vec4 P, vec2 off, int layer)
 {
     float shadow = 1.0;
     vec4 shadowCoord = P;
-    shadowCoord.st = shadowCoord.st * 0.5 + 0.5;
+    shadowCoord.st = shadowCoord.st/shadowCoord.w * 0.5 + 0.5;
     if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0 && shadowCoord.x > 0.0 && shadowCoord.x < 1.0 && shadowCoord.y > 0.0 && shadowCoord.y < 1.0)
     {
         float dist = texture(shadowDepth, vec3(shadowCoord.st + off, layer)).r;
