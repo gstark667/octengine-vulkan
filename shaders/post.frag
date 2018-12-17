@@ -14,18 +14,24 @@ layout (binding = 4) uniform post_uniform_buffer_object {
     vec4 cameraPos;
 } postUBO;
 
-vec2 toScreenSpace(vec3 position)
+vec3 toScreenSpace(vec3 position)
 {
     vec4 result = postUBO.cameraMVP * vec4(position, 1.0);
-    return result.st / result.w * 0.5 + 0.5;
+    return vec3(result.xy / result.w * 0.5 + 0.5, result.z);
+}
+
+float calcDist(vec3 pos1, vec3 pos2)
+{
+    return distance(pos1, postUBO.cameraPos.xyz) - distance(pos2, postUBO.cameraPos.xyz);
 }
 
 vec3 SSR(vec3 pos, vec3 dir)
 {
-    for (int i = 0; i < 100; ++i)
+    float dist = 0.0;
+    for (int i = 0; i < 25; ++i)
     {
-        float depth = texture(samplerPosition, toScreenSpace(pos)).z;
-        if (depth < pos.z)
+        dist = calcDist(texture(samplerPosition, toScreenSpace(pos).xy).xyz, pos);
+        if (dist > 0.0)
         {
             pos += dir;
         }
@@ -35,22 +41,23 @@ vec3 SSR(vec3 pos, vec3 dir)
             pos -= dir;
         }
     }
-    return texture(samplerComposite, toScreenSpace(pos)).rgb;
+    vec2 uv = toScreenSpace(pos).xy;
+    //if (uv.x > 1.0 || uv.x < 0.0 || uv.y > 1.0 || uv.y < 0.0 || dist > 0.1 || dist < -0.1)
+    //    return vec3(0.0);
+    return texture(samplerComposite, uv).rgb;
 }
 
 void main()
 {
     vec3 color = texture(samplerComposite, inUV).rgb;
     vec3 bright = texture(samplerBright, inUV).rgb;
-    vec3 normal = texture(samplerNormal, inUV).rgb;
+    vec3 normal = normalize(texture(samplerNormal, inUV).rgb);
     vec3 position = texture(samplerPosition, inUV).rgb;
 
-    vec3 R = reflect(position - postUBO.cameraPos.xyz, normal) * 0.1;
+    vec3 V = normalize(position - postUBO.cameraPos.xyz);
+    vec3 R = reflect(V, normal);
 
     outFragColor = vec4(color + bright, 1.0);
-    outFragColor = vec4(R, 1.0);
-    //outFragColor = vec4(texture(samplerComposite, toScreenSpace(position)).rgb, 1.0);
-    //outFragColor = vec4(texture(samplerComposite, toScreenSpace(ref)).rgb, 1.0);
-    outFragColor = vec4(SSR(position + R, R), 1.0);
+    //outFragColor = vec4(SSR(position + R, R), 1.0);
 }
 
