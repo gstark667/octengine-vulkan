@@ -506,10 +506,12 @@ void application_create_pipeline_attachments(application_t *app) {
     pipeline_attachment_create(&app->brightAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     pipeline_attachment_create(&app->normalAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     pipeline_attachment_create(&app->positionAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
+    pipeline_attachment_create(&app->fresnelAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     app->attachments.push_back(&app->colorAttachment);
     app->attachments.push_back(&app->brightAttachment);
     app->attachments.push_back(&app->normalAttachment);
     app->attachments.push_back(&app->positionAttachment);
+    app->attachments.push_back(&app->fresnelAttachment);
 
     // offscreen
     pipeline_attachment_create(&app->albedo, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, app->sampleCount, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
@@ -624,6 +626,8 @@ void application_create_pipelines(application_t *app)
     descriptor_set_add_image(&app->postDescriptorSet, &app->normalAttachment.image, 2, false, false, false);
     descriptor_set_add_image(&app->postDescriptorSet, &app->positionAttachment.image, 3, false, false, false);
     descriptor_set_add_buffer(&app->postDescriptorSet, sizeof(post_ubo_t), 4, false);
+    descriptor_set_add_texture(&app->postDescriptorSet, &app->skybox, 5, false);
+    descriptor_set_add_image(&app->postDescriptorSet, &app->fresnelAttachment.image, 6, false, false, false);
     descriptor_set_create(&app->postDescriptorSet);
     app->postPipeline.depth = false;
     pipeline_create(&app->postPipeline, &app->postDescriptorSet, app->windowWidth, app->windowHeight, "shaders/screen_vert.spv", "shaders/post_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->postAttachments, true, false);
@@ -1185,6 +1189,7 @@ void application_main_loop(application_t *app) {
         auto currentTime = std::chrono::high_resolution_clock::now();
         float delta = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
         lastTime = std::chrono::high_resolution_clock::now();
+
         std::cout << "fps: " << 1.0f/delta << std::endl;
 
         if (startup > 0)

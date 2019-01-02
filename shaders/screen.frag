@@ -36,6 +36,7 @@ layout (location = 0) out vec4 outFragColor;
 layout (location = 1) out vec4 outFragBright;
 layout (location = 2) out vec4 outFragNormal;
 layout (location = 3) out vec4 outFragPosition;
+layout (location = 4) out vec4 outFragFresnel;
 
 #define SHADOW_FACTOR 0.0
 #define PI 3.14159
@@ -54,6 +55,17 @@ vec4 resolve(sampler2DMS tex, ivec2 uv)
         result += texelFetch(tex, uv, int(i)); 
     }    
     return result / renderUBO.sampleCount;
+}
+
+float resolveSky(sampler2DMS tex, ivec2 uv)
+{
+    float result = 0.0;
+    for (int i = 0; i < renderUBO.sampleCount; i++)
+    {
+        if (texelFetch(tex, uv, i).r == 1.0)
+            result += 1.0;
+    }    
+    return result / float(renderUBO.sampleCount);
 }
 
 float textureProj(vec4 P, vec2 off, int layer)
@@ -160,15 +172,15 @@ vec3 specularContribution(vec3 L, vec3 V, vec3 N, vec3 albedo, float metallic, f
     return color;
 }
 
-vec4 process(ivec2 UV, vec4 skyColor, int i)
+void main()
 {
-    if (texelFetch(samplerDepth, UV, i).r == 1)
-        return skyColor;
+    ivec2 attDim = textureSize(samplerAlbedo);
+    ivec2 UV = ivec2(inUV * attDim);
 
-    vec3 albedo = texelFetch(samplerAlbedo, UV, i).rgb;
-    vec3 normal = texelFetch(samplerNormal, UV, i).rgb;
-    vec3 position = texelFetch(samplerPosition, UV, i).rgb;
-    vec3 pbr = texelFetch(samplerPBR, UV, i).rgb;
+    vec3 albedo = resolve(samplerAlbedo, UV).rgb;
+    vec3 normal = resolve(samplerNormal, UV).rgb;
+    vec3 position = resolve(samplerPosition, UV).rgb;
+    vec3 pbr = resolve(samplerPBR, UV).rgb;
 
     vec3 N = normalize(normal);
     vec3 V = normalize(lightUBO.cameraPos.xyz - position);
@@ -176,12 +188,14 @@ vec4 process(ivec2 UV, vec4 skyColor, int i)
 
     vec3 sky = texture(samplerSkybox, R).rgb;
     vec3 illum = texture(samplerIllumination, R).rgb;
+    vec3 skyColor = texture(samplerSky, inUV).rgb;
+    float skyAmount = 1.0 - resolveSky(samplerDepth, UV);
 
     vec3 L0 = vec3(0.0, 0.0, 0.0);
     vec3 F0 = vec3(0.04); 
     F0 = mix(F0, albedo, pbr.r);
 
-    float F = fresnel(N, V, pbr.g) - (fresnel(V, V, pbr.g) * pbr.r);
+    float F = fresnel(N, V, pbr.g);
     vec3 diffuse = albedo * illum * 0.5;
     vec3 specular = mix(sky, illum * ((1.0 - pbr.g) * 0.5 + 0.5), pbr.g);
 
@@ -207,40 +221,22 @@ vec4 process(ivec2 UV, vec4 skyColor, int i)
         float dotNL = clamp(dot(N, L), 0.0, 1.0);
         float D = D_GGX(dotNH, pbr.g);
         float G = G_SchlicksmithGGX(dotNL, dotNV, pbr.g);
-        float F = fresnel(N, V, pbr.g);
         vec3 spec = vec3(D * F * G) / (4.0 * dotNL * dotNV + 0.001);
         vec3 kD = (vec3(1.0) - F) * (1.0 - pbr.r);
         diffuse += vec3(D * F * G) * lightUBO.lights[i].color.rgb * mix(vec3(1), albedo, pbr.r) * attenuation;
         diffuse += mix(G, D * G, pbr.r) * attenuation * lightUBO.lights[i].color.rgb * albedo;
     }
 
-    vec3 color = mix(mix(diffuse, specular, F), albedo, pbr.b);
-    float brightness = dot(color, vec3(0.2126, 0.7152, 0.0722)) + pbr.b;
+    vec3 color = mix(mix(diffuse, specular, F), albedo, pbr.b) * (1.0 + pbr.b);
 
-    return vec4(color, brightness);
-}
+    outFragColor = vec4(mix(skyColor, color, skyAmount), 1.0);
+    outFragPosition = vec4(position, skyAmount);
+    outFragNormal = vec4(normal, skyAmount);
+    outFragFresnel = vec4(F);
 
-void main()
-{
-    ivec2 attDim = textureSize(samplerAlbedo);
-    ivec2 UV = ivec2(inUV * attDim);
-    vec4 skyColor = texture(samplerSky, inUV);
-    skyColor.w = dot(skyColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-
-    vec4 result = vec4(0.0);
-    for (float i = 0.0; i < renderUBO.sampleCount; i += 1.0)
-    {
-        result += process(UV, skyColor, int(i));
-    }
-    result /= renderUBO.sampleCount;
-    outFragColor = vec4(result.xyz, 1.0);
-
-    outFragPosition = resolve(samplerPosition, UV);
-    outFragNormal = resolve(samplerNormal, UV);
-
-    if(result.w > 1.0)
+    float brightness = dot(outFragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+    if(brightness > 1.0)
         outFragBright = outFragColor;
     else
         outFragBright = vec4(0.0, 0.0, 0.0, 1.0);
 }
-
