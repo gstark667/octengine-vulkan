@@ -38,7 +38,6 @@ layout (location = 2) out vec4 outFragNormal;
 layout (location = 3) out vec4 outFragPosition;
 layout (location = 4) out vec4 outFragFresnel;
 
-#define SHADOW_FACTOR 0.0
 #define PI 3.14159
 
 const mat4 biasMat = mat4(
@@ -78,7 +77,7 @@ float textureProj(vec4 P, vec2 off, int layer)
         float dist = texture(shadowDepth, vec3(shadowCoord.st + off, layer)).r;
         if (shadowCoord.w > 0.0 && dist < shadowCoord.z - 0.0015)
         {
-            shadow = SHADOW_FACTOR;
+            shadow = 0.0;
         }
     }
     return shadow;
@@ -87,23 +86,19 @@ float textureProj(vec4 P, vec2 off, int layer)
 float filterPCF(vec4 sc, int layer)
 {
     ivec2 texDim = textureSize(shadowDepth, 0).xy;
-    float scale = 1.0;
-    float dx = scale * 1.0 / float(texDim.x);
-    float dy = scale * 1.0 / float(texDim.y);
+    vec2 delta = vec2(1.0) / vec2(texDim.xy);
 
     float shadowFactor = 0.0;
-    int count = 0;
     int range = 1;
     
     for (int x = -range; x <= range; x++)
     {
         for (int y = -range; y <= range; y++)
         {
-            shadowFactor += textureProj(sc, vec2(dx*x, dy*y), layer);
-            count++;
+            shadowFactor += textureProj(sc, vec2(delta.x * x, delta.y * y), layer);
         }
     }
-    return shadowFactor / count;
+    return shadowFactor / 9.0;
 }
 
 // Normal Distribution
@@ -112,7 +107,7 @@ float D_GGX(float dotNH, float roughness)
     float alpha = roughness * roughness;
     float alpha2 = alpha * alpha;
     float denom = dotNH * dotNH * (alpha2 - 1.0) + 1.0;
-    return (alpha2)/(PI * denom*denom); 
+    return (alpha2)/(PI * denom * denom); 
 }
 
 // Geometric Shadowing
@@ -131,18 +126,10 @@ float fresnel(vec3 N, vec3 V, float roughness)
     N = mix(N, V, roughness);
     float ior = 1.45;
     float c = max(dot(N, V), 0.0);
-    float g = ior * ior - 1.0 + c * c;
-    if (g > 0.0)
-    {
-        g = sqrt(g);
-        float A = (g - c) / (g + c);
-        float B = (c * (g + c) - 1.0) / (c * (g - c) + 1.0);
-        return 0.5 * A * A * (1.0 + B * B);
-    }
-    else
-    {
-        return 1.0;
-    }
+    float g = sqrt(ior * ior - 1.0 + c * c);
+    float A = (g - c) / (g + c);
+    float B = (c * (g + c) - 1.0) / (c * (g - c) + 1.0);
+    return 0.5 * A * A * (1.0 + B * B);
 }
 
 // Specular
@@ -221,10 +208,8 @@ void main()
         float dotNL = clamp(dot(N, L), 0.0, 1.0);
         float D = D_GGX(dotNH, pbr.g);
         float G = G_SchlicksmithGGX(dotNL, dotNV, pbr.g);
-        vec3 spec = vec3(D * F * G) / (4.0 * dotNL * dotNV + 0.001);
-        vec3 kD = (vec3(1.0) - F) * (1.0 - pbr.r);
-        diffuse += vec3(D * F * G) * lightUBO.lights[i].color.rgb * mix(vec3(1), albedo, pbr.r) * attenuation;
-        diffuse += mix(G, D * G, pbr.r) * attenuation * lightUBO.lights[i].color.rgb * albedo;
+        diffuse += vec3(D * F * G) * lightUBO.lights[i].color.rgb * mix(vec3(1), albedo, pbr.r) * attenuation
+        + mix(G, D * G, pbr.r) * attenuation * lightUBO.lights[i].color.rgb * albedo;
     }
 
     vec3 color = mix(mix(diffuse, specular, F), albedo, pbr.b) * (1.0 + pbr.b);
@@ -235,8 +220,5 @@ void main()
     outFragFresnel = vec4(F);
 
     float brightness = dot(outFragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-    if(brightness > 1.0)
-        outFragBright = outFragColor;
-    else
-        outFragBright = vec4(0.0, 0.0, 0.0, 1.0);
+    outFragBright = outFragColor * (clamp(brightness, 0.95, 1.0) - 0.95) * 20.0;
 }

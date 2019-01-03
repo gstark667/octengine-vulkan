@@ -506,7 +506,7 @@ void application_create_pipeline_attachments(application_t *app) {
     pipeline_attachment_create(&app->brightAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     pipeline_attachment_create(&app->normalAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     pipeline_attachment_create(&app->positionAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
-    pipeline_attachment_create(&app->fresnelAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
+    pipeline_attachment_create(&app->fresnelAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     app->attachments.push_back(&app->colorAttachment);
     app->attachments.push_back(&app->brightAttachment);
     app->attachments.push_back(&app->normalAttachment);
@@ -551,10 +551,7 @@ void application_create_pipeline_attachments(application_t *app) {
     app->uiColor.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     app->uiColor.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     app->uiColor.external = true;
-    pipeline_attachment_create(&app->uiDepth, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     app->uiAttachments.push_back(&app->uiColor);
-    app->uiAttachments.push_back(&app->uiDepth);
-
 
     // shadow
     if (!app->shadowImageArray)
@@ -646,16 +643,11 @@ void application_create_frame_buffers(application_t *app) {
     app->swapChainFramebuffers.resize(app->swapChainImageViews.size());
 
     for (size_t i = 0; i < app->swapChainImageViews.size(); i++) {
-        std::array<VkImageView, 2> views = {
-            app->swapChainImageViews[i],
-            app->uiDepth.image.view
-        };
-
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = app->uiPipeline.renderPass;
-        framebufferInfo.attachmentCount = views.size();
-        framebufferInfo.pAttachments = views.data();
+        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.pAttachments = &app->swapChainImageViews[i];
         framebufferInfo.width = app->swapChainExtent.width;
         framebufferInfo.height = app->swapChainExtent.height;
         framebufferInfo.layers = 1;

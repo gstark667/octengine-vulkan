@@ -34,7 +34,7 @@ vec3 SSR(vec3 pos, vec3 dir, vec3 color, float fresnel)
 
     float dist = 0.0;
     vec4 newPos;
-    for (int i = 0; i < 100; ++i)
+    for (int i = 0; i < 25; ++i)
     {
         newPos = texture(samplerPosition, toScreenSpace(pos).xy);
         dist = calcDist(newPos.xyz, pos);

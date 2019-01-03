@@ -16,9 +16,6 @@ layout (location = 0) out vec4 outFragColor;
 
 float weight[5] = float[5](0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
 
-#define SHADOW_FACTOR 0.0
-#define PI 3.14159
-
 void main()
 {
 
