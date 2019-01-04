@@ -129,7 +129,7 @@ float fresnel(vec3 N, vec3 V, float roughness)
     float g = sqrt(ior * ior - 1.0 + c * c);
     float A = (g - c) / (g + c);
     float B = (c * (g + c) - 1.0) / (c * (g - c) + 1.0);
-    return 0.5 * A * A * (1.0 + B * B);
+    return min(0.5 * A * A * (1.0 + B * B), 1.0);
 }
 
 // Specular

@@ -1144,7 +1144,7 @@ void application_init_vulkan(application_t *app) {
     texture_add(&app->skybox, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "up.png", false);
     texture_add(&app->skybox, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "front.png", false);
     texture_add(&app->skybox, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "back.png", false);
-    texture_load(&app->skybox, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
+    //texture_load(&app->skybox, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
 
     app->illumination.cube = true;
     texture_add(&app->illumination, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "right_ill.png", false);
@@ -1153,7 +1153,7 @@ void application_init_vulkan(application_t *app) {
     texture_add(&app->illumination, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "up_ill.png", false);
     texture_add(&app->illumination, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "front_ill.png", false);
     texture_add(&app->illumination, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue, "back_ill.png", false);
-    texture_load(&app->illumination, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
+    //texture_load(&app->illumination, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
 
     application_create_pipelines(app);
 

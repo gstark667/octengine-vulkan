@@ -36,6 +36,7 @@ struct font_t
     font_glyph_t glyphs[128];
     texture_t texture;
     texture_data_t textureData;
+    float size = 16.0f;
 };
 
 void font_create(font_t *font);

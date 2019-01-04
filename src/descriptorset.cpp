@@ -24,10 +24,23 @@ void descriptor_set_create_layout(descriptor_set_t *descriptorSet)
 
     for (auto it = descriptorSet->textures.begin(); it != descriptorSet->textures.end(); ++it)
     {
+        size_t bindIdx = it->binding;
+        if (!it->texture->combined)
+        {
+            VkDescriptorSetLayoutBinding binding = {};
+            binding.binding = bindIdx;
+            binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+            binding.descriptorCount = 1;
+            binding.stageFlags = it->vertex ? VK_SHADER_STAGE_VERTEX_BIT : VK_SHADER_STAGE_FRAGMENT_BIT;
+            binding.pImmutableSamplers = nullptr;
+            bindings.push_back(binding);
+            bindIdx++;
+        }
+
         VkDescriptorSetLayoutBinding binding = {};
-        binding.binding = it->binding;
-        binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        binding.descriptorCount = 1;
+        binding.binding = bindIdx;
+        binding.descriptorType = it->texture->combined ? VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER : VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        binding.descriptorCount = it->texture->combined ? 1 : 80;
         binding.stageFlags = it->vertex ? VK_SHADER_STAGE_VERTEX_BIT : VK_SHADER_STAGE_FRAGMENT_BIT;
         binding.pImmutableSamplers = nullptr;
         bindings.push_back(binding);
@@ -45,7 +58,14 @@ void descriptor_set_create_layout(descriptor_set_t *descriptorSet)
 
 void descriptor_set_create_pool(descriptor_set_t *descriptorSet)
 {
-    std::vector<VkDescriptorPoolSize> poolSizes(descriptorSet->buffers.size() + descriptorSet->textures.size());
+    size_t poolSize = descriptorSet->buffers.size() + descriptorSet->textures.size();
+    for (auto it = descriptorSet->textures.begin(); it != descriptorSet->textures.end(); ++it)
+    {
+        if (!it->texture->combined)
+            ++poolSize;
+    }
+
+    std::vector<VkDescriptorPoolSize> poolSizes(poolSize);
     for (auto it = descriptorSet->buffers.begin(); it != descriptorSet->buffers.end(); ++it)
     {
         poolSizes.at(it->binding).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -54,8 +74,16 @@ void descriptor_set_create_pool(descriptor_set_t *descriptorSet)
 
     for (auto it = descriptorSet->textures.begin(); it != descriptorSet->textures.end(); ++it)
     {
-        poolSizes.at(it->binding).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes.at(it->binding).descriptorCount = 1;
+        size_t bindIdx = it->binding;
+        if (!it->texture->combined)
+        {
+            poolSizes.at(bindIdx).type = VK_DESCRIPTOR_TYPE_SAMPLER;
+            poolSizes.at(bindIdx).descriptorCount = 1;
+            ++bindIdx;
+        }
+
+        poolSizes.at(bindIdx).type = it->texture->combined ? VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER : VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        poolSizes.at(bindIdx).descriptorCount = it->texture->combined ? 1 : 80;
     }
 
     VkDescriptorPoolCreateInfo poolInfo = {};
@@ -85,7 +113,8 @@ void descriptor_set_create_descriptor_set(descriptor_set_t *descriptorSet)
 
     std::vector<VkWriteDescriptorSet> descriptorWrites;
     std::vector<VkDescriptorBufferInfo*> bufferInfos;
-    std::vector<VkDescriptorImageInfo*> imageInfos;
+    std::vector<VkDescriptorImageInfo*> samplerInfos;
+    std::vector<std::vector<VkDescriptorImageInfo>*> imageInfos;
     for (auto it = descriptorSet->buffers.begin(); it != descriptorSet->buffers.end(); ++it)
     {
         VkDescriptorBufferInfo *bufferInfo = new VkDescriptorBufferInfo();
@@ -108,20 +137,65 @@ void descriptor_set_create_descriptor_set(descriptor_set_t *descriptorSet)
 
     for (auto it = descriptorSet->textures.begin(); it != descriptorSet->textures.end(); ++it)
     {
-        VkDescriptorImageInfo *imageInfo = new VkDescriptorImageInfo();
-        imageInfo->imageLayout = it->shadow ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo->imageView = it->texture->image.view;
-        imageInfo->sampler = it->texture->sampler;
+        std::vector<VkDescriptorImageInfo> *imageInfo = new std::vector<VkDescriptorImageInfo>();
+        size_t binding = it->binding;
+        if (!it->texture->combined)
+        {
+            {
+                VkDescriptorImageInfo *info = new VkDescriptorImageInfo();
+                info->imageLayout = it->shadow ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                info->sampler = it->texture->sampler;
+                samplerInfos.push_back(info);
+
+                VkWriteDescriptorSet write;
+                write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                write.dstSet = descriptorSet->descriptorSet;
+                write.dstBinding = binding;
+                write.dstArrayElement = 0;
+                write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+                write.descriptorCount = 1;
+                write.pImageInfo = info;
+                write.pNext = NULL;
+                descriptorWrites.push_back(write);
+
+                binding++;
+            }
+
+            for (auto it2 = it->texture->data.begin(); it2 != it->texture->data.end(); ++it2)
+            {
+                VkDescriptorImageInfo info;
+                info.imageLayout = it->shadow ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                info.imageView = it2->image.view;
+                info.sampler = it->texture->combined ? it->texture->sampler : VK_NULL_HANDLE;
+                imageInfo->push_back(info);
+            }
+
+            for (size_t i = it->texture->data.size(); !it->texture->combined && i < 80; ++i)
+            {
+                VkDescriptorImageInfo info;
+                info.imageLayout = it->shadow ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                info.imageView = it->texture->data.back().image.view;
+                imageInfo->push_back(info);
+            }
+        }
+        else
+        {
+            VkDescriptorImageInfo info;
+            info.imageLayout = it->shadow ?  VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            info.imageView = it->texture->data[0].image.view;
+            info.sampler = it->texture->sampler;
+            imageInfo->push_back(info);
+        }
         imageInfos.push_back(imageInfo);
 
         VkWriteDescriptorSet write;
         write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         write.dstSet = descriptorSet->descriptorSet;
-        write.dstBinding = it->binding;
+        write.dstBinding = binding;
         write.dstArrayElement = 0;
-        write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        write.descriptorCount = 1;
-        write.pImageInfo = imageInfo;
+        write.descriptorType = it->texture->combined ? VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER : VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        write.descriptorCount = imageInfo->size();
+        write.pImageInfo = imageInfo->data();
         write.pNext = NULL;
         descriptorWrites.push_back(write);
     }
@@ -131,6 +205,8 @@ void descriptor_set_create_descriptor_set(descriptor_set_t *descriptorSet)
     for (auto it = bufferInfos.begin(); it != bufferInfos.end(); ++it)
         delete *it;
     for (auto it = imageInfos.begin(); it != imageInfos.end(); ++it)
+        delete *it;
+    for (auto it = samplerInfos.begin(); it != samplerInfos.end(); ++it)
         delete *it;
 }
 
@@ -162,11 +238,12 @@ void descriptor_set_add_texture(descriptor_set_t *descriptorSet, texture_t *text
 void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, uint32_t binding, bool vertex, bool repeat, bool shadow)
 {
     texture_t *texture = new texture_t();
+    texture_data_t textureData;
     if (image)
     {
-        texture->image = *image;
-        texture->width = image->width;
-        texture->height = image->height;
+        textureData.image = *image;
+        textureData.width = image->width;
+        textureData.height = image->height;
 
         VkSamplerCreateInfo samplerInfo = {};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -191,6 +268,9 @@ void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, u
             throw std::runtime_error("failed to create texture sampler!");
         }
     }
+    texture->data.push_back(textureData);
+    texture->cube = image->samples > 1;
+    texture->combined = true;
 
     descriptor_texture_t newTexture;
     newTexture.texture = texture;
@@ -199,6 +279,7 @@ void descriptor_set_add_image(descriptor_set_t *descriptorSet, image_t *image, u
     newTexture.shadow = repeat;
     newTexture.shadow = shadow;
     newTexture.fromImage = true;
+
     descriptorSet->textures.push_back(newTexture);
 }
 
@@ -218,19 +299,24 @@ void descriptor_set_update_buffer(descriptor_set_t *descriptorSet, void *data, u
 
 void descriptor_set_update_texture(descriptor_set_t *descriptorSet, texture_t *texture, uint32_t binding)
 {
-    VkDescriptorImageInfo imageInfo;
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = texture->image.view;
-    imageInfo.sampler = texture->sampler;
+    std::vector<VkDescriptorImageInfo> imageInfos;
+    for (auto it = texture->data.begin(); it != texture->data.end(); ++it)
+    {
+        VkDescriptorImageInfo imageInfo;
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = it->image.view;
+        imageInfo.sampler = texture->combined ? texture->sampler : VK_NULL_HANDLE;
+        imageInfos.push_back(imageInfo);
+    }
 
     VkWriteDescriptorSet write;
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.dstSet = descriptorSet->descriptorSet;
-    write.dstBinding = binding;
+    write.dstBinding = texture->combined ? binding : binding + 1;
     write.dstArrayElement = 0;
-    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    write.descriptorCount = 1;
-    write.pImageInfo = &imageInfo;
+    write.descriptorType = texture->combined ? VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER : VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    write.descriptorCount = imageInfos.size();
+    write.pImageInfo = imageInfos.data();
     write.pNext = NULL;
 
     vkUpdateDescriptorSets(descriptorSet->device, 1, &write, 0, nullptr);
@@ -244,9 +330,9 @@ void descriptor_set_update_image(descriptor_set_t *descriptorSet, image_t *image
         {
             vkDestroySampler(descriptorSet->device, it->texture->sampler, nullptr);
 
-            it->texture->image = *image;
-            it->texture->width = image->width;
-            it->texture->height = image->height;
+            it->texture->data[0].image = *image;
+            it->texture->data[0].width = image->width;
+            it->texture->data[0].height = image->height;
 
             VkSamplerCreateInfo samplerInfo = {};
             samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -272,8 +358,8 @@ void descriptor_set_update_image(descriptor_set_t *descriptorSet, image_t *image
             }
 
             VkDescriptorImageInfo imageInfo;
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = it->texture->image.view;
+            imageInfo.imageLayout = it->shadow ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = it->texture->data[0].image.view;
             imageInfo.sampler = it->texture->sampler;
 
             VkWriteDescriptorSet write;
@@ -281,7 +367,7 @@ void descriptor_set_update_image(descriptor_set_t *descriptorSet, image_t *image
             write.dstSet = descriptorSet->descriptorSet;
             write.dstBinding = binding;
             write.dstArrayElement = 0;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            write.descriptorType = it->texture->combined ? VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER : VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
             write.descriptorCount = 1;
             write.pImageInfo = &imageInfo;
             write.pNext = NULL;

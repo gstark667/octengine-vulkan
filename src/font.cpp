@@ -11,8 +11,8 @@ void font_create(font_t *font)
     if (FT_New_Face(font->library, "liberation.ttf", 0, &font->face)) 
         throw std::runtime_error("FT_New_Face failed (there is probably a problem with your font file)");
 
-    int h = 32;
-    FT_Set_Char_Size(font->face, h << 6, h << 6, 96, 96);
+    //FT_Set_Char_Size(font->face, ((int)font->size) << 6, ((int)font->size) << 6, 96, 96);
+    FT_Set_Pixel_Sizes(font->face, (int)font->size, (int)font->size);
 
     std::cout << "generating font" << std::endl;
     for (int i = 0; i < 128; ++i)

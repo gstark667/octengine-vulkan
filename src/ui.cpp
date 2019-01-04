@@ -21,9 +21,8 @@ void ui_create(ui_t *ui, VkDevice device, VkPhysicalDevice physicalDevice, VkCom
 
     font_create(&ui->font);
     ui->fontTexture.data.push_back(ui->font.textureData);
-    ui->fontTexture.width = ui->font.textureData.width;
-    ui->fontTexture.height = ui->font.textureData.height;
-    texture_load(&ui->fontTexture, ui->device, ui->physicalDevice, ui->commandPool, ui->graphicsQueue);
+    ui->fontTexture.smooth = true;
+    texture_data_load(&ui->fontTexture, &ui->fontTexture.data[0], ui->device, ui->physicalDevice, ui->commandPool, ui->graphicsQueue, 0);
 }
 
 void ui_render(ui_t *ui, VkCommandBuffer commandBuffer, pipeline_t *pipeline, descriptor_set_t *descriptorSet)
@@ -40,6 +39,12 @@ void ui_update(ui_t *ui)
     }
     ui_build(ui, ui->root, 0, glm::vec2(0.0f), glm::vec2(1.0f));
     model_copy_instance_buffer(&ui->model, ui->device, ui->physicalDevice, ui->commandPool, ui->graphicsQueue);
+}
+
+glm::vec3 ui_quantize(ui_t *ui, glm::vec3 input)
+{
+    glm::vec3 output =  glm::vec3(((int)(input.x / ui->pxWidth)) * ui->pxWidth, ((int)(input.y / ui->pxHeight)) * ui->pxHeight, input.z);
+    return output;
 }
 
 size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset, glm::vec2 pos, glm::vec2 scale)
@@ -59,14 +64,14 @@ size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset, glm::vec2 pos, g
     size_t rows = 0;
     size_t rowStart = first;
     size_t lastWord = first;
-    glm::vec2 textScale(element->textScale * scale.y * 9.0f / 16.0f, element->textScale * scale.y);
+    glm::vec2 textScale(ui->pxWidth * ui->font.size * 0.5f, ui->pxHeight * ui->font.size * 0.5f);
     for (size_t i = 0; i < element->text.length(); ++i)
     {
         if (element->text.at(i) != '\n')
         {
             offset++;
             font_glyph_t glyph = ui->font.glyphs[(short)element->text.at(i)];
-            ui->model.instances[offset].pos = glm::vec3(pos.x + textPos.x + (glyph.width + glyph.left) * textScale.x, pos.y + (glyph.height / 2.0f - glyph.top) * textScale.y + textPos.y, 0.0f);
+            ui->model.instances[offset].pos = ui_quantize(ui, glm::vec3(pos.x + textPos.x + (glyph.width + glyph.left) * textScale.x, pos.y + (glyph.height / 2.0f - glyph.top) * textScale.y + textPos.y, 0.0f));
             ui->model.instances[offset].scale = glm::vec3(textScale.x * glyph.width, textScale.y * glyph.height, 1.0f);
             ui->model.instances[offset].rot = glm::vec3(glyph.uvWidth, glyph.uvHeight, glyph.uvOffset);
             ui->model.instances[offset].textureIdx.x = 0;

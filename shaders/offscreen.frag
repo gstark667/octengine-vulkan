@@ -1,7 +1,9 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
+#extension GL_EXT_nonuniform_qualifier : enable
 
-layout(binding = 2) uniform sampler2DArray texSampler;
+layout(binding = 2) uniform sampler samp;
+layout(binding = 3) uniform texture2D textures[80];
 
 layout (location = 0) in vec3 inNormal;
 layout (location = 1) in vec2 inUV;
@@ -15,7 +17,7 @@ layout (location = 2) out vec4 outPosition;
 layout (location = 3) out vec4 outPBR;
 
 void main() {
-    vec3 normal = (texture(texSampler, vec3(inUV, inTexIdx.g)).rgb * 2 - 1);
+    vec3 normal = (texture(sampler2D(textures[inTexIdx.g], samp), inUV).rgb * 2 - 1);
 
     vec3 tangent = normalize(normal - inNormal * dot(normal, inNormal));
     vec3 bitangent = cross(tangent, inNormal);
@@ -23,6 +25,6 @@ void main() {
 
     outNormal = vec4(TBN * normal, 1.0);
     outPosition = vec4(inWorldPos, 1.0);
-    outAlbedo = texture(texSampler, vec3(inUV, inTexIdx.r));
-    outPBR = vec4(texture(texSampler, vec3(inUV, inTexIdx.b)).rgb, outAlbedo.a);
+    outAlbedo = texture(sampler2D(textures[inTexIdx.r], samp), inUV);
+    outPBR = vec4(texture(sampler2D(textures[inTexIdx.b], samp), inUV).rgb, outAlbedo.a);
 }

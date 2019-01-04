@@ -11,12 +11,14 @@ void scene_create(scene_t *scene, VkDevice device, VkPhysicalDevice physicalDevi
     texture_add(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue, "default.png", false);
     texture_add(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue, "normal.png", false);
     texture_add(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue, "pbr.png", false);
-    texture_load(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue);
+    //texture_load(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue);
 
     physics_world_init(&scene->world);
 
     audio_world_init(&scene->audio);
 
+    scene->ui.pxWidth = 2.0f / scene->width;
+    scene->ui.pxHeight = 2.0f / scene->height;
     ui_create(&scene->ui, device, physicalDevice, commandPool, graphicsQueue);
 }
 
@@ -124,6 +126,9 @@ void scene_resize(scene_t *scene, uint32_t width, uint32_t height)
         scene->camera->height = height;
         camera_resize(scene->camera);
     }
+
+    scene->ui.pxWidth = 2.0f / scene->width;
+    scene->ui.pxHeight = 2.0f / scene->height;
 }
 
 void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, pipeline_t *pipeline, descriptor_set_t *descriptorSet, bool ui)

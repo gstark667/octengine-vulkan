@@ -25,6 +25,7 @@ struct ui_element_t
 
 struct ui_t
 {
+    float pxWidth, pxHeight;
     model_t model;
     ui_element_t *root = NULL;
     font_t font;
