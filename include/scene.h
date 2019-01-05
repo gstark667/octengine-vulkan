@@ -50,6 +50,7 @@ struct scene_t
 
     uint32_t width, height;
     bool isDirty = true;
+    bool uiDirty = true;
 };
 
 extern "C" {

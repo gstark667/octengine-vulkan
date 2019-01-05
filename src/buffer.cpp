@@ -73,24 +73,28 @@ void buffer_copy(buffer_t *buffer, VkDevice device, VkPhysicalDevice physicalDev
     buffer_destroy(&stagingBuffer, device);
 }
 
-void buffer_stage(buffer_t *dst, buffer_t *src, VkDevice device, VkCommandBuffer commandBuffer, void *data, size_t size)
+bool buffer_stage(buffer_t *dst, buffer_t *src, VkDevice device, VkCommandBuffer commandBuffer, void *data, size_t size)
 {
+    bool output = false;
     if (size == 0)
-        return;
-    if (dst->size != size)
+        return false;
+    if (dst->size < size)
     {
         buffer_resize(dst, device, size);
+        output = true;
     }
 
-    if (src->size != size)
+    if (src->size < size)
     {
         buffer_resize(src, device, size);
+        output = true;
     }
 
     void *tempData;
     vkMapMemory(device, src->memory, 0, size, 0, &tempData);
     memcpy(tempData, data, size);
     vkUnmapMemory(device, src->memory);
+    return output;
 }
 
 void buffer_inline_copy(buffer_t *dst, buffer_t *src, VkCommandBuffer commandBuffer)

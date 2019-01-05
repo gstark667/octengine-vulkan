@@ -39,7 +39,7 @@ struct ui_t
 
 void ui_create(ui_t *ui, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 void ui_render(ui_t *ui, VkCommandBuffer commandBuffer, pipeline_t *pipeline, descriptor_set_t *descriptorSet);
-void ui_update(ui_t *ui);
+bool ui_update(ui_t *ui);
 size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset, glm::vec2 pos, glm::vec2 scale);
 void ui_cleanup(ui_t *ui);
 

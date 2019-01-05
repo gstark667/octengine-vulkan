@@ -11,7 +11,6 @@ void scene_create(scene_t *scene, VkDevice device, VkPhysicalDevice physicalDevi
     texture_add(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue, "default.png", false);
     texture_add(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue, "normal.png", false);
     texture_add(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue, "pbr.png", false);
-    //texture_load(&scene->textures, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue);
 
     physics_world_init(&scene->world);
 
@@ -146,7 +145,7 @@ void scene_render(scene_t *scene, VkCommandBuffer commandBuffer, pipeline_t *pip
 }
 
 void scene_update(scene_t *scene, float delta)
-{   
+{
     for (std::set<gameobject_t*>::iterator it = scene->tempGameobjects.begin(); it != scene->tempGameobjects.end(); ++it)
     {   
         scene->gameobjects.insert(*it);
@@ -172,7 +171,7 @@ void scene_update(scene_t *scene, float delta)
     {   
         model_update(it->first, delta, &scene->bones);
         model_copy_instances(it->first, it->second);
-        model_copy_instance_buffer(it->first, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue);
+        scene->isDirty |= model_copy_instance_buffer(it->first, scene->device, scene->physicalDevice, scene->commandPool, scene->graphicsQueue);
     }
 
     if (scene->camera && scene->camera->object)
@@ -180,7 +179,7 @@ void scene_update(scene_t *scene, float delta)
         scene->audio.listener = scene->camera->object;
     }
     audio_world_update(&scene->audio, delta);
-    ui_update(&scene->ui);
+    scene->uiDirty = ui_update(&scene->ui);
 }
 
 void scene_load(scene_t *scene, std::string path)

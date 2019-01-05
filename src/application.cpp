@@ -492,6 +492,7 @@ void application_create_command_pool(application_t *app) {
 
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
 
     if (vkCreateCommandPool(app->device, &poolInfo, nullptr, &app->commandPool) != VK_SUCCESS) {
@@ -660,8 +661,6 @@ void application_create_frame_buffers(application_t *app) {
 
 // create command buffers
 void application_create_command_buffers(application_t *app) {
-    app->commandBuffers.resize(app->swapChainFramebuffers.size());
-
     // composite
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -669,7 +668,7 @@ void application_create_command_buffers(application_t *app) {
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = 1;
 
-    if (vkAllocateCommandBuffers(app->device, &allocInfo, &app->commandBuffer) != VK_SUCCESS) {
+    if (app->commandBuffer == VK_NULL_HANDLE && vkAllocateCommandBuffers(app->device, &allocInfo, &app->commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 
@@ -679,8 +678,7 @@ void application_create_command_buffers(application_t *app) {
 
     // create the offscreen command buffer
     allocInfo.commandBufferCount = 1;
-
-    if (vkAllocateCommandBuffers(app->device, &allocInfo, &app->offscreenCommandBuffer) != VK_SUCCESS) {
+    if (app->offscreenCommandBuffer == VK_NULL_HANDLE && vkAllocateCommandBuffers(app->device, &allocInfo, &app->offscreenCommandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 
@@ -690,8 +688,7 @@ void application_create_command_buffers(application_t *app) {
 
     // create the sky command buffer
     allocInfo.commandBufferCount = 1;
-
-    if (vkAllocateCommandBuffers(app->device, &allocInfo, &app->skyCommandBuffer) != VK_SUCCESS) {
+    if (app->skyCommandBuffer == VK_NULL_HANDLE && vkAllocateCommandBuffers(app->device, &allocInfo, &app->skyCommandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 
@@ -701,8 +698,7 @@ void application_create_command_buffers(application_t *app) {
 
     // create the blur h command buffer
     allocInfo.commandBufferCount = 1;
-
-    if (vkAllocateCommandBuffers(app->device, &allocInfo, &app->blurHCommandBuffer) != VK_SUCCESS) {
+    if (app->blurHCommandBuffer == VK_NULL_HANDLE && vkAllocateCommandBuffers(app->device, &allocInfo, &app->blurHCommandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 
@@ -713,7 +709,7 @@ void application_create_command_buffers(application_t *app) {
     // create the blur v command buffer
     allocInfo.commandBufferCount = 1;
 
-    if (vkAllocateCommandBuffers(app->device, &allocInfo, &app->blurVCommandBuffer) != VK_SUCCESS) {
+    if (app->blurVCommandBuffer == VK_NULL_HANDLE && vkAllocateCommandBuffers(app->device, &allocInfo, &app->blurVCommandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 
@@ -724,7 +720,7 @@ void application_create_command_buffers(application_t *app) {
     // create the post command buffer
     allocInfo.commandBufferCount = 1;
 
-    if (vkAllocateCommandBuffers(app->device, &allocInfo, &app->postCommandBuffer) != VK_SUCCESS) {
+    if (app->postCommandBuffer == VK_NULL_HANDLE && vkAllocateCommandBuffers(app->device, &allocInfo, &app->postCommandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 
@@ -732,26 +728,12 @@ void application_create_command_buffers(application_t *app) {
     model_render(&app->quad, app->postCommandBuffer, &app->postPipeline, &app->postDescriptorSet);
     pipeline_end_render(&app->postPipeline, app->postCommandBuffer);
 
-    // create the ui command buffer
-    allocInfo.commandBufferCount = (uint32_t) app->commandBuffers.size();
-
-    if (vkAllocateCommandBuffers(app->device, &allocInfo, app->commandBuffers.data()) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate command buffers!");
-    }
-
-    for (size_t i = 0; i < app->commandBuffers.size(); i++) {
-        app->uiPipeline.framebuffer = app->swapChainFramebuffers[i];
-        pipeline_begin_render(&app->uiPipeline, app->commandBuffers[i]);
-        scene_render(&app->scene, app->commandBuffers[i], &app->uiPipeline, &app->uiDescriptorSet, true);
-        pipeline_end_render(&app->uiPipeline, app->commandBuffers[i]);
-    }
-
     // create the shadow command buffers
     for (size_t idx = 0; idx < app->shadowPipelines.size(); ++idx)
     {
         allocInfo.commandBufferCount = 1;
 
-        if (vkAllocateCommandBuffers(app->device, &allocInfo, app->shadowCommandBuffers[idx]) != VK_SUCCESS) {
+        if (*app->shadowCommandBuffers[idx] == VK_NULL_HANDLE && vkAllocateCommandBuffers(app->device, &allocInfo, app->shadowCommandBuffers[idx]) != VK_SUCCESS) {
             throw std::runtime_error("failed to allocate shadow command buffers!");
         }
 
@@ -761,8 +743,31 @@ void application_create_command_buffers(application_t *app) {
     }
 }
 
+void application_create_ui_command_buffers(application_t *app)
+{
+    app->commandBuffers.resize(app->swapChainFramebuffers.size());
+
+    VkCommandBufferAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = app->commandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = (uint32_t) app->commandBuffers.size();
+
+    if (app->commandBuffers[0] == VK_NULL_HANDLE && vkAllocateCommandBuffers(app->device, &allocInfo, app->commandBuffers.data()) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate command buffers!");
+    }
+
+    for (size_t i = 0; i < app->commandBuffers.size(); i++) {
+        app->uiPipeline.framebuffer = app->swapChainFramebuffers[i];
+        pipeline_begin_render(&app->uiPipeline, app->commandBuffers[i]);
+        scene_render(&app->scene, app->commandBuffers[i], &app->uiPipeline, &app->uiDescriptorSet, true);
+        pipeline_end_render(&app->uiPipeline, app->commandBuffers[i]);
+    }
+}
+
 // create semaphores
-void application_create_semaphores(application_t *app) {
+void application_create_semaphores(application_t *app)
+{
     VkSemaphoreCreateInfo semaphoreInfo = {};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -817,6 +822,7 @@ void application_add_shadow_pipelines(application_t *app)
         app->shadowPipelines.push_back(new pipeline_t());
         app->shadowDescriptorSets.push_back(new descriptor_set_t());
         app->shadowCommandBuffers.push_back(new VkCommandBuffer());
+        *app->shadowCommandBuffers.back() = VK_NULL_HANDLE;
         app->shadowAttachments.push_back({});
         app->shadowAttachments[idx].push_back(new pipeline_attachment_t());
 
@@ -1119,6 +1125,7 @@ void application_recreate_swap_chain(application_t *app) {
 
     application_create_frame_buffers(app);
     application_create_command_buffers(app);
+    application_create_ui_command_buffers(app);
 }
 
 void application_init_vulkan(application_t *app) {
@@ -1171,6 +1178,7 @@ void application_init_vulkan(application_t *app) {
     model_create_buffers(&app->quad, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
     model_create_buffers(&app->cube, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
     application_create_command_buffers(app);
+    application_create_ui_command_buffers(app);
     application_create_semaphores(app);
 }
 
@@ -1257,6 +1265,12 @@ void application_main_loop(application_t *app) {
         {
             app->scene.isDirty = false;
             application_create_command_buffers(app);
+        }
+
+        if (app->scene.uiDirty)
+        {
+            app->scene.uiDirty = false;
+            application_create_ui_command_buffers(app);
         }
 
         application_draw_frame(app);

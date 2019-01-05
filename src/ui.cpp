@@ -30,15 +30,21 @@ void ui_render(ui_t *ui, VkCommandBuffer commandBuffer, pipeline_t *pipeline, de
     model_render(&ui->model, commandBuffer, pipeline, descriptorSet);
 }
 
-void ui_update(ui_t *ui)
+bool ui_update(ui_t *ui)
 {
     size_t count = ui_element_count_children(ui->root);
+    bool output = ui->model.instances.size() != count;
     while (ui->model.instances.size() < count)
     {
         ui->model.instances.push_back({});
     }
+    while (ui->model.instances.size() > count)
+    {
+        ui->model.instances.pop_back();
+    }
     ui_build(ui, ui->root, 0, glm::vec2(0.0f), glm::vec2(1.0f));
     model_copy_instance_buffer(&ui->model, ui->device, ui->physicalDevice, ui->commandPool, ui->graphicsQueue);
+    return count;
 }
 
 glm::vec3 ui_quantize(ui_t *ui, glm::vec3 input)

@@ -115,7 +115,7 @@ void model_load(model_t *model, std::string path);
 //model_instance_t *model_create_instance(model_t *model);
 void model_copy_index_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 void model_copy_instances(model_t *model, std::vector<gameobject_t*> instances);
-void model_copy_instance_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
+bool model_copy_instance_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 void model_create_buffers(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 void model_update(model_t *model, float delta, bone_ubo_t *boneBuffer);
 void model_render(model_t *model, VkCommandBuffer commandBuffer, pipeline_t *pipeline, descriptor_set_t *descriptorSet);

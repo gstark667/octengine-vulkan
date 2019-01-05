@@ -363,13 +363,14 @@ void model_copy_instances(model_t *model, std::vector<gameobject_t*>instances)
     }
 }
 
-void model_copy_instance_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
+bool model_copy_instance_buffer(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
     VkDeviceSize bufferSize = (sizeof(model_instance_t) * model->instances.size());
     VkCommandBuffer commandBuffer = begin_single_time_commands(device, commandPool);
-    buffer_stage(&model->instanceBuffer, &model->instanceStagingBuffer, device, commandBuffer, model->instances.data(), bufferSize);
+    bool output = buffer_stage(&model->instanceBuffer, &model->instanceStagingBuffer, device, commandBuffer, model->instances.data(), bufferSize);
     buffer_inline_copy(&model->instanceBuffer, &model->instanceStagingBuffer, commandBuffer);
     end_single_time_commands(device, commandPool, graphicsQueue, commandBuffer);
+    return output;
 }
 
 void model_create_buffers(model_t *model, VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)

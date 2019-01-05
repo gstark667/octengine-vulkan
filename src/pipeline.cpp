@@ -381,6 +381,8 @@ void pipeline_create_framebuffer(pipeline_t *pipeline)
 
 void pipeline_begin_render(pipeline_t *pipeline, VkCommandBuffer commandBuffer)
 {
+    vkResetCommandBuffer(commandBuffer, 0);
+
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;

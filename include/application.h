@@ -108,11 +108,12 @@ struct application_t
 
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;
-    VkCommandBuffer commandBuffer;
-    VkCommandBuffer offscreenCommandBuffer;
-    VkCommandBuffer skyCommandBuffer;
-    VkCommandBuffer blurHCommandBuffer, blurVCommandBuffer;
-    VkCommandBuffer postCommandBuffer;
+    VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+    VkCommandBuffer offscreenCommandBuffer = VK_NULL_HANDLE;
+    VkCommandBuffer skyCommandBuffer = VK_NULL_HANDLE;
+    VkCommandBuffer blurHCommandBuffer = VK_NULL_HANDLE;
+    VkCommandBuffer blurVCommandBuffer = VK_NULL_HANDLE;
+    VkCommandBuffer postCommandBuffer = VK_NULL_HANDLE;
     std::vector<VkCommandBuffer*> shadowCommandBuffers;
 
     pipeline_attachment_t colorAttachment, brightAttachment, normalAttachment, positionAttachment, fresnelAttachment, albedo, normal, position, currPosition, lastPosition, pbr, offscreenDepthAttachment, shadowPosition, sky, blurH, blurV, postColor, uiColor;
