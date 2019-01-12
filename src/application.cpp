@@ -10,7 +10,8 @@ bool queue_family_is_complete(queue_family_t *queueFamily)
 }
 
 // swapchain support
-swapchain_support_t application_query_swap_chain_support(application_t *app, VkPhysicalDevice device) {
+swapchain_support_t application_query_swap_chain_support(application_t *app, VkPhysicalDevice device)
+{
     swapchain_support_t details;
 
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, app->surface, &details.capabilities);
@@ -35,7 +36,8 @@ swapchain_support_t application_query_swap_chain_support(application_t *app, VkP
 }
 
 
-void application_init_window(application_t *app) {
+void application_init_window(application_t *app)
+{
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
     // figure out how big the screen is if we're full screen
     if (app->fullscreen)
@@ -69,7 +71,8 @@ void application_init_window(application_t *app) {
 }
 
 // create instance
-bool application_check_validation_layer_support(application_t *app) {
+bool application_check_validation_layer_support(application_t *app)
+{
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
@@ -112,7 +115,8 @@ std::vector<const char*> application_get_required_extensions(application_t *app)
     return extensions;
 }
 
-void application_create_instance(application_t *app) {
+void application_create_instance(application_t *app)
+{
     if (app->enableValidationLayers && !application_check_validation_layer_support(app)) {
         throw std::runtime_error("validation layers requested, but not available!");
     }
@@ -160,7 +164,7 @@ VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCa
 }
 
 void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator)
-    {
+{
     auto func = (PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
     if (func != nullptr)
     {
@@ -168,13 +172,15 @@ void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT
     }
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char* layerPrefix, const char *msg, void *userData) {
+static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char* layerPrefix, const char *msg, void *userData)
+{
     std::cerr << "validation layer: " << msg << std::endl;
 
     return VK_FALSE;
 }
 
-void application_setup_debug_callback(application_t *app) {
+void application_setup_debug_callback(application_t *app)
+{
     if (!app->enableValidationLayers) return;
 
     VkDebugReportCallbackCreateInfoEXT createInfo = {};
@@ -194,7 +200,8 @@ void application_create_surface(application_t *app)
 }
 
 // pick physical device
-queue_family_t application_find_queue_families(application_t *app, VkPhysicalDevice device) {
+queue_family_t application_find_queue_families(application_t *app, VkPhysicalDevice device)
+{
     queue_family_t indices;
 
     uint32_t queueFamilyCount = 0;
@@ -226,7 +233,8 @@ queue_family_t application_find_queue_families(application_t *app, VkPhysicalDev
     return indices;
 }
 
-bool application_check_device_extension_support(application_t *app, VkPhysicalDevice device) {
+bool application_check_device_extension_support(application_t *app, VkPhysicalDevice device)
+{
     uint32_t extensionCount;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
@@ -242,7 +250,8 @@ bool application_check_device_extension_support(application_t *app, VkPhysicalDe
     return requiredExtensions.empty();
 }
 
-bool application_is_device_suitable(application_t *app, VkPhysicalDevice device) {
+bool application_is_device_suitable(application_t *app, VkPhysicalDevice device)
+{
     queue_family_t indices = application_find_queue_families(app, device);
 
     bool extensionsSupported = application_check_device_extension_support(app, device);
@@ -256,7 +265,8 @@ bool application_is_device_suitable(application_t *app, VkPhysicalDevice device)
     return queue_family_is_complete(&indices) && extensionsSupported && swapChainAdequate;
 }
 
-void application_get_usable_samples(application_t *app) {
+void application_get_usable_samples(application_t *app)
+{
     VkPhysicalDeviceProperties physicalDeviceProperties;
     vkGetPhysicalDeviceProperties(app->physicalDevice, &physicalDeviceProperties);
 
@@ -270,7 +280,8 @@ void application_get_usable_samples(application_t *app) {
     app->sampleCount = VK_SAMPLE_COUNT_2_BIT;
 }
 
-void application_pick_physical_device(application_t *app) {
+void application_pick_physical_device(application_t *app)
+{
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(app->instance, &deviceCount, nullptr);
 
@@ -296,7 +307,8 @@ void application_pick_physical_device(application_t *app) {
 }
 
 // create logical device
-void application_create_logical_device(application_t *app) {
+void application_create_logical_device(application_t *app)
+{
     queue_family_t indices = application_find_queue_families(app, app->physicalDevice);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -343,7 +355,8 @@ void application_create_logical_device(application_t *app) {
 }
 
 // create swapchain
-VkSurfaceFormatKHR application_choose_swap_surface_format(application_t * app, const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+VkSurfaceFormatKHR application_choose_swap_surface_format(application_t * app, const std::vector<VkSurfaceFormatKHR>& availableFormats)
+{
     if (availableFormats.size() == 1 && availableFormats[0].format == VK_FORMAT_UNDEFINED) {
         return {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
     }
@@ -357,7 +370,8 @@ VkSurfaceFormatKHR application_choose_swap_surface_format(application_t * app, c
     return availableFormats[0];
 }
 
-VkPresentModeKHR application_choose_swap_present_mode(application_t *app, const std::vector<VkPresentModeKHR> availablePresentModes) {
+VkPresentModeKHR application_choose_swap_present_mode(application_t *app, const std::vector<VkPresentModeKHR> availablePresentModes)
+{
     VkPresentModeKHR bestMode = VK_PRESENT_MODE_FIFO_KHR;
 
     for (const auto& availablePresentMode : availablePresentModes) {
@@ -371,7 +385,8 @@ VkPresentModeKHR application_choose_swap_present_mode(application_t *app, const 
     return bestMode;
 }
 
-VkExtent2D application_choose_swap_extent(application_t *app, const VkSurfaceCapabilitiesKHR& capabilities) {
+VkExtent2D application_choose_swap_extent(application_t *app, const VkSurfaceCapabilitiesKHR& capabilities)
+{
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
     } else {
@@ -384,7 +399,8 @@ VkExtent2D application_choose_swap_extent(application_t *app, const VkSurfaceCap
     }
 }
 
-void application_create_swap_chain(application_t *app) {
+void application_create_swap_chain(application_t *app)
+{
     swapchain_support_t swapChainSupport = application_query_swap_chain_support(app, app->physicalDevice);
 
     VkSurfaceFormatKHR surfaceFormat = application_choose_swap_surface_format(app, swapChainSupport.formats);
@@ -438,7 +454,8 @@ void application_create_swap_chain(application_t *app) {
 }
 
 // create image views
-void application_create_image_views(application_t *app) {
+void application_create_image_views(application_t *app)
+{
     app->swapChainImageViews.resize(app->swapChainImages.size());
 
     for (size_t i = 0; i < app->swapChainImages.size(); i++) {
@@ -464,8 +481,10 @@ void application_create_image_views(application_t *app) {
 }
 
 // find depth format 
-VkFormat application_find_supported_format(application_t *app, const std::vector<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
-    for (VkFormat format: candidates) {
+VkFormat application_find_supported_format(application_t *app, const std::vector<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
+{
+    for (VkFormat format: candidates)
+    {
         VkFormatProperties props;
         vkGetPhysicalDeviceFormatProperties(app->physicalDevice, format, &props);
 
@@ -478,7 +497,8 @@ VkFormat application_find_supported_format(application_t *app, const std::vector
     throw std::runtime_error("failed to find supported format!");
 }
 
-VkFormat application_find_depth_format(application_t *app) {
+VkFormat application_find_depth_format(application_t *app)
+{
     return application_find_supported_format(app,
         {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
         VK_IMAGE_TILING_OPTIMAL,
@@ -487,7 +507,8 @@ VkFormat application_find_depth_format(application_t *app) {
 }
 
 // create command pool
-void application_create_command_pool(application_t *app) {
+void application_create_command_pool(application_t *app)
+{
     queue_family_t queueFamilyIndices = application_find_queue_families(app, app->physicalDevice);
 
     VkCommandPoolCreateInfo poolInfo = {};
@@ -501,7 +522,8 @@ void application_create_command_pool(application_t *app) {
 }
 
 // create depth resources
-void application_create_pipeline_attachments(application_t *app) {
+void application_create_pipeline_attachments(application_t *app)
+{
     // composite
     pipeline_attachment_create(&app->colorAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
     pipeline_attachment_create(&app->brightAttachment, app->device, app->physicalDevice, app->swapChainExtent.width, app->swapChainExtent.height, VK_SAMPLE_COUNT_1_BIT, app->swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, app->commandPool, app->graphicsQueue, false);
@@ -640,7 +662,8 @@ void application_create_pipelines(application_t *app)
 }
 
 // create frame buffers
-void application_create_frame_buffers(application_t *app) {
+void application_create_frame_buffers(application_t *app)
+{
     app->swapChainFramebuffers.resize(app->swapChainImageViews.size());
 
     for (size_t i = 0; i < app->swapChainImageViews.size(); i++) {
@@ -660,7 +683,8 @@ void application_create_frame_buffers(application_t *app) {
 }
 
 // create command buffers
-void application_create_command_buffers(application_t *app) {
+void application_create_command_buffers(application_t *app)
+{
     // composite
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -1173,7 +1197,7 @@ void application_init_vulkan(application_t *app) {
     app->quad.instances.push_back({});
     app->cube.instances.push_back({});
     app->cube.instances[0].scale = glm::vec3(100.0f, 100.0f, 100.0f);
-    model_load(&app->quad, "quad.dae");
+    model_load(&app->quad, "quad_centered.dae");
     model_load(&app->cube, "skycube.dae");
     model_create_buffers(&app->quad, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);
     model_create_buffers(&app->cube, app->device, app->physicalDevice, app->commandPool, app->graphicsQueue);

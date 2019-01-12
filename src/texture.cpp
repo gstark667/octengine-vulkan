@@ -123,7 +123,6 @@ void texture_data_load(texture_t *texture, texture_data_t *textureData, VkDevice
         }
     }
 
-    std::cout << "texture combined: " << texture->combined << std::endl;
     texture->combined = texture->cube || idx == 0;
 }
 

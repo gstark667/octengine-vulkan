@@ -16,8 +16,8 @@ void scene_create(scene_t *scene, VkDevice device, VkPhysicalDevice physicalDevi
 
     audio_world_init(&scene->audio);
 
-    scene->ui.pxWidth = 2.0f / scene->width;
-    scene->ui.pxHeight = 2.0f / scene->height;
+    scene->ui.pxWidth = 1.0 / scene->width;
+    scene->ui.pxHeight = 1.0 / scene->height;
     ui_create(&scene->ui, device, physicalDevice, commandPool, graphicsQueue);
 }
 

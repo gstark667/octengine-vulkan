@@ -37,6 +37,7 @@ struct font_t
     texture_t texture;
     texture_data_t textureData;
     float size = 16.0f;
+    float height = 1.0f;
 };
 
 void font_create(font_t *font);

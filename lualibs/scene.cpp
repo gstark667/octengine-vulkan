@@ -56,7 +56,6 @@ static int libscene_set_camera(lua_State *L)
     scene_t *scene = (scene_t*)lua_tointeger(L, 1);
     camera_t *camera = (camera_t*)lua_tointeger(L, 2);
     scene->camera = camera;
-    std::cout << "setting camera: " << camera << std::endl;
     return 0;
 }
 

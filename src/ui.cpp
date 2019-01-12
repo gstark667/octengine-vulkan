@@ -10,24 +10,28 @@ void ui_create(ui_t *ui, VkDevice device, VkPhysicalDevice physicalDevice, VkCom
     ui->physicalDevice = physicalDevice;
     ui->commandPool = commandPool;
     ui->graphicsQueue = graphicsQueue;
-    std::cout << ui->device << std::endl;
 
-    model_load(&ui->model, "quad.dae");
+    model_load(&ui->model, "quad_centered.dae");
     ui->model.instances.push_back({});
     model_create_buffers(&ui->model, device, physicalDevice, commandPool, graphicsQueue);
+
+    model_load(&ui->textModel, "quad.dae");
+    ui->textModel.instances.push_back({});
+    model_create_buffers(&ui->textModel, device, physicalDevice, commandPool, graphicsQueue);
 
     ui->root = new ui_element_t();
     ui->root->textureIdx = -1;
 
     font_create(&ui->font);
     ui->fontTexture.data.push_back(ui->font.textureData);
-    ui->fontTexture.smooth = true;
+    ui->fontTexture.smooth = false;
     texture_data_load(&ui->fontTexture, &ui->fontTexture.data[0], ui->device, ui->physicalDevice, ui->commandPool, ui->graphicsQueue, 0);
 }
 
 void ui_render(ui_t *ui, VkCommandBuffer commandBuffer, pipeline_t *pipeline, descriptor_set_t *descriptorSet)
 {
     model_render(&ui->model, commandBuffer, pipeline, descriptorSet);
+    model_render(&ui->textModel, commandBuffer, pipeline, descriptorSet);
 }
 
 bool ui_update(ui_t *ui)
@@ -42,18 +46,31 @@ bool ui_update(ui_t *ui)
     {
         ui->model.instances.pop_back();
     }
-    ui_build(ui, ui->root, 0, glm::vec2(0.0f), glm::vec2(1.0f));
+    while (ui->textModel.instances.size() < count)
+    {
+        ui->textModel.instances.push_back({});
+    }
+    while (ui->textModel.instances.size() > count)
+    {
+        ui->textModel.instances.pop_back();
+    }
+    ui_build(ui, ui->root, 0, 0, glm::vec2(0.0f), glm::vec2(1.0f));
     model_copy_instance_buffer(&ui->model, ui->device, ui->physicalDevice, ui->commandPool, ui->graphicsQueue);
+    model_copy_instance_buffer(&ui->textModel, ui->device, ui->physicalDevice, ui->commandPool, ui->graphicsQueue);
     return count;
 }
 
-glm::vec3 ui_quantize(ui_t *ui, glm::vec3 input)
+float ui_quantize_x(ui_t *ui, float x)
 {
-    glm::vec3 output =  glm::vec3(((int)(input.x / ui->pxWidth)) * ui->pxWidth, ((int)(input.y / ui->pxHeight)) * ui->pxHeight, input.z);
-    return output;
+    return (((int)(x / ui->pxWidth)) * ui->pxWidth);
 }
 
-size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset, glm::vec2 pos, glm::vec2 scale)
+float ui_quantize(ui_t *ui, float x)
+{
+    return ((int)(x / ui->pxWidth)) * ui->pxWidth;
+}
+
+size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset, size_t textOffset, glm::vec2 pos, glm::vec2 scale)
 {
     pos.x = element->x * scale.x + pos.x;
     pos.y = element->y * scale.y + pos.y;
@@ -66,51 +83,72 @@ size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset, glm::vec2 pos, g
 
     glm::vec2 textPos(0.0f);
     std::map<int, float> widths;
-    size_t first = offset + 1;
+    size_t first = textOffset;
     size_t rows = 0;
     size_t rowStart = first;
     size_t lastWord = first;
-    glm::vec2 textScale(ui->pxWidth * ui->font.size * 0.5f, ui->pxHeight * ui->font.size * 0.5f);
     for (size_t i = 0; i < element->text.length(); ++i)
     {
+        font_glyph_t glyph = ui->font.glyphs[(short)element->text.at(i)];
+        // position the character
         if (element->text.at(i) != '\n')
         {
-            offset++;
-            font_glyph_t glyph = ui->font.glyphs[(short)element->text.at(i)];
-            ui->model.instances[offset].pos = ui_quantize(ui, glm::vec3(pos.x + textPos.x + (glyph.width + glyph.left) * textScale.x, pos.y + (glyph.height / 2.0f - glyph.top) * textScale.y + textPos.y, 0.0f));
-            ui->model.instances[offset].scale = glm::vec3(textScale.x * glyph.width, textScale.y * glyph.height, 1.0f);
-            ui->model.instances[offset].rot = glm::vec3(glyph.uvWidth, glyph.uvHeight, glyph.uvOffset);
-            ui->model.instances[offset].textureIdx.x = 0;
-            textPos.x += glyph.xAdv * textScale.x * 2.0f;
+            glm::vec2 textScale(ui->pxWidth * glyph.width, ui->pxHeight * ui->font.height);
+            ui->textModel.instances[textOffset].pos = glm::vec3(pos.x + textPos.x + (glyph.left * 2.0f * ui->pxWidth), pos.y - (glyph.top * 2.0f * ui->pxHeight) + textPos.y, 0.0f);
+            ui->textModel.instances[textOffset].scale = glm::vec3(textScale.x * 2.0f, textScale.y * 2.0f, 1.0f);
+            ui->textModel.instances[textOffset].rot = glm::vec3(glyph.uvWidth, 1.0f, glyph.uvOffset);
+            ui->textModel.instances[textOffset].textureIdx.x = 0;
+            textPos.x += glyph.xAdv * ui->pxWidth * 2.0f;
         }
-        if (textPos.x > scale.x * 2.0f || i == element->text.length() - 1 || element->text.at(i) == '\n')
+        // make a new row of characters
+        if (textPos.x > scale.x * 2.0f || element->text.at(i) == '\n')
         {
-            for (size_t j = rowStart; j <= offset; ++j)
-                widths[j] = textPos.x;
+            float rowWidth = textPos.x;
             textPos.x = 0.0f;
-            textPos.y += textScale.y * 2.0f;
-            rowStart = offset + 1;
+            textPos.y += ui->pxHeight * ui->font.height * 2.0f;
+            // move the last character
+            if (element->text.at(i) != '\n')
+            {
+                ui->textModel.instances[textOffset].pos = glm::vec3(pos.x + textPos.x + (glyph.left * 2.0f * ui->pxWidth), pos.y - (glyph.top * 2.0f * ui->pxHeight) + textPos.y, 0.0f);
+                textPos.x += glyph.xAdv * ui->pxWidth * 2.0f;
+                rowWidth -= textPos.x;
+            }
+            // save the row width
+            for (size_t j = rowStart; j < textOffset; ++j)
+                widths[j] = rowWidth;
+            rowStart = textOffset;
+        }
+        // save last row width
+        if (i == element->text.length() - 1)
+        {
+            for (size_t j = rowStart; j <= textOffset; ++j)
+                widths[j] = textPos.x;
+        }
+        // increment
+        if (element->text.at(i) != '\n')
+        {
+            textOffset++;
         }
     }
 
-    for (size_t i = first; i <= offset; ++i)
+    for (size_t i = first; i < textOffset; ++i)
     {
         // center
         if (element->textAllign == 0)
-            ui->model.instances[i].pos.x -= widths[i] / 2.0f;
+            ui->textModel.instances[i].pos.x -= ui_quantize(ui, widths[i] / 2.0f);
         // left
         if (element->textAllign == -1)
-            ui->model.instances[i].pos.x -= scale.x;
+            ui->textModel.instances[i].pos.x -= ui_quantize(ui, scale.x);
         // right
         if (element->textAllign == 1)
-            ui->model.instances[i].pos.x += scale.x - widths[i];
+            ui->textModel.instances[i].pos.x += ui_quantize(ui, scale.x - widths[i]);
         // vertical
-        ui->model.instances[i].pos.y -= textPos.y / 2.0f - textScale.y * 1.5f;
+        ui->textModel.instances[i].pos.y -= ui_quantize(ui, textPos.y / 2.0f - ui->pxHeight * ui->font.size * 0.5f);
     }
 
     for (auto it = element->children.begin(); it != element->children.end(); ++it)
     {
-        offset = ui_build(ui, *it, offset + 1, pos, scale);
+        offset = ui_build(ui, *it, offset + 1, textOffset, pos, scale);
     }
     return offset;
 }
@@ -118,6 +156,7 @@ size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset, glm::vec2 pos, g
 void ui_cleanup(ui_t *ui)
 {
     model_cleanup(&ui->model, ui->device);
+    model_cleanup(&ui->textModel, ui->device);
     texture_cleanup(&ui->fontTexture, ui->device);
 }
 
