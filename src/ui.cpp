@@ -26,6 +26,10 @@ void ui_create(ui_t *ui, VkDevice device, VkPhysicalDevice physicalDevice, VkCom
     ui->fontTexture.data.push_back(ui->font.textureData);
     ui->fontTexture.smooth = false;
     texture_data_load(&ui->fontTexture, &ui->fontTexture.data[0], ui->device, ui->physicalDevice, ui->commandPool, ui->graphicsQueue, 0);
+
+    texture_add(&ui->textures, ui->device, ui->physicalDevice, ui->commandPool, ui->graphicsQueue, "default.png", false);
+    texture_add(&ui->textures, ui->device, ui->physicalDevice, ui->commandPool, ui->graphicsQueue, "example.png", false);
+    ui->textures.combined = false;
 }
 
 void ui_render(ui_t *ui, VkCommandBuffer commandBuffer, pipeline_t *pipeline, descriptor_set_t *descriptorSet)
@@ -77,16 +81,14 @@ size_t ui_build(ui_t *ui, ui_element_t *element, size_t offset, size_t textOffse
     scale.x = element->width * scale.x;
     scale.y = element->height * scale.y;
     ui->model.instances[offset].pos = glm::vec3(pos.x, pos.y, 0.0f);
-    ui->model.instances[offset].rot = glm::vec3(1.0f, 1.0f, 0.0f);
+    ui->model.instances[offset].rot = glm::vec3(1.0f, offset == 0 ? 1.0f : -1.0f, 0.0f);
     ui->model.instances[offset].scale = glm::vec3(scale.x, scale.y, 1.0f);
     ui->model.instances[offset].textureIdx.x = element->textureIdx;
 
     glm::vec2 textPos(0.0f);
     std::map<int, float> widths;
     size_t first = textOffset;
-    size_t rows = 0;
     size_t rowStart = first;
-    size_t lastWord = first;
     for (size_t i = 0; i < element->text.length(); ++i)
     {
         font_glyph_t glyph = ui->font.glyphs[(short)element->text.at(i)];
@@ -158,6 +160,7 @@ void ui_cleanup(ui_t *ui)
     model_cleanup(&ui->model, ui->device);
     model_cleanup(&ui->textModel, ui->device);
     texture_cleanup(&ui->fontTexture, ui->device);
+    texture_cleanup(&ui->textures, ui->device);
 }
 
 ui_element_t *ui_element_create(ui_t *ui, ui_element_t *parent)

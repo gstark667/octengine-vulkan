@@ -656,6 +656,7 @@ void application_create_pipelines(application_t *app)
     descriptor_set_setup(&app->uiDescriptorSet, app->device, app->physicalDevice);
     descriptor_set_add_image(&app->uiDescriptorSet, &app->postColor.image, 0, false, false, false);
     descriptor_set_add_texture(&app->uiDescriptorSet, &app->scene.ui.fontTexture, 1, false);
+    descriptor_set_add_texture(&app->uiDescriptorSet, &app->scene.ui.textures, 2, false);
     descriptor_set_create(&app->uiDescriptorSet);
     app->uiPipeline.depth = false;
     pipeline_create(&app->uiPipeline, &app->uiDescriptorSet, app->windowWidth, app->windowHeight, "shaders/ui_vert.spv", "shaders/ui_frag.spv", app->device, app->physicalDevice, VK_SAMPLE_COUNT_1_BIT, app->commandPool, app->graphicsQueue, app->uiAttachments, false, false);

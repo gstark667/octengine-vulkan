@@ -31,6 +31,7 @@ struct ui_t
     ui_element_t *root = NULL;
     font_t font;
     texture_t fontTexture;
+    texture_t textures;
     bool dirty = false;
     VkDevice device;
     VkPhysicalDevice physicalDevice;

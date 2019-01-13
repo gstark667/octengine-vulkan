@@ -3,6 +3,8 @@
 
 layout (binding = 0) uniform sampler2D samplerComposite;
 layout (binding = 1) uniform sampler2D samplerFont;
+layout (binding = 2) uniform sampler samp;
+layout (binding = 3) uniform texture2D textures[80];
 
 layout (location = 0) in vec2 inUV;
 layout (location = 1) flat in int textureIdx;
@@ -16,5 +18,6 @@ void main()
     else if (textureIdx == 0)
         outFragColor = texture(samplerFont, inUV).rgba;
     else
+        //outFragColor = texture(sampler2D(textures[textureIdx], samp), inUV).rgba;
         outFragColor = vec4(0.0, 0.0, 0.0, 1.0);
 }
